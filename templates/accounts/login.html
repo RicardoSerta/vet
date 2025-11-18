@@ -1,0 +1,54 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Login - VetPortal</title>
+
+    <link rel="stylesheet" href="{% static 'accounts/css/styles.css' %}">
+</head>
+<body class="login-body">
+    <div class="login-overlay">
+        <div class="login-card">
+
+            {% if error %}
+                <div class="error-message">
+                    {{ error }}
+                </div>
+            {% endif %}
+
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="form-group">
+                    <label class="section-label">SEU LOGIN:</label>
+                    <label for="id_login" class="field-label">Login:</label>
+                    <input type="text" id="id_login" name="username" placeholder="Digite seu login">
+                </div>
+
+                <div class="form-group">
+                    <label class="section-label">SUA SENHA:</label>
+                    <label for="id_password" class="field-label">Senha:</label>
+                    <input type="password" id="id_password" name="password" placeholder="Digite sua senha">
+                </div>
+
+                <div class="form-footer">
+                    <label class="remember">
+                        <input type="checkbox" name="remember">
+                        Lembrar!
+                    </label>
+
+                    <button type="submit" class="btn-login">
+                        Entrar!
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="brand">
+            LUMAVET
+        </div>
+    </div>
+</body>
+</html>
+

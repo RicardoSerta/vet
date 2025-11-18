@@ -1,0 +1,167 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Meu Perfil - VetPortal</title>
+
+    <link rel="stylesheet" href="{% static 'accounts/css/styles.css' %}">
+</head>
+<body class="app-body">
+
+<div class="app-layout" id="app-layout">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-avatar">
+                {% if profile.photo %}
+                    <img src="{{ profile.photo.url }}" alt="Foto de perfil">
+                {% else %}
+                    <img src="{% static 'accounts/img/avatar-placeholder.png' %}" alt="Foto de perfil">
+                {% endif %}
+            </div>
+            <div class="sidebar-username">
+                {{ request.user.first_name|default:request.user.username }}
+            </div>
+        </div>
+
+        <ul class="sidebar-nav">
+            <li>
+                <a href="#" class="active">
+                    <span class="sidebar-nav-icon">👤</span>
+                    <span class="sidebar-nav-label">Meu Perfil</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <span class="sidebar-nav-icon">📄</span>
+                    <span class="sidebar-nav-label">Exames</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <span class="sidebar-nav-icon">🔗</span>
+                    <span class="sidebar-nav-label">Config QRCode</span>
+                </a>
+            </li>
+        </ul>
+    </aside>
+
+    <!-- MAIN -->
+    <div class="main">
+
+        <!-- TOPBAR -->
+        <header class="topbar">
+            <div class="topbar-left">
+                <button type="button" class="topbar-btn" id="sidebar-toggle">
+                    ☰
+                </button>
+                <span class="topbar-title">Área do Usuário</span>
+            </div>
+
+            <div class="topbar-right">
+                <span>Bem-vindo(a), {{ request.user.first_name|default:request.user.username }}</span>
+
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-logout">Sair</button>
+                </form>
+            </div>
+        </header>
+
+        <!-- CONTEÚDO -->
+        <main class="content">
+
+            {% if messages %}
+                <div class="messages">
+                    {% for message in messages %}
+                        <div class="message-{{ message.tags }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="card">
+                <h2 class="card-title">Dados do usuário</h2>
+
+                <div class="profile-grid">
+                    <!-- FORMULÁRIO -->
+                    <div>
+                        <form method="post" enctype="multipart/form-data">
+                            {% csrf_token %}
+
+                            <div class="profile-form-row">
+                                <div class="profile-form-group">
+                                    <label for="id_name">Nome:</label>
+                                    <input type="text" id="id_name" name="name"
+                                           value="{{ request.user.first_name }}">
+                                </div>
+
+                                <div class="profile-form-group">
+                                    <label for="id_email">E-mail:</label>
+                                    <input type="email" id="id_email" name="email"
+                                           value="{{ request.user.email }}">
+                                </div>
+                            </div>
+
+                            <div class="profile-form-row">
+                                <div class="profile-form-group">
+                                    <label for="id_whatsapp">WhatsApp:</label>
+                                    <input type="text" id="id_whatsapp" name="whatsapp"
+                                           value="{{ profile.whatsapp }}">
+                                </div>
+
+                                <div class="profile-form-group">
+                                    <label for="id_password">Nova senha:</label>
+                                    <input type="password" id="id_password" name="password" placeholder="Deixar em branco para não alterar">
+                                    <div class="field-hint">
+                                        A senha atual não é exibida. Preencha aqui apenas se quiser trocar.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="profile-form-row">
+                                <div class="profile-form-group">
+                                    <label for="id_photo">Foto de perfil:</label>
+                                    <input type="file" id="id_photo" name="photo" accept="image/*">
+                                    <div class="field-hint">
+                                        Envie uma imagem quadrada, de preferência.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn-primary">Salvar alterações</button>
+                        </form>
+                    </div>
+
+                    <!-- FOTO GRANDE AO LADO -->
+                    <div class="profile-photo-card">
+                        {% if profile.photo %}
+                            <img src="{{ profile.photo.url }}" alt="Foto de perfil" class="profile-photo">
+                        {% else %}
+                            <img src="{% static 'accounts/img/avatar-placeholder.png' %}" alt="Foto de perfil" class="profile-photo">
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const toggleBtn = document.getElementById('sidebar-toggle');
+    const layout = document.getElementById('app-layout');
+
+    if (toggleBtn && layout) {
+        toggleBtn.addEventListener('click', function () {
+            layout.classList.toggle('sidebar-collapsed');
+        });
+    }
+});
+</script>
+
+</body>
+</html>
+

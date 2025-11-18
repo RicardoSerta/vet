@@ -1,0 +1,387 @@
+/* Deixa a caixa dos inputs mais previsível */
+* {
+    box-sizing: border-box;
+}
+
+/* BODY específico da página de login */
+body.login-body {
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    min-height: 100vh;
+
+    /* Caminho da imagem de fundo (url pública /static/...) */
+    background-image: url("/static/accounts/img/login-bg.jpg");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+/* Container que centraliza o card na tela */
+.login-overlay {
+    height: 100vh;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative; /* para o texto nomedosite ficar absoluto dentro dele */
+}
+
+/* Card branco de login */
+.login-card {
+    background-color: rgba(255, 255, 255, 0.97);
+    padding: 30px 40px;
+    border-radius: 4px;
+    box-shadow: 0 0 25px rgba(0, 0, 0, 0.2);
+    min-width: 380px;
+}
+
+/* Cada bloco (login / senha) */
+.form-group {
+    margin-bottom: 16px;
+}
+
+/* Título pequeno do bloco: SEU LOGIN, SUA SENHA */
+.section-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+}
+
+/* Label pequena: Login:, Senha: */
+.field-label {
+    display: block;
+    font-size: 12px;
+    color: #777;
+    margin-bottom: 4px;
+}
+
+/* Inputs de texto e senha */
+input[type="text"],
+input[type="password"] {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #ddd;
+    border-radius: 2px;
+    font-size: 13px;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus {
+    outline: none;
+    border-color: #00a676;
+    box-shadow: 0 0 0 1px rgba(0, 166, 118, 0.15);
+}
+
+/* Linha de baixo do formulário (checkbox à esquerda, botão à direita) */
+.form-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+}
+
+/* Texto do “Lembrar” */
+.remember {
+    font-size: 12px;
+    color: #555;
+}
+
+/* Botão azul */
+.btn-login {
+    border: none;
+    padding: 8px 18px;
+    border-radius: 2px;
+    font-size: 13px;
+    cursor: pointer;
+    background-color: #74b9ff;
+    color: #fff;
+    font-weight: 700;
+}
+
+.btn-login:hover {
+    background-color: #4aa3ff;
+}
+
+/* “nomedosite” lá embaixo na tela */
+.brand {
+    position: absolute;
+    bottom: 16px;
+    font-size: 30px;
+    color: #ffffff;
+    text-shadow: 0 0 5px rgba(0, 0, 0, 0.7);
+}
+
+.error-message {
+    background-color: rgba(255, 0, 0, 0.06);
+    border: 1px solid rgba(255, 0, 0, 0.4);
+    color: #b00020;
+    font-size: 12px;
+    padding: 8px 10px;
+    border-radius: 3px;
+    margin-bottom: 12px;
+}
+
+/* --------------------------- */
+/* LAYOUT INTERNO (pós-login) */
+/* --------------------------- */
+
+body.app-body {
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    background-color: #f3f4f6;
+}
+
+.app-layout {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* SIDEBAR */
+
+.sidebar {
+    width: 230px;
+    background-color: #111827;
+    color: #e5e7eb;
+    display: flex;
+    flex-direction: column;
+    padding: 16px 0;
+}
+
+.sidebar-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 16px 16px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sidebar-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 999px;
+    overflow: hidden;
+    margin-bottom: 8px;
+    background-color: #374151;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sidebar-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.sidebar-username {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.sidebar-nav {
+    list-style: none;
+    margin: 16px 0 0;
+    padding: 0;
+}
+
+.sidebar-nav li a {
+    display: flex;
+    align-items: center;
+    padding: 10px 20px;
+    font-size: 14px;
+    color: #e5e7eb;
+    text-decoration: none;
+}
+
+.sidebar-nav li a:hover,
+.sidebar-nav li a.active {
+    background-color: #1f2937;
+}
+
+.sidebar-nav-icon {
+    margin-right: 8px;
+    font-size: 14px;
+}
+
+/* MAIN */
+
+.main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* TOPBAR */
+
+.topbar {
+    height: 56px;
+    background-color: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+}
+
+.topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.topbar-btn {
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 20px;
+}
+
+.topbar-title {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+}
+
+.btn-logout {
+    border: none;
+    background-color: #ef4444;
+    color: #ffffff;
+    padding: 6px 12px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+/* CONTEÚDO PRINCIPAL */
+
+.content {
+    padding: 20px;
+}
+
+.card {
+    background-color: #ffffff;
+    border-radius: 4px;
+    border: 1px solid #e5e7eb;
+    padding: 16px 20px;
+}
+
+.card-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+/* GRID DO PERFIL */
+
+.profile-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 24px;
+}
+
+.profile-form-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 12px;
+}
+
+.profile-form-group label {
+    display: block;
+    font-size: 12px;
+    color: #6b7280;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+}
+
+.profile-form-group input[type="text"],
+.profile-form-group input[type="email"],
+.profile-form-group input[type="password"] {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 3px;
+    border: 1px solid #d1d5db;
+    font-size: 13px;
+}
+
+.field-hint {
+    font-size: 11px;
+    color: #9ca3af;
+    margin-top: 2px;
+}
+
+.btn-primary {
+    border: none;
+    background-color: #10b981;
+    color: #ffffff;
+    padding: 8px 18px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+/* FOTO GRANDE */
+
+.profile-photo-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.profile-photo {
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    object-fit: cover;
+    background-color: #e5e7eb;
+}
+
+/* MENSAGENS */
+
+.messages {
+    margin-bottom: 10px;
+}
+
+.messages .message-success {
+    background-color: #ecfdf5;
+    border: 1px solid #bbf7d0;
+    color: #166534;
+    font-size: 12px;
+    padding: 8px 10px;
+    border-radius: 3px;
+}
+
+.messages .message-error {
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+    font-size: 12px;
+    padding: 8px 10px;
+    border-radius: 3px;
+}
+
+/* SIDEBAR COLAPSADA */
+
+.app-layout.sidebar-collapsed .sidebar {
+    width: 72px;
+}
+
+.app-layout.sidebar-collapsed .sidebar-username,
+.app-layout.sidebar-collapsed .sidebar-nav-label {
+    display: none;
+}
+
+.app-layout.sidebar-collapsed .sidebar-header {
+    align-items: center;
+}
+
