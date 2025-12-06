@@ -1,0 +1,105 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}LumaVet{% endblock %}</title>
+
+    <link rel="stylesheet" href="{% static 'accounts/css/styles.css' %}">
+</head>
+<body class="app-body">
+
+<div class="app-layout" id="app-layout">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-avatar">
+                {% if profile.photo %}
+                    <img src="{{ profile.photo.url }}" alt="Foto de perfil">
+                {% else %}
+                    <img src="{% static 'accounts/img/avatar-placeholder.png' %}" alt="Foto de perfil">
+                {% endif %}
+            </div>
+            <div class="sidebar-username">
+                {{ request.user.first_name|default:request.user.username }}
+            </div>
+        </div>
+
+        <ul class="sidebar-nav">
+            <li>
+                <a href="{% url 'meu_perfil' %}" class="{% if request.resolver_match.url_name == 'meu_perfil' %}active{% endif %}">
+                    <span class="sidebar-nav-icon">👤</span>
+                    <span class="sidebar-nav-label">Meu Perfil</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" class="{% if request.resolver_match.url_name == 'exames' %}active{% endif %}">
+                    <span class="sidebar-nav-icon">📄</span>
+                    <span class="sidebar-nav-label">Exames</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" class="{% if request.resolver_match.url_name == 'config_qrcode' %}active{% endif %}">
+                    <span class="sidebar-nav-icon">🔗</span>
+                    <span class="sidebar-nav-label">Config QRCode</span>
+                </a>
+            </li>
+        </ul>
+    </aside>
+
+    <!-- MAIN -->
+    <div class="main">
+
+        <!-- TOPBAR -->
+        <header class="topbar">
+            <div class="topbar-left">
+                <button type="button" class="topbar-btn" id="sidebar-toggle">
+                    ☰
+                </button>
+                <span class="topbar-title">
+                    {% block page_title %}Área do Usuário{% endblock %}
+                </span>
+            </div>
+
+            <div class="topbar-right">
+                <span>Bem-vindo(a), {{ request.user.first_name|default:request.user.username }}</span>
+
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-logout">Sair</button>
+                </form>
+            </div>
+        </header>
+
+        <!-- CONTEÚDO PRINCIPAL -->
+        <main class="content">
+            {% if messages %}
+                <div class="messages">
+                    {% for message in messages %}
+                        <div class="message-{{ message.tags }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            {% block main_content %}{% endblock %}
+        </main>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const toggleBtn = document.getElementById('sidebar-toggle');
+    const layout = document.getElementById('app-layout');
+
+    if (toggleBtn && layout) {
+        toggleBtn.addEventListener('click', function () {
+            layout.classList.toggle('sidebar-collapsed');
+        });
+    }
+});
+</script>
+
+</body>
+</html>
+
