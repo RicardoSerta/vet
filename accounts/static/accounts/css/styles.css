@@ -385,3 +385,97 @@ body.app-body {
     align-items: center;
 }
 
+.table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    margin-top: 10px;
+}
+
+.exams-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.exams-table th,
+.exams-table td {
+    border: 1px solid #e5e7eb;
+    padding: 8px 10px;
+}
+
+.exams-table thead {
+    background-color: #f9fafb;
+}
+
+.exams-table th a {
+    text-decoration: none;
+    color: #111827;
+    font-weight: 600;
+    font-size: 12px;
+}
+
+.exams-table th a:hover {
+    text-decoration: underline;
+}
+
+.exams-actions {
+    white-space: nowrap;
+    text-align: center;
+}
+
+.btn-icon {
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+    text-decoration: none;
+    margin-right: 4px;
+}
+
+.btn-icon-blue {
+    background-color: #3b82f6;
+    color: white;
+}
+
+.btn-icon-green {
+    background-color: #10b981;
+    color: white;
+}
+
+.btn-icon-red {
+    background-color: #ef4444;
+    color: white;
+}
+
+.exams-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.exams-search-form {
+    display: flex;
+    gap: 6px;
+}
+
+.exams-search-form input[type="text"] {
+    padding: 6px 8px;
+    border-radius: 3px;
+    border: 1px solid #d1d5db;
+    font-size: 13px;
+}
+
+.exams-search-form button {
+    border: none;
+    background-color: #6b7280;
+    color: #ffffff;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+

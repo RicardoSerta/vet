@@ -1,0 +1,146 @@
+{% extends 'base_app.html' %}
+{% load static %}
+
+{% block title %}Exames - LumaVet{% endblock %}
+{% block page_title %}Exames{% endblock %}
+
+{% block main_content %}
+
+<div class="card">
+    <div class="exams-header">
+        <div class="exams-header-left">
+            <h2 class="card-title">Lista de exames</h2>
+        </div>
+
+        <form method="get" class="exams-search-form">
+            <input type="text" name="q" placeholder="Buscar por pet, tutor, clínica..."
+                   value="{{ search_query|default_if_none:'' }}">
+            <button type="submit">Buscar</button>
+        </form>
+    </div>
+
+    <div class="table-wrapper">
+        <table class="exams-table">
+            <thead>
+                <tr>
+                    {# Helpers pra links de ordenação #}
+                    {% with qparam=search_query|default_if_none:'' %}
+                    <th>
+                        <a href="?order=realizacao&direction={% if order == 'realizacao' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
+                            Realização
+                            {% if order == 'realizacao' %}
+                                {% if direction == 'asc' %}▲{% else %}▼{% endif %}
+                            {% endif %}
+                        </a>
+                    </th>
+                    <th>
+                        <a href="?order=clinica&direction={% if order == 'clinica' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
+                            Clínica / Veterinário
+                            {% if order == 'clinica' %}
+                                {% if direction == 'asc' %}▲{% else %}▼{% endif %}
+                            {% endif %}
+                        </a>
+                    </th>
+                    <th>
+                        <a href="?order=exame&direction={% if order == 'exame' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
+                            Exame
+                            {% if order == 'exame' %}
+                                {% if direction == 'asc' %}▲{% else %}▼{% endif %}
+                            {% endif %}
+                        </a>
+                    </th>
+                    <th>
+                        <a href="?order=pet&direction={% if order == 'pet' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
+                            Pet
+                            {% if order == 'pet' %}
+                                {% if direction == 'asc' %}▲{% else %}▼{% endif %}
+                            {% endif %}
+                        </a>
+                    </th>
+                    <th>
+                        <a href="?order=raca&direction={% if order == 'raca' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
+                            Raça
+                            {% if order == 'raca' %}
+                                {% if direction == 'asc' %}▲{% else %}▼{% endif %}
+                            {% endif %}
+                        </a>
+                    </th>
+                    <th>
+                        <a href="?order=tutor&direction={% if order == 'tutor' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
+                            Tutor
+                            {% if order == 'tutor' %}
+                                {% if direction == 'asc' %}▲{% else %}▼{% endif %}
+                            {% endif %}
+                        </a>
+                    </th>
+                    <th>Alerta Email</th>
+                    <th>Alerta Zap</th>
+                    <th>
+                        <a href="?order=retorno&direction={% if order == 'retorno' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
+                            Retorno previsto
+                            {% if order == 'retorno' %}
+                                {% if direction == 'asc' %}▲{% else %}▼{% endif %}
+                            {% endif %}
+                        </a>
+                    </th>
+                    <th>Ações</th>
+                    {% endwith %}
+                </tr>
+            </thead>
+            <tbody>
+                {% if exams %}
+                    {% for exam in exams %}
+                        <tr>
+                            <td>{{ exam.date_realizacao|date:"d/m/Y" }}</td>
+                            <td>{{ exam.clinic_or_vet }}</td>
+                            <td>{{ exam.exam_type }}</td>
+                            <td>{{ exam.pet_name }}</td>
+                            <td>{{ exam.breed }}</td>
+                            <td>{{ exam.tutor_name }}</td>
+                            <td>
+                                {% if exam.alerta_email %}
+                                    {{ exam.alerta_email|date:"d/m/Y H:i" }}
+                                {% else %}
+                                    –
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if exam.alerta_zap %}
+                                    {{ exam.alerta_zap|date:"d/m/Y H:i" }}
+                                {% else %}
+                                    –
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if exam.retorno_previsto %}
+                                    {{ exam.retorno_previsto|date:"d/m/Y" }}
+                                {% else %}
+                                    –
+                                {% endif %}
+                            </td>
+                            <td class="exams-actions">
+                                <a href="{% url 'exam_forward' exam.pk %}" title="Encaminhar" class="btn-icon btn-icon-blue">✉</a>
+                                <a href="{% url 'exam_detail' exam.pk %}" title="Visualizar" class="btn-icon btn-icon-green">👁</a>
+                                <form method="post" action="{% url 'exam_delete' exam.pk %}" style="display:inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn-icon btn-icon-red" title="Excluir" onclick="return confirm('Tem certeza que deseja excluir este exame?');">
+                                        🗑
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="10" style="text-align:center;">
+                            Nenhum exame cadastrado ainda.
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
+

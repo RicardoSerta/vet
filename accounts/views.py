@@ -1,9 +1,10 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.db.models import Q
 
-from .models import Profile
+from .models import Profile, Exam
 
 
 def login_view(request):
@@ -64,6 +65,87 @@ def profile_view(request):
         'profile': profile,
     }
     return render(request, 'accounts/profile.html', context)
+    
+@login_required
+def exams_list(request):
+    profile, _ = Profile.objects.get_or_create(user=request.user)
+
+    exams = Exam.objects.all()
+
+    # Busca simples
+    search_query = request.GET.get('q', '').strip()
+    if search_query:
+        exams = exams.filter(
+            Q(clinic_or_vet__icontains=search_query) |
+            Q(exam_type__icontains=search_query) |
+            Q(pet_name__icontains=search_query) |
+            Q(breed__icontains=search_query) |
+            Q(tutor_name__icontains=search_query)
+        )
+
+    # Ordenação
+    order = request.GET.get('order', '')
+    direction = request.GET.get('direction', 'asc')
+
+    order_map = {
+        'realizacao': 'date_realizacao',
+        'clinica': 'clinic_or_vet',
+        'exame': 'exam_type',
+        'pet': 'pet_name',
+        'raca': 'breed',
+        'tutor': 'tutor_name',
+        'retorno': 'retorno_previsto',
+    }
+
+    if order in order_map:
+        field_name = order_map[order]
+        if direction == 'desc':
+            field_name = '-' + field_name
+        exams = exams.order_by(field_name)
+
+    context = {
+        'profile': profile,
+        'exams': exams,
+        'search_query': search_query,
+        'order': order,
+        'direction': direction,
+    }
+    return render(request, 'accounts/exams_list.html', context)
+    
+@login_required
+def exam_detail(request, pk):
+    profile, _ = Profile.objects.get_or_create(user=request.user)
+    exam = get_object_or_404(Exam, pk=pk)
+
+    return render(request, 'accounts/exam_detail.html', {
+        'profile': profile,
+        'exam': exam,
+    })
+
+
+@login_required
+def exam_delete(request, pk):
+    exam = get_object_or_404(Exam, pk=pk)
+
+    if request.method == 'POST':
+        exam.delete()
+        messages.success(request, 'Exame excluído com sucesso.')
+        return redirect('exames')
+
+    # Se acessarem por GET, mostra só uma confirmação simples
+    profile, _ = Profile.objects.get_or_create(user=request.user)
+    return render(request, 'accounts/exam_confirm_delete.html', {
+        'profile': profile,
+        'exam': exam,
+    })
+
+
+@login_required
+def exam_forward(request, pk):
+    exam = get_object_or_404(Exam, pk=pk)
+    # Protótipo: só mostra uma mensagem por enquanto
+    messages.info(request, 'Funcionalidade de encaminhar exame ainda será implementada.')
+    return redirect('exames')
 
 
 def logout_view(request):

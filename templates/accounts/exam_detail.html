@@ -1,0 +1,45 @@
+{% extends 'base_app.html' %}
+{% load static %}
+
+{% block title %}Exame - LumaVet{% endblock %}
+{% block page_title %}Detalhes do exame{% endblock %}
+
+{% block main_content %}
+<div class="card">
+    <h2 class="card-title">{{ exam.exam_type }} - {{ exam.pet_name }}</h2>
+
+    <p><strong>Realização:</strong> {{ exam.date_realizacao|date:"d/m/Y" }}</p>
+    <p><strong>Clínica / Veterinário:</strong> {{ exam.clinic_or_vet }}</p>
+    <p><strong>Pet:</strong> {{ exam.pet_name }}</p>
+    <p><strong>Raça:</strong> {{ exam.breed }}</p>
+    <p><strong>Tutor:</strong> {{ exam.tutor_name }}</p>
+    <p><strong>Retorno previsto:</strong>
+        {% if exam.retorno_previsto %}
+            {{ exam.retorno_previsto|date:"d/m/Y" }}
+        {% else %}
+            –
+        {% endif %}
+    </p>
+
+    <p><strong>Alerta Email:</strong>
+        {% if exam.alerta_email %}
+            {{ exam.alerta_email|date:"d/m/Y H:i" }}
+        {% else %}
+            –
+        {% endif %}
+    </p>
+
+    <p><strong>Alerta Zap:</strong>
+        {% if exam.alerta_zap %}
+            {{ exam.alerta_zap|date:"d/m/Y H:i" }}
+        {% else %}
+            –
+        {% endif %}
+    </p>
+
+    <p style="margin-top: 12px;">
+        <a href="{% url 'exames' %}" class="btn-primary">Voltar para lista</a>
+    </p>
+</div>
+{% endblock %}
+

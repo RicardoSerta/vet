@@ -1,0 +1,19 @@
+{% extends 'base_app.html' %}
+
+{% block title %}Excluir exame - LumaVet{% endblock %}
+{% block page_title %}Excluir exame{% endblock %}
+
+{% block main_content %}
+<div class="card">
+    <h2 class="card-title">Confirmar exclusão</h2>
+
+    <p>Você tem certeza que deseja excluir o exame <strong>{{ exam.exam_type }}</strong> do pet <strong>{{ exam.pet_name }}</strong>?</p>
+
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn-primary">Sim, excluir</button>
+        <a href="{% url 'exames' %}" style="margin-left:10px;">Cancelar</a>
+    </form>
+</div>
+{% endblock %}
+

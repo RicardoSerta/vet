@@ -34,7 +34,7 @@
                 </a>
             </li>
             <li>
-                <a href="#" class="{% if request.resolver_match.url_name == 'exames' %}active{% endif %}">
+                <a href="{% url 'exames' %}" class="{% if request.resolver_match.url_name == 'exames' %}active{% endif %}">
                     <span class="sidebar-nav-icon">📄</span>
                     <span class="sidebar-nav-label">Exames</span>
                 </a>
