@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.db.models import Q
 
 from .models import Profile, Exam
+from .forms import ExamUploadForm
 
 
 def login_view(request):
@@ -146,6 +147,42 @@ def exam_forward(request, pk):
     # Protótipo: só mostra uma mensagem por enquanto
     messages.info(request, 'Funcionalidade de encaminhar exame ainda será implementada.')
     return redirect('exames')
+    
+@login_required
+def exam_upload(request):
+    profile, _ = Profile.objects.get_or_create(user=request.user)
+
+    if request.method == 'POST':
+        form = ExamUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            cd = form.cleaned_data
+
+            exam = Exam.objects.create(
+                date_realizacao=cd['parsed_date_realizacao'],
+                clinic_or_vet=cd['clinic_or_vet'],
+                exam_type=cd['parsed_exam_type'],
+                pet_name=cd['parsed_pet_name'],
+                breed=cd['parsed_breed'],
+                tutor_name=cd['parsed_tutor_name'],
+                tutor_phone=cd['tutor_phone'],
+                tutor_email=cd['tutor_email'],
+                observations=cd['observations'],
+                pdf_file=cd['pdf_file'],
+                owner=request.user,
+            )
+
+            messages.success(
+                request,
+                f'Exame de {exam.pet_name} cadastrado com sucesso.'
+            )
+            return redirect('exames')
+    else:
+        form = ExamUploadForm()
+
+    return render(request, 'accounts/exam_upload.html', {
+        'profile': profile,
+        'form': form,
+    })
 
 
 def logout_view(request):

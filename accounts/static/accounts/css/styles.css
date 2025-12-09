@@ -478,4 +478,43 @@ body.app-body {
     cursor: pointer;
 }
 
+/* Botão principal pode ser usado como <button> ou <a> */
+.btn-primary {
+    border: none;
+    background-color: #10b981;
+    color: #ffffff;
+    padding: 8px 18px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    text-decoration: none;
+    display: inline-block;
+}
+
+/* Erros de campo no formulário */
+.field-error {
+    color: #b91c1c;
+    font-size: 11px;
+    margin-top: 2px;
+}
+
+/* Header dos exames com botão + search */
+.exams-header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-upload-exam {
+    white-space: nowrap;
+}
+
+/* Formulário de upload (pode reaproveitar as classes de perfil) */
+.exam-upload-form input[type="text"],
+.exam-upload-form input[type="email"],
+.exam-upload-form input[type="date"],
+.exam-upload-form textarea {
+    width: 100%;
+}
+
 

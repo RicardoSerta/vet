@@ -19,11 +19,16 @@ class Exam(models.Model):
     breed = models.CharField("Raça", max_length=255, blank=True)
     tutor_name = models.CharField("Tutor", max_length=255)
 
+    tutor_phone = models.CharField("Celular do tutor", max_length=20, blank=True)
+    tutor_email = models.CharField("E-mail do tutor", max_length=255, blank=True)
+    observations = models.TextField("Observações", blank=True)
+
     alerta_email = models.DateTimeField("Alerta Email", blank=True, null=True)
     alerta_zap = models.DateTimeField("Alerta Zap", blank=True, null=True)
     retorno_previsto = models.DateField("Retorno previsto", blank=True, null=True)
 
-    # quem cadastrou o exame (pode ser útil depois)
+    pdf_file = models.FileField("Arquivo PDF", upload_to='exam_pdfs/', blank=True, null=True)
+
     owner = models.ForeignKey(
         User,
         on_delete=models.SET_NULL,
@@ -39,5 +44,4 @@ class Exam(models.Model):
 
     def __str__(self):
         return f'{self.exam_type} - {self.pet_name}'
-
 
