@@ -44,4 +44,49 @@ class Exam(models.Model):
 
     def __str__(self):
         return f'{self.exam_type} - {self.pet_name}'
+        
+class BaseContact(models.Model):
+    name = models.CharField("Nome", max_length=255)
+    email = models.CharField("E-mail", max_length=255, blank=True)
+    phone = models.CharField("Telefone", max_length=20, blank=True)
+    created_at = models.DateTimeField("Data de cadastro", auto_now_add=True)
+
+    class Meta:
+        abstract = True
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
+class Tutor(BaseContact):
+    class Meta(BaseContact.Meta):
+        verbose_name = "Tutor"
+        verbose_name_plural = "Tutores"
+
+
+class Clinic(BaseContact):
+    class Meta(BaseContact.Meta):
+        verbose_name = "Clínica"
+        verbose_name_plural = "Clínicas"
+
+
+class Veterinarian(BaseContact):
+    class Meta(BaseContact.Meta):
+        verbose_name = "Veterinário"
+        verbose_name_plural = "Veterinários"
+
+
+class Pet(models.Model):
+    name = models.CharField("Nome", max_length=255)
+    breed = models.CharField("Raça", max_length=255, blank=True)
+    tutor = models.ForeignKey(Tutor, on_delete=models.CASCADE, related_name="pets")
+    created_at = models.DateTimeField("Data de cadastro", auto_now_add=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
 

@@ -11,5 +11,9 @@ urlpatterns = [
     path('exames/<int:pk>/', views.exam_detail, name='exam_detail'),
     path('exames/<int:pk>/excluir/', views.exam_delete, name='exam_delete'),
     path('exames/<int:pk>/encaminhar/', views.exam_forward, name='exam_forward'),
+
+    path('gestao/', views.management_view, name='gestao'),
+    path('gestao/<str:category>/', views.management_view, name='gestao_category'),
+    path('gestao/<str:category>/novo/', views.management_create, name='gestao_create'),
 ]
 

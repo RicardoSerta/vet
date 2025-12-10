@@ -4,6 +4,8 @@ from datetime import date
 
 from django import forms
 
+from .models import Tutor, Clinic, Veterinarian, Pet
+
 
 class ExamUploadForm(forms.Form):
     clinic_or_vet = forms.CharField(
@@ -96,4 +98,33 @@ class ExamUploadForm(forms.Form):
         cleaned['parsed_date_realizacao'] = data_realizacao
 
         return cleaned
+
+class TutorForm(forms.ModelForm):
+    class Meta:
+        model = Tutor
+        fields = ['name', 'email', 'phone']
+
+
+class ClinicForm(forms.ModelForm):
+    class Meta:
+        model = Clinic
+        fields = ['name', 'email', 'phone']
+
+
+class VeterinarianForm(forms.ModelForm):
+    class Meta:
+        model = Veterinarian
+        fields = ['name', 'email', 'phone']
+
+
+class PetForm(forms.ModelForm):
+    class Meta:
+        model = Pet
+        fields = ['name', 'breed', 'tutor']
+
+    def clean_breed(self):
+        breed = self.cleaned_data.get('breed', '').strip()
+        if not breed:
+            return 'SRD'
+        return breed
 

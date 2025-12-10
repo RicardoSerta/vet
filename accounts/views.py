@@ -4,9 +4,35 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q
 
-from .models import Profile, Exam
-from .forms import ExamUploadForm
+from .models import Profile, Exam, Tutor, Clinic, Veterinarian, Pet
+from .forms import ExamUploadForm, TutorForm, ClinicForm, VeterinarianForm, PetForm
 
+MANAGEMENT_CATEGORIES = {
+    'tutores': {
+        'label': 'Tutores',
+        'singular': 'Tutor',
+        'model': Tutor,
+        'form': TutorForm,
+    },
+    'clinicas': {
+        'label': 'Clínicas',
+        'singular': 'Clínica',
+        'model': Clinic,
+        'form': ClinicForm,
+    },
+    'veterinarios': {
+        'label': 'Veterinários',
+        'singular': 'Veterinário',
+        'model': Veterinarian,
+        'form': VeterinarianForm,
+    },
+    'pets': {
+        'label': 'Pets',
+        'singular': 'Pet',
+        'model': Pet,
+        'form': PetForm,
+    },
+}
 
 def login_view(request):
     if request.user.is_authenticated:
@@ -181,6 +207,61 @@ def exam_upload(request):
 
     return render(request, 'accounts/exam_upload.html', {
         'profile': profile,
+        'form': form,
+    })
+    
+@login_required
+def management_view(request, category='tutores'):
+    profile, _ = Profile.objects.get_or_create(user=request.user)
+
+    if category not in MANAGEMENT_CATEGORIES:
+        category = 'tutores'
+
+    info = MANAGEMENT_CATEGORIES[category]
+    Model = info['model']
+
+    items = Model.objects.all().order_by('-created_at')
+
+    categories_nav = [
+        {'slug': key, 'label': value['label']}
+        for key, value in MANAGEMENT_CATEGORIES.items()
+    ]
+
+    context = {
+        'profile': profile,
+        'category': category,
+        'category_label': info['label'],
+        'category_singular': info['singular'],
+        'categories_nav': categories_nav,
+        'items': items,
+        'empty_message': f"Nenhum {info['singular'].lower()} cadastrado ainda.",
+    }
+    return render(request, 'accounts/management.html', context)
+
+@login_required
+def management_create(request, category):
+    profile, _ = Profile.objects.get_or_create(user=request.user)
+
+    if category not in MANAGEMENT_CATEGORIES:
+        return redirect('gestao')
+
+    info = MANAGEMENT_CATEGORIES[category]
+    FormClass = info['form']
+
+    if request.method == 'POST':
+        form = FormClass(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'{info["singular"]} cadastrado(a) com sucesso.')
+            return redirect('gestao_category', category=category)
+    else:
+        form = FormClass()
+
+    return render(request, 'accounts/management_form.html', {
+        'profile': profile,
+        'category': category,
+        'category_label': info['label'],
+        'category_singular': info['singular'],
         'form': form,
     })
 

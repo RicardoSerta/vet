@@ -1,0 +1,75 @@
+{% extends 'base_app.html' %}
+
+{% block title %}Gestão - LumaVet{% endblock %}
+{% block page_title %}Gestão{% endblock %}
+
+{% block main_content %}
+<div class="card">
+    <div class="management-header">
+        <div class="management-tabs">
+            {% for cat in categories_nav %}
+                <a href="{% url 'gestao_category' cat.slug %}"
+                   class="management-tab {% if cat.slug == category %}active{% endif %}">
+                    {{ cat.label }}
+                </a>
+            {% endfor %}
+        </div>
+
+        <a href="{% url 'gestao_create' category %}"
+           class="btn-icon btn-icon-green management-add-btn"
+           title="Novo {{ category_singular }}">
+            +
+        </a>
+    </div>
+
+    <div class="table-wrapper">
+        <table class="exams-table">
+            <thead>
+                {% if category == 'pets' %}
+                    <tr>
+                        <th>Nome</th>
+                        <th>Raça</th>
+                        <th>Tutor</th>
+                        <th>Data de cadastro</th>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <th>Nome</th>
+                        <th>E-mail</th>
+                        <th>Telefone</th>
+                        <th>Data de cadastro</th>
+                    </tr>
+                {% endif %}
+            </thead>
+            <tbody>
+                {% if items %}
+                    {% for item in items %}
+                        {% if category == 'pets' %}
+                            <tr>
+                                <td>{{ item.name }}</td>
+                                <td>{{ item.breed }}</td>
+                                <td>{{ item.tutor.name }}</td>
+                                <td>{{ item.created_at|date:"d/m/Y" }}</td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td>{{ item.name }}</td>
+                                <td>{{ item.email }}</td>
+                                <td>{{ item.phone }}</td>
+                                <td>{{ item.created_at|date:"d/m/Y" }}</td>
+                            </tr>
+                        {% endif %}
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="4" style="text-align:center;">
+                            {{ empty_message }}
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+

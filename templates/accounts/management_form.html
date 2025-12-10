@@ -1,0 +1,30 @@
+{% extends 'base_app.html' %}
+
+{% block title %}Novo {{ category_singular }} - LumaVet{% endblock %}
+{% block page_title %}Novo {{ category_singular }}{% endblock %}
+
+{% block main_content %}
+<div class="card">
+    <h2 class="card-title">Cadastrar {{ category_singular }}</h2>
+
+    <form method="post" class="exam-upload-form">
+        {% csrf_token %}
+
+        {% for field in form %}
+            <div class="profile-form-row">
+                <div class="profile-form-group" style="grid-column: 1 / -1;">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}:</label>
+                    {{ field }}
+                    {% if field.errors %}
+                        <div class="field-error">{{ field.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+
+        <button type="submit" class="btn-primary">Salvar</button>
+        <a href="{% url 'gestao_category' category %}" style="margin-left: 10px; font-size: 13px;">Cancelar</a>
+    </form>
+</div>
+{% endblock %}
+

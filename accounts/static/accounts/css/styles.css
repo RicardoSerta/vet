@@ -517,4 +517,40 @@ body.app-body {
     width: 100%;
 }
 
+.management-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.management-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.management-tab {
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid #d1d5db;
+    font-size: 12px;
+    text-decoration: none;
+    color: #374151;
+    background-color: #f9fafb;
+}
+
+.management-tab.active {
+    background-color: #111827;
+    color: #f9fafb;
+    border-color: #111827;
+}
+
+.management-add-btn {
+    font-size: 18px;
+    padding: 4px 10px;
+    border-radius: 999px;
+}
+
 
