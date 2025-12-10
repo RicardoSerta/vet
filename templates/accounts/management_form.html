@@ -13,8 +13,16 @@
         {% for field in form %}
             <div class="profile-form-row">
                 <div class="profile-form-group" style="grid-column: 1 / -1;">
-                    <label for="{{ field.id_for_label }}">{{ field.label }}:</label>
-                    {{ field }}
+                    {% if category == 'pets' and field.name == 'tutor' %}
+                        <label for="{{ field.id_for_label }}">{{ field.label }}:</label>
+                        <input type="text" id="tutor-search"
+                               placeholder="Digite para filtrar tutores..."
+                               style="margin-bottom: 6px;">
+                        {{ field }}
+                    {% else %}
+                        <label for="{{ field.id_for_label }}">{{ field.label }}:</label>
+                        {{ field }}
+                    {% endif %}
                     {% if field.errors %}
                         <div class="field-error">{{ field.errors.0 }}</div>
                     {% endif %}
@@ -26,5 +34,32 @@
         <a href="{% url 'gestao_category' category %}" style="margin-left: 10px; font-size: 13px;">Cancelar</a>
     </form>
 </div>
+{% if category == 'pets' %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const searchInput = document.getElementById('tutor-search');
+    const select = document.getElementById('id_tutor');
+
+    if (!searchInput || !select) return;
+
+    searchInput.addEventListener('input', function () {
+        const term = this.value.toLowerCase();
+
+        for (let i = 0; i < select.options.length; i++) {
+            const option = select.options[i];
+
+            // Mantém a opção vazia (---------) sempre visível
+            if (option.value === "") {
+                option.hidden = false;
+                continue;
+            }
+
+            const text = option.text.toLowerCase();
+            option.hidden = term && !text.includes(term);
+        }
+    });
+});
+</script>
+{% endif %}
 {% endblock %}
 

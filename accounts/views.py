@@ -13,24 +13,56 @@ MANAGEMENT_CATEGORIES = {
         'singular': 'Tutor',
         'model': Tutor,
         'form': TutorForm,
+        'search_fields': ['name', 'email', 'phone'],
+        'order_map': {
+            'nome': 'name',
+            'email': 'email',
+            'telefone': 'phone',
+            'data': 'created_at',
+        },
+        'empty_message': 'Nenhum tutor cadastrado ainda.',
     },
     'clinicas': {
         'label': 'Clínicas',
         'singular': 'Clínica',
         'model': Clinic,
         'form': ClinicForm,
+        'search_fields': ['name', 'email', 'phone'],
+        'order_map': {
+            'nome': 'name',
+            'email': 'email',
+            'telefone': 'phone',
+            'data': 'created_at',
+        },
+        'empty_message': 'Nenhuma clínica cadastrada ainda.',
     },
     'veterinarios': {
         'label': 'Veterinários',
         'singular': 'Veterinário',
         'model': Veterinarian,
         'form': VeterinarianForm,
+        'search_fields': ['name', 'email', 'phone'],
+        'order_map': {
+            'nome': 'name',
+            'email': 'email',
+            'telefone': 'phone',
+            'data': 'created_at',
+        },
+        'empty_message': 'Nenhum veterinário cadastrado ainda.',
     },
     'pets': {
         'label': 'Pets',
         'singular': 'Pet',
         'model': Pet,
         'form': PetForm,
+        'search_fields': ['name', 'breed', 'tutor__name'],
+        'order_map': {
+            'nome': 'name',
+            'raca': 'breed',
+            'tutor': 'tutor__name',
+            'data': 'created_at',
+        },
+        'empty_message': 'Nenhum pet cadastrado ainda.',
     },
 }
 
@@ -220,7 +252,29 @@ def management_view(request, category='tutores'):
     info = MANAGEMENT_CATEGORIES[category]
     Model = info['model']
 
-    items = Model.objects.all().order_by('-created_at')
+    items = Model.objects.all()
+
+    # BUSCA
+    search_query = request.GET.get('q', '').strip()
+    if search_query:
+        from django.db.models import Q
+        q_obj = Q()
+        for field in info.get('search_fields', []):
+            q_obj |= Q(**{f"{field}__icontains": search_query})
+        items = items.filter(q_obj)
+
+    # ORDENAÇÃO
+    order = request.GET.get('order', '')
+    direction = request.GET.get('direction', 'asc')
+    order_map = info.get('order_map', {})
+
+    if order in order_map:
+        field_name = order_map[order]
+        if direction == 'desc':
+            field_name = '-' + field_name
+        items = items.order_by(field_name)
+    else:
+        items = items.order_by('-created_at')
 
     categories_nav = [
         {'slug': key, 'label': value['label']}
@@ -234,7 +288,10 @@ def management_view(request, category='tutores'):
         'category_singular': info['singular'],
         'categories_nav': categories_nav,
         'items': items,
-        'empty_message': f"Nenhum {info['singular'].lower()} cadastrado ainda.",
+        'empty_message': info['empty_message'],
+        'search_query': search_query,
+        'order': order,
+        'direction': direction,
     }
     return render(request, 'accounts/management.html', context)
 

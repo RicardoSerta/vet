@@ -15,31 +15,97 @@
             {% endfor %}
         </div>
 
-        <a href="{% url 'gestao_create' category %}"
-           class="btn-icon btn-icon-green management-add-btn"
-           title="Novo {{ category_singular }}">
-            +
-        </a>
+        <div class="management-header-right">
+            <form method="get" class="exams-search-form">
+                <input type="text" name="q" placeholder="Buscar..."
+                       value="{{ search_query|default_if_none:'' }}">
+                <button type="submit">Buscar</button>
+            </form>
+
+            <a href="{% url 'gestao_create' category %}"
+               class="btn-icon btn-icon-green management-add-btn"
+               title="Novo {{ category_singular }}">
+                +
+            </a>
+        </div>
     </div>
 
     <div class="table-wrapper">
         <table class="exams-table">
             <thead>
+                {% with qparam=search_query|default_if_none:'' %}
                 {% if category == 'pets' %}
                     <tr>
-                        <th>Nome</th>
-                        <th>Raça</th>
-                        <th>Tutor</th>
-                        <th>Data de cadastro</th>
+                        <th>
+                            <a href="?order=nome&direction={% if order == 'nome' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
+                                Nome
+                                {% if order == 'nome' %}
+                                    {% if direction == 'asc' %}▲{% else %}▼{% endif %}
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            <a href="?order=raca&direction={% if order == 'raca' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
+                                Raça
+                                {% if order == 'raca' %}
+                                    {% if direction == 'asc' %}▲{% else %}▼{% endif %}
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            <a href="?order=tutor&direction={% if order == 'tutor' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
+                                Tutor
+                                {% if order == 'tutor' %}
+                                    {% if direction == 'asc' %}▲{% else %}▼{% endif %}
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            <a href="?order=data&direction={% if order == 'data' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
+                                Data de cadastro
+                                {% if order == 'data' %}
+                                    {% if direction == 'asc' %}▲{% else %}▼{% endif %}
+                                {% endif %}
+                            </a>
+                        </th>
                     </tr>
                 {% else %}
                     <tr>
-                        <th>Nome</th>
-                        <th>E-mail</th>
-                        <th>Telefone</th>
-                        <th>Data de cadastro</th>
+                        <th>
+                            <a href="?order=nome&direction={% if order == 'nome' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
+                                Nome
+                                {% if order == 'nome' %}
+                                    {% if direction == 'asc' %}▲{% else %}▼{% endif %}
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            <a href="?order=email&direction={% if order == 'email' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
+                                E-mail
+                                {% if order == 'email' %}
+                                    {% if direction == 'asc' %}▲{% else %}▼{% endif %}
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            <a href="?order=telefone&direction={% if order == 'telefone' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
+                                Telefone
+                                {% if order == 'telefone' %}
+                                    {% if direction == 'asc' %}▲{% else %}▼{% endif %}
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            <a href="?order=data&direction={% if order == 'data' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
+                                Data de cadastro
+                                {% if order == 'data' %}
+                                    {% if direction == 'asc' %}▲{% else %}▼{% endif %}
+                                {% endif %}
+                            </a>
+                        </th>
                     </tr>
                 {% endif %}
+                {% endwith %}
             </thead>
             <tbody>
                 {% if items %}

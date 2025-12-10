@@ -553,4 +553,9 @@ body.app-body {
     border-radius: 999px;
 }
 
+.management-header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
 
