@@ -3,9 +3,16 @@ from django.contrib.auth.models import User
 
 
 class Profile(models.Model):
+    ROLE_CHOICES = [
+        ('ADMIN', 'Admin'),
+        ('BASIC', 'Básico'),
+    ]
+
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     whatsapp = models.CharField(max_length=20, blank=True)
     photo = models.ImageField(upload_to='profile_photos/', blank=True, null=True)
+
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='BASIC')
 
     def __str__(self):
         return f'Perfil de {self.user.username}'
@@ -28,6 +35,15 @@ class Exam(models.Model):
     retorno_previsto = models.DateField("Retorno previsto", blank=True, null=True)
 
     pdf_file = models.FileField("Arquivo PDF", upload_to='exam_pdfs/', blank=True, null=True)
+
+    assigned_user = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="assigned_exams",
+        help_text="Conta (clínica/vet) que pode visualizar este exame"
+    )
 
     owner = models.ForeignKey(
         User,
@@ -66,12 +82,28 @@ class Tutor(BaseContact):
 
 
 class Clinic(BaseContact):
+    user = models.OneToOneField(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='clinic_account'
+    )
+
     class Meta(BaseContact.Meta):
         verbose_name = "Clínica"
         verbose_name_plural = "Clínicas"
 
 
 class Veterinarian(BaseContact):
+    user = models.OneToOneField(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='vet_account'
+    )
+
     class Meta(BaseContact.Meta):
         verbose_name = "Veterinário"
         verbose_name_plural = "Veterinários"

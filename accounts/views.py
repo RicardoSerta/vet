@@ -3,6 +3,9 @@ from django.contrib.auth import authenticate, login, logout, update_session_auth
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q
+from django.http import FileResponse, Http404
+from .authz import admin_required
+from .authz import is_admin_user
 
 from .models import Profile, Exam, Tutor, Clinic, Veterinarian, Pet
 from .forms import ExamUploadForm, TutorForm, ClinicForm, VeterinarianForm, PetForm
@@ -126,10 +129,29 @@ def profile_view(request):
     return render(request, 'accounts/profile.html', context)
     
 @login_required
+def exam_pdf(request, pk):
+    exam = get_object_or_404(Exam, pk=pk)
+
+    if not is_admin_user(request.user) and exam.assigned_user_id != request.user.id:
+        raise Http404()
+
+    if not exam.pdf_file:
+        raise Http404()
+
+    return FileResponse(exam.pdf_file.open('rb'), content_type='application/pdf')
+    
+@login_required
 def exams_list(request):
     profile, _ = Profile.objects.get_or_create(user=request.user)
 
     exams = Exam.objects.all()
+    
+    if not is_admin_user(request.user):
+        exams = exams.filter(assigned_user=request.user)
+    
+    if not is_admin_user(request.user) and exam.assigned_user_id != request.user.id:
+        messages.error(request, "Você não tem permissão para visualizar este exame.")
+        return redirect('exames')
 
     # Busca simples
     search_query = request.GET.get('q', '').strip()
@@ -183,6 +205,7 @@ def exam_detail(request, pk):
 
 
 @login_required
+@admin_required
 def exam_delete(request, pk):
     exam = get_object_or_404(Exam, pk=pk)
 
@@ -200,6 +223,7 @@ def exam_delete(request, pk):
 
 
 @login_required
+@admin_required
 def exam_forward(request, pk):
     exam = get_object_or_404(Exam, pk=pk)
     # Protótipo: só mostra uma mensagem por enquanto
@@ -207,6 +231,7 @@ def exam_forward(request, pk):
     return redirect('exames')
     
 @login_required
+@admin_required
 def exam_upload(request):
     profile, _ = Profile.objects.get_or_create(user=request.user)
 
@@ -214,10 +239,27 @@ def exam_upload(request):
         form = ExamUploadForm(request.POST, request.FILES)
         if form.is_valid():
             cd = form.cleaned_data
+            
+            selected = cd['clinic_or_vet']
+            assigned_user = None
+
+            if selected.startswith("CLINIC:"):
+                clinic_id = int(selected.split(":")[1])
+                clinic = Clinic.objects.get(id=clinic_id)
+                clinic_or_vet_name = clinic.name
+                assigned_user = clinic.user  # pode ser None se alguma clínica antiga não tiver user
+            elif selected.startswith("VET:"):
+                vet_id = int(selected.split(":")[1])
+                vet = Veterinarian.objects.get(id=vet_id)
+                clinic_or_vet_name = vet.name
+                assigned_user = vet.user
+            else:
+                clinic_or_vet_name = ""
+                assigned_user = None
 
             exam = Exam.objects.create(
                 date_realizacao=cd['parsed_date_realizacao'],
-                clinic_or_vet=cd['clinic_or_vet'],
+                clinic_or_vet=clinic_or_vet_name,
                 exam_type=cd['parsed_exam_type'],
                 pet_name=cd['parsed_pet_name'],
                 breed=cd['parsed_breed'],
@@ -227,6 +269,7 @@ def exam_upload(request):
                 observations=cd['observations'],
                 pdf_file=cd['pdf_file'],
                 owner=request.user,
+                assigned_user=assigned_user,
             )
 
             messages.success(
@@ -243,6 +286,7 @@ def exam_upload(request):
     })
     
 @login_required
+@admin_required
 def management_view(request, category='tutores'):
     profile, _ = Profile.objects.get_or_create(user=request.user)
 
@@ -296,6 +340,7 @@ def management_view(request, category='tutores'):
     return render(request, 'accounts/management.html', context)
 
 @login_required
+@admin_required
 def management_create(request, category):
     profile, _ = Profile.objects.get_or_create(user=request.user)
 
@@ -308,9 +353,16 @@ def management_create(request, category):
     if request.method == 'POST':
         form = FormClass(request.POST)
         if form.is_valid():
-            form.save()
-            messages.success(request, f'{info["singular"]} cadastrado(a) com sucesso.')
+            obj = form.save()
+            created_username = getattr(form, "created_username", None)
+
+            if created_username:
+                messages.success(request, f'{info["singular"]} cadastrado(a). Login: {created_username}')
+            else:
+                messages.success(request, f'{info["singular"]} cadastrado(a) com sucesso.')
+
             return redirect('gestao_category', category=category)
+
     else:
         form = FormClass()
 

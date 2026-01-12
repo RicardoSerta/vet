@@ -18,10 +18,12 @@
                        value="{{ search_query|default_if_none:'' }}">
                 <button type="submit">Buscar</button>
             </form>
-            
+
+            {% if is_admin %}
             <a href="{% url 'exam_upload' %}" class="btn-primary btn-upload-exam">
                 + Novo exame
             </a>
+            {% endif %}
         </div>
     </div>
 
@@ -29,7 +31,6 @@
         <table class="exams-table">
             <thead>
                 <tr>
-                    {# Helpers pra links de ordenação #}
                     {% with qparam=search_query|default_if_none:'' %}
                     <th>
                         <a href="?order=realizacao&direction={% if order == 'realizacao' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
@@ -93,6 +94,7 @@
                     {% endwith %}
                 </tr>
             </thead>
+
             <tbody>
                 {% if exams %}
                     {% for exam in exams %}
@@ -124,25 +126,26 @@
                                     –
                                 {% endif %}
                             </td>
-                            <td class="exams-actions">
-                                <a href="{% url 'exam_forward' exam.pk %}" title="Encaminhar" class="btn-icon btn-icon-blue">✉</a>
 
-                                {% if exam.pdf_file %}
-                                    <a href="{{ exam.pdf_file.url }}" title="Visualizar PDF" class="btn-icon btn-icon-green" target="_blank">
-                                        👁
-                                    </a>
-                                {% else %}
-                                    <a href="{% url 'exam_detail' exam.pk %}" title="Visualizar detalhes" class="btn-icon btn-icon-green">
-                                        👁
-                                    </a>
+                            <td class="exams-actions">
+                                {% if is_admin %}
+                                  <a href="{% url 'exam_forward' exam.pk %}" title="Encaminhar" class="btn-icon btn-icon-blue">✉</a>
                                 {% endif %}
 
-                                <form method="post" action="{% url 'exam_delete' exam.pk %}" style="display:inline;">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn-icon btn-icon-red" title="Excluir" onclick="return confirm('Tem certeza que deseja excluir este exame?');">
-                                        🗑
-                                    </button>
-                                </form>
+                                {% if exam.pdf_file %}
+                                  <!-- ✅ Agora abre o PDF pela rota segura -->
+                                  <a href="{% url 'exam_pdf' exam.pk %}" title="Visualizar PDF" class="btn-icon btn-icon-green" target="_blank">👁</a>
+                                {% else %}
+                                  <a href="{% url 'exam_detail' exam.pk %}" title="Visualizar detalhes" class="btn-icon btn-icon-green">👁</a>
+                                {% endif %}
+
+                                {% if is_admin %}
+                                  <form method="post" action="{% url 'exam_delete' exam.pk %}" style="display:inline;">
+                                      {% csrf_token %}
+                                      <button type="submit" class="btn-icon btn-icon-red" title="Excluir"
+                                          onclick="return confirm('Tem certeza que deseja excluir este exame?');">🗑</button>
+                                  </form>
+                                {% endif %}
                             </td>
                         </tr>
                     {% endfor %}

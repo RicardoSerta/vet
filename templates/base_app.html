@@ -39,6 +39,7 @@
                     <span class="sidebar-nav-label">Exames</span>
                 </a>
             </li>
+            {% if is_admin %}
             <li>
                 <a href="{% url 'gestao' %}"
                    class="{% if request.resolver_match.url_name == 'gestao' or request.resolver_match.url_name == 'gestao_category' or request.resolver_match.url_name == 'gestao_create' %}active{% endif %}">
@@ -46,6 +47,7 @@
                     <span class="sidebar-nav-label">Gestão</span>
                 </a>
             </li>
+            {% endif %}
             <li>
                 <a href="#" class="{% if request.resolver_match.url_name == 'config_qrcode' %}active{% endif %}">
                     <span class="sidebar-nav-icon">🔗</span>
