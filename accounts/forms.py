@@ -4,6 +4,8 @@ import unicodedata
 from django.contrib.auth.models import User
 from .models import Profile
 from datetime import date
+from datetime import datetime
+from pathlib import Path
 
 from django import forms
 
@@ -81,46 +83,62 @@ class ExamUploadForm(forms.Form):
         return phone
 
     def clean(self):
-        cleaned = super().clean()
-        pdf = cleaned.get('pdf_file')
+        cleaned_data = super().clean()
+        pdf = cleaned_data.get("pdf_file")
 
         if not pdf:
-            return cleaned
+            return cleaned_data
 
-        name = os.path.basename(pdf.name)
+        # pega só o nome do arquivo (sem caminho)
+        filename = Path(pdf.name).name
 
-        if not name.lower().endswith('.pdf'):
-            self.add_error('pdf_file', 'O arquivo deve ser um PDF (.pdf).')
-            return cleaned
+        # valida extensão
+        if not filename.lower().endswith(".pdf"):
+            raise forms.ValidationError("O arquivo precisa ser um PDF (.pdf).")
 
-        base = name[:-4]  # remove .pdf
-        parts = base.split('-')
+        stem = filename[:-4]  # remove ".pdf"
 
-        # Esperamos: Pet - Tutor - Raça - Exame - YYYY - MM - DD  (7 partes)
-        if len(parts) != 7:
-            self.add_error(
-                'pdf_file',
-                'O nome do arquivo deve estar no formato '
-                'Pet-Tutor-Raça-Exame-YYYY-MM-DD.pdf',
+        # quebra por espaços (se tiver múltiplos espaços, split() resolve)
+        parts = stem.split()
+
+        # Esperado:
+        # Laudo Pet Raça Tutor Exame DD.MM.YYYY
+        if len(parts) != 6:
+            raise forms.ValidationError(
+                "Nome do arquivo inválido. Use o formato: "
+                "Laudo Pet Raça Tutor Exame DD.MM.YYYY.pdf"
             )
-            return cleaned
 
-        pet, tutor, breed, exam_type, year, month, day = parts
+        if parts[0] != "Laudo":
+            raise forms.ValidationError(
+                'Nome do arquivo inválido: ele deve começar com "Laudo".'
+            )
 
+        pet_raw, breed_raw, tutor_raw, exam_raw, date_raw = parts[1:]
+
+        # underscores viram espaços
+        pet = pet_raw.replace("_", " ").strip()
+        breed = breed_raw.replace("_", " ").strip()
+        tutor = tutor_raw.replace("_", " ").strip()
+        exam_type = exam_raw.replace("_", " ").strip()
+
+        # data no formato DD.MM.YYYY
         try:
-            data_realizacao = date(int(year), int(month), int(day))
+            date_realizacao = datetime.strptime(date_raw, "%d.%m.%Y").date()
         except ValueError:
-            self.add_error('pdf_file', 'Data inválida no nome do arquivo.')
-            return cleaned
+            raise forms.ValidationError(
+                "Data inválida no nome do arquivo. Use DD.MM.YYYY (ex.: 12.01.2026)."
+            )
 
-        # Guardamos os dados "escondidos" aqui, pra view usar ao salvar
-        cleaned['parsed_pet_name'] = pet
-        cleaned['parsed_tutor_name'] = tutor
-        cleaned['parsed_breed'] = breed
-        cleaned['parsed_exam_type'] = exam_type
-        cleaned['parsed_date_realizacao'] = data_realizacao
+        # salva nos campos “parsed_...” que sua view já usa
+        cleaned_data["parsed_pet_name"] = pet
+        cleaned_data["parsed_breed"] = breed
+        cleaned_data["parsed_tutor_name"] = tutor
+        cleaned_data["parsed_exam_type"] = exam_type
+        cleaned_data["parsed_date_realizacao"] = date_realizacao
 
-        return cleaned
+        return cleaned_data
+
 
 class TutorForm(forms.ModelForm):
     class Meta:

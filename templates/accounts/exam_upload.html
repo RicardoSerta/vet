@@ -8,11 +8,6 @@
 <div class="card">
     <h2 class="card-title">Cadastrar novo exame</h2>
 
-    <p style="font-size: 12px; color: #6b7280; margin-bottom: 10px;">
-        O arquivo PDF deve estar nomeado no formato:
-        <strong>Pet-Tutor-Raça-Exame-YYYY-MM-DD.pdf</strong>.
-    </p>
-
     {% if form.non_field_errors %}
         <div class="messages">
             <div class="message-error">
@@ -41,8 +36,13 @@
                     <div class="field-error">{{ form.pdf_file.errors.0 }}</div>
                 {% endif %}
                 <div class="field-hint">
-                    Apenas arquivos .pdf, com o nome no formato indicado acima.
+                    Formato do nome:
+                    <strong>Laudo Pet Raça Tutor Exame DD.MM.YYYY.pdf</strong>
+                    <br>
+                    Exemplo:
+                    <strong>Laudo Nina SRD Maria_Silva Hemograma 05.03.2025.pdf</strong>
                 </div>
+
             </div>
         </div>
 
