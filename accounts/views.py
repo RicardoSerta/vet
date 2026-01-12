@@ -131,6 +131,11 @@ def profile_view(request):
 @login_required
 def exam_pdf(request, pk):
     exam = get_object_or_404(Exam, pk=pk)
+    
+    
+    if not is_admin_user(request.user) and exam.assigned_user_id != request.user.id:
+        messages.error(request, "Você não tem permissão para visualizar este exame.")
+        return redirect('exames')
 
     if not is_admin_user(request.user) and exam.assigned_user_id != request.user.id:
         raise Http404()
@@ -148,10 +153,6 @@ def exams_list(request):
     
     if not is_admin_user(request.user):
         exams = exams.filter(assigned_user=request.user)
-    
-    if not is_admin_user(request.user) and exam.assigned_user_id != request.user.id:
-        messages.error(request, "Você não tem permissão para visualizar este exame.")
-        return redirect('exames')
 
     # Busca simples
     search_query = request.GET.get('q', '').strip()
@@ -197,6 +198,11 @@ def exams_list(request):
 def exam_detail(request, pk):
     profile, _ = Profile.objects.get_or_create(user=request.user)
     exam = get_object_or_404(Exam, pk=pk)
+    
+    
+    if not is_admin_user(request.user) and exam.assigned_user_id != request.user.id:
+        messages.error(request, "Você não tem permissão para visualizar este exame.")
+        return redirect('exames')
 
     return render(request, 'accounts/exam_detail.html', {
         'profile': profile,
