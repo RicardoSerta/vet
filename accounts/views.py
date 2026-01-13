@@ -9,8 +9,8 @@ from django.http import FileResponse, Http404
 from .authz import admin_required
 from .authz import is_admin_user
 
-from .models import Profile, Exam, Tutor, Clinic, Veterinarian, Pet
-from .forms import ExamUploadForm, TutorForm, ClinicForm, VeterinarianForm, PetForm, MultiExamUploadForm, parse_exam_filename
+from .models import Profile, Exam, Tutor, Clinic, Veterinarian, Pet, ExamTypeAlias
+from .forms import ExamUploadForm, TutorForm, ClinicForm, VeterinarianForm, PetForm, MultiExamUploadForm, parse_exam_filename, ExamTypeAliasForm
 
 MANAGEMENT_CATEGORIES = {
     'tutores': {
@@ -122,6 +122,13 @@ def ensure_tutor_and_pet(tutor_name, pet_name, breed, tutor_email="", tutor_phon
             pet.save()
 
     return tutor, pet
+    
+def translate_exam_type(exam_type_raw: str) -> str:
+    key = (exam_type_raw or "").strip().lower()
+    if not key:
+        return exam_type_raw
+    alias = ExamTypeAlias.objects.filter(abbreviation=key).first()
+    return alias.full_name if alias else exam_type_raw
 
 def login_view(request):
     if request.user.is_authenticated:
@@ -329,7 +336,7 @@ def exam_upload(request):
             exam = Exam.objects.create(
                 date_realizacao=cd['parsed_date_realizacao'],
                 clinic_or_vet=clinic_or_vet_name,
-                exam_type=cd['parsed_exam_type'],
+                exam_type=translate_exam_type(cd['parsed_exam_type']),
                 pet_name=cd['parsed_pet_name'],
                 breed=cd['parsed_breed'],
                 tutor_name=cd['parsed_tutor_name'],
@@ -405,7 +412,7 @@ def exam_upload_multi(request):
                     Exam.objects.create(
                         date_realizacao=data["date_realizacao"],
                         clinic_or_vet=clinic_or_vet_name,
-                        exam_type=data["exam_type"],
+                        exam_type=translate_exam_type(data["exam_type"]),
                         pet_name=data["pet_name"],
                         breed=data["breed"],
                         tutor_name=data["tutor_name"],
@@ -636,6 +643,61 @@ def management_delete(request, category, pk):
 
     messages.success(request, f'"{name}" foi excluído com sucesso.')
     return redirect('gestao_category', category=category)
+    
+@login_required
+@admin_required
+def exam_types_list(request):
+    q = (request.GET.get("q") or "").strip()
+    order = request.GET.get("order") or "abbreviation"
+    direction = request.GET.get("direction") or "asc"
+
+    items = ExamTypeAlias.objects.all()
+
+    if q:
+        items = items.filter(
+            Q(abbreviation__icontains=q) |
+            Q(full_name__icontains=q)
+        )
+
+    allowed_orders = {
+        "sigla": "abbreviation",
+        "exame": "full_name",
+    }
+    order_field = allowed_orders.get(order, "abbreviation")
+    if direction == "desc":
+        order_field = "-" + order_field
+    items = items.order_by(order_field)
+
+    profile, _ = Profile.objects.get_or_create(user=request.user)
+
+    return render(request, "accounts/exam_types_list.html", {
+        "profile": profile,
+        "items": items,
+        "search_query": q,
+        "order": order,
+        "direction": direction,
+    })
+
+
+@login_required
+@admin_required
+def exam_types_create(request):
+    if request.method == "POST":
+        form = ExamTypeAliasForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Tipo de exame cadastrado com sucesso.")
+            return redirect("exam_types")
+    else:
+        form = ExamTypeAliasForm()
+
+    profile, _ = Profile.objects.get_or_create(user=request.user)
+
+    return render(request, "accounts/exam_types_form.html", {
+        "profile": profile,
+        "form": form,
+        "title": "Cadastrar tipo de exame",
+    })
 
 
 def logout_view(request):

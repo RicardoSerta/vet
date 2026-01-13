@@ -1,0 +1,42 @@
+{% extends 'base_app.html' %}
+
+{% block title %}{{ title }} - LumaVet{% endblock %}
+{% block page_title %}Tipos de Exames{% endblock %}
+
+{% block main_content %}
+<div class="card">
+  <h2 class="card-title">{{ title }}</h2>
+
+  {% if form.non_field_errors %}
+    <div class="messages">
+      <div class="message-error">{{ form.non_field_errors.0 }}</div>
+    </div>
+  {% endif %}
+
+  <form method="post" class="exam-upload-form">
+    {% csrf_token %}
+
+    <div class="profile-form-row">
+      <div class="profile-form-group">
+        <label for="{{ form.abbreviation.id_for_label }}">Sigla:</label>
+        {{ form.abbreviation }}
+        {% if form.abbreviation.errors %}
+          <div class="field-error">{{ form.abbreviation.errors.0 }}</div>
+        {% endif %}
+      </div>
+
+      <div class="profile-form-group">
+        <label for="{{ form.full_name.id_for_label }}">Exame:</label>
+        {{ form.full_name }}
+        {% if form.full_name.errors %}
+          <div class="field-error">{{ form.full_name.errors.0 }}</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <button type="submit" class="btn-primary">Salvar</button>
+    <a href="{% url 'exam_types' %}" style="margin-left: 10px; font-size: 13px;">Cancelar</a>
+  </form>
+</div>
+{% endblock %}
+

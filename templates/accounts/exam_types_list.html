@@ -1,0 +1,67 @@
+{% extends 'base_app.html' %}
+
+{% block title %}Tipos de Exames - LumaVet{% endblock %}
+{% block page_title %}Tipos de Exames{% endblock %}
+
+{% block main_content %}
+<div class="card">
+  <div class="management-header">
+    <div>
+      <h2 class="card-title" style="margin:0;">Tipos de Exames</h2>
+    </div>
+
+    <div class="management-header-right">
+      <form method="get" class="exams-search-form">
+        <input type="text" name="q" placeholder="Buscar..." value="{{ search_query|default_if_none:'' }}">
+        <button type="submit">Buscar</button>
+      </form>
+
+      <a href="{% url 'exam_types_create' %}" class="btn-icon btn-icon-green management-add-btn" title="Novo tipo">
+        +
+      </a>
+    </div>
+  </div>
+
+  <div class="table-wrapper">
+    <table class="exams-table">
+      <thead>
+        {% with qparam=search_query|default_if_none:'' %}
+        <tr>
+          <th>
+            <a href="?order=sigla&direction={% if order == 'sigla' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
+              Sigla
+              {% if order == 'sigla' %}
+                {% if direction == 'asc' %}▲{% else %}▼{% endif %}
+              {% endif %}
+            </a>
+          </th>
+          <th>
+            <a href="?order=exame&direction={% if order == 'exame' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
+              Exame
+              {% if order == 'exame' %}
+                {% if direction == 'asc' %}▲{% else %}▼{% endif %}
+              {% endif %}
+            </a>
+          </th>
+        </tr>
+        {% endwith %}
+      </thead>
+      <tbody>
+        {% if items %}
+          {% for item in items %}
+            <tr>
+              <td>{{ item.abbreviation }}</td>
+              <td>{{ item.full_name }}</td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="2" style="text-align:center;">Nenhum tipo de exame cadastrado ainda.</td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+

@@ -9,7 +9,7 @@ from pathlib import Path
 
 from django import forms
 
-from .models import Tutor, Clinic, Veterinarian, Pet, Profile
+from .models import Tutor, Clinic, Veterinarian, Pet, Profile, ExamTypeAlias
 
 def parse_exam_filename(filename: str):
     """
@@ -530,3 +530,25 @@ class MultiExamUploadForm(forms.Form):
             parse_exam_filename(f.name)
 
         return files
+        
+class ExamTypeAliasForm(forms.ModelForm):
+    class Meta:
+        model = ExamTypeAlias
+        fields = ["abbreviation", "full_name"]
+        widgets = {
+            "abbreviation": forms.TextInput(attrs={"placeholder": "Sigla (ex: eco, egc, rx)"}),
+            "full_name": forms.TextInput(attrs={"placeholder": "Nome real do exame (ex: Ecocardiograma)"}),
+        }
+
+    def clean_abbreviation(self):
+        abbr = (self.cleaned_data.get("abbreviation") or "").strip().lower()
+        if not abbr:
+            raise forms.ValidationError("Informe a sigla.")
+        return abbr
+
+    def clean_full_name(self):
+        name = (self.cleaned_data.get("full_name") or "").strip()
+        if not name:
+            raise forms.ValidationError("Informe o nome real do exame.")
+        return name
+

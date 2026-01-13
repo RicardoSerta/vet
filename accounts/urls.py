@@ -19,5 +19,7 @@ urlpatterns = [
     path('gestao/<str:category>/<int:pk>/excluir/', views.management_delete, name='gestao_delete'),
     path('exames/<int:pk>/pdf/', views.exam_pdf, name='exam_pdf'),
     path('exames/novo-multiplo/', views.exam_upload_multi, name='exam_upload_multi'),
+    path("exames/tipos/", views.exam_types_list, name="exam_types"),
+    path("exames/tipos/novo/", views.exam_types_create, name="exam_types_create"),
 ]
 

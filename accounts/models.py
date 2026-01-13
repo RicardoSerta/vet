@@ -121,5 +121,25 @@ class Pet(models.Model):
 
     def __str__(self):
         return self.name
+        
+class ExamTypeAlias(models.Model):
+    abbreviation = models.CharField("Sigla", max_length=50, unique=True)
+    full_name = models.CharField("Exame", max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["abbreviation"]
+
+    def save(self, *args, **kwargs):
+        # garante case-insensitive na prática (sempre salva em minúsculo)
+        if self.abbreviation:
+            self.abbreviation = self.abbreviation.strip().lower()
+        if self.full_name:
+            self.full_name = self.full_name.strip()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.abbreviation} -> {self.full_name}"
+
 
 
