@@ -68,7 +68,7 @@
                                 {% endif %}
                             </a>
                         </th>
-                        <th style="width: 70px; text-align:center;">Ações</th>
+                        <th style="width: 110px; text-align:center;">Ações</th>
                     </tr>
                 {% else %}
                     <tr>
@@ -104,7 +104,7 @@
                                 {% endif %}
                             </a>
                         </th>
-                        <th style="width: 70px; text-align:center;">Ações</th>
+                        <th style="width: 110px; text-align:center;">Ações</th>
                     </tr>
                 {% endif %}
                 {% endwith %}
@@ -118,11 +118,22 @@
                                 <td>{{ item.breed }}</td>
                                 <td>{{ item.tutor.name }}</td>
                                 <td>{{ item.created_at|date:"d/m/Y" }}</td>
-                                <td style="text-align:center;">
+                                <td style="text-align:center; white-space:nowrap;">
                                     <a href="{% url 'gestao_edit' category item.id %}" title="Editar"
-                                       class="btn-icon btn-icon-blue" style="display:inline-flex; align-items:center; justify-content:center;">
+                                       class="btn-icon btn-icon-blue"
+                                       style="display:inline-flex; align-items:center; justify-content:center;">
                                         ✏️
                                     </a>
+
+                                    <form method="post" action="{% url 'gestao_delete' category item.id %}"
+                                          style="display:inline;"
+                                          onsubmit="return confirm('Tem certeza que deseja excluir {{ item.name|escapejs }}?');">
+                                        {% csrf_token %}
+                                        <button type="submit" title="Excluir" class="btn-icon btn-icon-red"
+                                                style="border:0; cursor:pointer; margin-left:6px;">
+                                            🗑️
+                                        </button>
+                                    </form>
                                 </td>
                             </tr>
                         {% else %}
@@ -131,11 +142,22 @@
                                 <td>{{ item.email }}</td>
                                 <td>{{ item.phone }}</td>
                                 <td>{{ item.created_at|date:"d/m/Y" }}</td>
-                                <td style="text-align:center;">
+                                <td style="text-align:center; white-space:nowrap;">
                                     <a href="{% url 'gestao_edit' category item.id %}" title="Editar"
-                                       class="btn-icon btn-icon-blue" style="display:inline-flex; align-items:center; justify-content:center;">
+                                       class="btn-icon btn-icon-blue"
+                                       style="display:inline-flex; align-items:center; justify-content:center;">
                                         ✏️
                                     </a>
+
+                                    <form method="post" action="{% url 'gestao_delete' category item.id %}"
+                                          style="display:inline;"
+                                          onsubmit="return confirm('Tem certeza que deseja excluir {{ item.name|escapejs }}?');">
+                                        {% csrf_token %}
+                                        <button type="submit" title="Excluir" class="btn-icon btn-icon-red"
+                                                style="border:0; cursor:pointer; margin-left:6px;">
+                                            🗑️
+                                        </button>
+                                    </form>
                                 </td>
                             </tr>
                         {% endif %}

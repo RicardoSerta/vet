@@ -3,6 +3,7 @@ from django.contrib.auth import authenticate, login, logout, update_session_auth
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q
+from django.db.models.deletion import ProtectedError
 from django.db import transaction
 from django.http import FileResponse, Http404
 from .authz import admin_required
@@ -586,6 +587,55 @@ def management_edit(request, category, pk):
         "is_edit": True,
         "obj": obj,
     })
+    
+@login_required
+@admin_required
+def management_delete(request, category, pk):
+    if request.method != "POST":
+        return redirect('gestao_category', category=category)
+
+    category_map = {
+        'tutores': Tutor,
+        'clinicas': Clinic,
+        'veterinarios': Veterinarian,
+        'pets': Pet,
+    }
+
+    Model = category_map.get(category)
+    if not Model:
+        messages.error(request, "Categoria inválida.")
+        return redirect('gestao')
+
+    obj = get_object_or_404(Model, pk=pk)
+    name = getattr(obj, "name", "item")
+
+    # Se for clínica/vet, pode ter user associado
+    linked_user = getattr(obj, "user", None)
+
+    try:
+        obj.delete()
+    except ProtectedError:
+        messages.error(
+            request,
+            "Não foi possível excluir porque este item está sendo usado por outros registros."
+        )
+        return redirect('gestao_category', category=category)
+
+    # Se tinha login, apaga o usuário (perde acesso)
+    if linked_user:
+        # evita apagar exames por acidente (caso seu FK esteja como CASCADE)
+        try:
+            Exam.objects.filter(assigned_user=linked_user).update(assigned_user=None)
+        except Exception:
+            pass
+
+        try:
+            linked_user.delete()
+        except Exception:
+            pass
+
+    messages.success(request, f'"{name}" foi excluído com sucesso.')
+    return redirect('gestao_category', category=category)
 
 
 def logout_view(request):

@@ -16,6 +16,7 @@ urlpatterns = [
     path('gestao/<str:category>/', views.management_view, name='gestao_category'),
     path('gestao/<str:category>/novo/', views.management_create, name='gestao_create'),
     path('gestao/<str:category>/<int:pk>/editar/', views.management_edit, name='gestao_edit'),
+    path('gestao/<str:category>/<int:pk>/excluir/', views.management_delete, name='gestao_delete'),
     path('exames/<int:pk>/pdf/', views.exam_pdf, name='exam_pdf'),
     path('exames/novo-multiplo/', views.exam_upload_multi, name='exam_upload_multi'),
 ]
