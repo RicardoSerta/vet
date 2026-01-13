@@ -584,6 +584,7 @@ def management_edit(request, category, pk):
         "category": category,
         "title": info["title"],
         "is_edit": True,
+        "obj": obj,
     })
 
 

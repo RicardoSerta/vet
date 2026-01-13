@@ -84,7 +84,7 @@ class ExamUploadForm(forms.Form):
         max_length=20,
         required=False,
         widget=forms.TextInput(attrs={
-            'placeholder': '(xx) xxxx-xxxx',
+            'placeholder': '(XX) XXXX-XXXX',
         })
     )
 
@@ -93,7 +93,7 @@ class ExamUploadForm(forms.Form):
         max_length=255,
         required=False,
         widget=forms.EmailInput(attrs={
-            'placeholder': 'email@exemplo.com',
+            'placeholder': 'exemplo@email.com',
         })
     )
 
@@ -138,7 +138,7 @@ class ExamUploadForm(forms.Form):
             pattern = r'^\(\d{2}\)\s?\d{4,5}-\d{4}$'
             if not re.match(pattern, phone):
                 raise forms.ValidationError(
-                    'Use o formato (xx) xxxx-xxxx ou (xx) 9xxxx-xxxx.'
+                    'Use o formato (XX) XXXX-XXXX ou (xx) 9XXXX-XXXXX.'
                 )
         return phone
 
@@ -210,8 +210,8 @@ class TutorForm(forms.ModelForm):
 
         self.fields['name'].widget.attrs.update({'placeholder': 'Nome do Tutor'})
         self.fields['email'].widget.attrs.update({'placeholder': 'exemplo@email.com'})
-        self.fields['phone'].widget.attrs.update({'placeholder': '(xx) xxxx-xxxx'})
-        self.fields['phone'].help_text = 'Formato: (xx) 9xxxx-xxxx ou (xx) xxxx-xxxx'
+        self.fields['phone'].widget.attrs.update({'placeholder': '(XX) XXXX-XXXX'})
+        self.fields['phone'].help_text = 'Formato: (XX) 9XXXX-XXXX ou (XX) XXXX-XXXX'
 
 
 class ClinicForm(forms.ModelForm):
@@ -317,8 +317,8 @@ class ClinicForm(forms.ModelForm):
 
         self.fields['name'].widget.attrs.update({'placeholder': 'Nome da Clínica'})
         self.fields['email'].widget.attrs.update({'placeholder': 'exemplo@email.com'})
-        self.fields['phone'].widget.attrs.update({'placeholder': '(xx) xxxx-xxxx'})
-        self.fields['phone'].help_text = 'Formato: (xx) 9xxxx-xxxx ou (xx) xxxx-xxxx'
+        self.fields['phone'].widget.attrs.update({'placeholder': '(XX) XXXX-XXXX'})
+        self.fields['phone'].help_text = 'Formato: (XX) 9XXXX-XXXX ou (XX) XXXX-XXXX'
 
 
 class VeterinarianForm(forms.ModelForm):
@@ -434,8 +434,8 @@ class VeterinarianForm(forms.ModelForm):
 
         self.fields['name'].widget.attrs.update({'placeholder': 'Nome do Veterinário'})
         self.fields['email'].widget.attrs.update({'placeholder': 'exemplo@email.com'})
-        self.fields['phone'].widget.attrs.update({'placeholder': '(xx) xxxx-xxxx'})
-        self.fields['phone'].help_text = 'Formato: (xx) 9xxxx-xxxx ou (xx) xxxx-xxxx'
+        self.fields['phone'].widget.attrs.update({'placeholder': '(XX) XXXX-XXXX'})
+        self.fields['phone'].help_text = 'Formato: (XX) 9XXXX-XXXX ou (XX) XXXX-XXXX'
 
 
 class PetForm(forms.ModelForm):
@@ -497,7 +497,7 @@ class MultiExamUploadForm(forms.Form):
         widget=MultipleFileInput(attrs={"multiple": True})
     )
 
-    MAX_FILES = 20  # pode mudar para 50 se quiser
+    MAX_FILES = 50
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

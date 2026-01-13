@@ -26,9 +26,15 @@
                     {% if field.errors %}
                         <div class="field-error">{{ field.errors.0 }}</div>
                     {% endif %}
-                    {% if field.help_text %}
-                      <div class="field-hint">{{ field.help_text }}</div>
-                    {% endif %}
+                    {% if field.name == "password" %}
+                        {% if is_edit and obj.user %}
+                          <div class="field-hint">A senha atual não é exibida. Preencha aqui apenas se quiser trocar.</div>
+                        {% endif %}
+                      {% else %}
+                        {% if field.help_text %}
+                          <div class="field-hint">{{ field.help_text }}</div>
+                        {% endif %}
+                      {% endif %}
                 </div>
             </div>
         {% endfor %}
