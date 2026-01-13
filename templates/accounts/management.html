@@ -68,6 +68,7 @@
                                 {% endif %}
                             </a>
                         </th>
+                        <th style="width: 70px; text-align:center;">Ações</th>
                     </tr>
                 {% else %}
                     <tr>
@@ -103,6 +104,7 @@
                                 {% endif %}
                             </a>
                         </th>
+                        <th style="width: 70px; text-align:center;">Ações</th>
                     </tr>
                 {% endif %}
                 {% endwith %}
@@ -116,6 +118,12 @@
                                 <td>{{ item.breed }}</td>
                                 <td>{{ item.tutor.name }}</td>
                                 <td>{{ item.created_at|date:"d/m/Y" }}</td>
+                                <td style="text-align:center;">
+                                    <a href="{% url 'gestao_edit' category item.id %}" title="Editar"
+                                       class="btn-icon btn-icon-blue" style="display:inline-flex; align-items:center; justify-content:center;">
+                                        ✏️
+                                    </a>
+                                </td>
                             </tr>
                         {% else %}
                             <tr>
@@ -123,12 +131,18 @@
                                 <td>{{ item.email }}</td>
                                 <td>{{ item.phone }}</td>
                                 <td>{{ item.created_at|date:"d/m/Y" }}</td>
+                                <td style="text-align:center;">
+                                    <a href="{% url 'gestao_edit' category item.id %}" title="Editar"
+                                       class="btn-icon btn-icon-blue" style="display:inline-flex; align-items:center; justify-content:center;">
+                                        ✏️
+                                    </a>
+                                </td>
                             </tr>
                         {% endif %}
                     {% endfor %}
                 {% else %}
                     <tr>
-                        <td colspan="4" style="text-align:center;">
+                        <td colspan="5" style="text-align:center;">
                             {{ empty_message }}
                         </td>
                     </tr>

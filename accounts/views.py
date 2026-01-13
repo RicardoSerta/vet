@@ -70,6 +70,58 @@ MANAGEMENT_CATEGORIES = {
     },
 }
 
+def ensure_tutor_and_pet(tutor_name, pet_name, breed, tutor_email="", tutor_phone=""):
+    """
+    Garante que:
+    - Existe um Tutor com esse nome (case-insensitive).
+      Se existir e email/phone vierem preenchidos, preenche apenas se estiver vazio.
+    - Existe um Pet (nome + tutor) (case-insensitive no nome do pet).
+      Se existir e a raça estiver vazia/SRD, atualiza se vier uma raça melhor.
+    """
+    tutor_name = (tutor_name or "").strip()
+    pet_name = (pet_name or "").strip()
+    breed = (breed or "").strip() or "SRD"
+    tutor_email = (tutor_email or "").strip()
+    tutor_phone = (tutor_phone or "").strip()
+
+    if not tutor_name or not pet_name:
+        return None, None
+
+    # 1) Tutor
+    tutor = Tutor.objects.filter(name__iexact=tutor_name).first()
+    if not tutor:
+        tutor = Tutor.objects.create(
+            name=tutor_name,
+            email=tutor_email,
+            phone=tutor_phone
+        )
+    else:
+        changed = False
+        if tutor_email and not tutor.email:
+            tutor.email = tutor_email
+            changed = True
+        if tutor_phone and not tutor.phone:
+            tutor.phone = tutor_phone
+            changed = True
+        if changed:
+            tutor.save()
+
+    # 2) Pet (nome + tutor)
+    pet = Pet.objects.filter(name__iexact=pet_name, tutor=tutor).first()
+    if not pet:
+        pet = Pet.objects.create(
+            name=pet_name,
+            breed=breed or "SRD",
+            tutor=tutor
+        )
+    else:
+        # melhora raça se antes estava SRD/vazia
+        if (not pet.breed or pet.breed.upper() == "SRD") and breed and breed.upper() != "SRD":
+            pet.breed = breed
+            pet.save()
+
+    return tutor, pet
+
 def login_view(request):
     if request.user.is_authenticated:
         return redirect('meu_perfil')
@@ -263,6 +315,15 @@ def exam_upload(request):
             else:
                 clinic_or_vet_name = ""
                 assigned_user = None
+                
+            ensure_tutor_and_pet(
+                tutor_name=cd['parsed_tutor_name'],
+                pet_name=cd['parsed_pet_name'],
+                breed=cd['parsed_breed'],
+                tutor_email=cd.get('tutor_email', ''),
+                tutor_phone=cd.get('tutor_phone', ''),
+            )
+
 
             exam = Exam.objects.create(
                 date_realizacao=cd['parsed_date_realizacao'],
@@ -332,7 +393,14 @@ def exam_upload_multi(request):
             with transaction.atomic():
                 for f in pdf_files:
                     data = parse_exam_filename(f.name)
+                    
+                    ensure_tutor_and_pet(
+                        tutor_name=data["tutor_name"],
+                        pet_name=data["pet_name"],
+                        breed=data["breed"],
+                    )
 
+                    
                     Exam.objects.create(
                         date_realizacao=data["date_realizacao"],
                         clinic_or_vet=clinic_or_vet_name,
@@ -445,6 +513,77 @@ def management_create(request, category):
         'category_label': info['label'],
         'category_singular': info['singular'],
         'form': form,
+    })
+    
+@login_required
+@admin_required
+def management_edit(request, category, pk):
+    category_map = {
+        'tutores': {
+            'model': Tutor,
+            'form': TutorForm,
+            'title': 'Editar Tutor',
+            'singular': 'Tutor',
+        },
+        'clinicas': {
+            'model': Clinic,
+            'form': ClinicForm,
+            'title': 'Editar Clínica',
+            'singular': 'Clínica',
+        },
+        'veterinarios': {
+            'model': Veterinarian,
+            'form': VeterinarianForm,
+            'title': 'Editar Veterinário',
+            'singular': 'Veterinário',
+        },
+        'pets': {
+            'model': Pet,
+            'form': PetForm,
+            'title': 'Editar Pet',
+            'singular': 'Pet',
+        },
+    }
+
+    if category not in category_map:
+        messages.error(request, "Categoria inválida.")
+        return redirect('gestao')
+
+    info = category_map[category]
+    obj = get_object_or_404(info['model'], pk=pk)
+
+    if request.method == "POST":
+        form = info['form'](request.POST, request.FILES, instance=obj)
+        if form.is_valid():
+            form.save()
+
+            # mensagens opcionais (se o form setar)
+            created_username = getattr(form, "created_username", None)
+            updated_username = getattr(form, "updated_username", None)
+            password_changed = getattr(form, "password_changed", False)
+
+            msg = f"{info['singular']} atualizado(a) com sucesso."
+            if created_username:
+                msg += f" Login criado: {created_username}"
+            elif updated_username:
+                msg += f" Login atualizado: {updated_username}"
+            if password_changed:
+                msg += " Senha atualizada."
+
+            messages.success(request, msg)
+            return redirect('gestao_category', category=category)
+    else:
+        form = info['form'](instance=obj)
+
+    # se você usa profile na base_app:
+    profile, _ = Profile.objects.get_or_create(user=request.user)
+
+    return render(request, "accounts/management_form.html", {
+        "profile": profile,
+        "form": form,
+        "category": category,
+        "title": info["title"],
+        "is_edit": True,
     })
 
 

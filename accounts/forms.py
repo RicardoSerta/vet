@@ -9,7 +9,7 @@ from pathlib import Path
 
 from django import forms
 
-from .models import Tutor, Clinic, Veterinarian, Pet
+from .models import Tutor, Clinic, Veterinarian, Pet, Profile
 
 def parse_exam_filename(filename: str):
     """
@@ -218,7 +218,6 @@ class ClinicForm(forms.ModelForm):
     password = forms.CharField(
         label="Senha",
         required=False,
-        min_length=6,
         widget=forms.PasswordInput(attrs={"placeholder": "Senha para login"})
     )
 
@@ -235,31 +234,72 @@ class ClinicForm(forms.ModelForm):
 
     def save(self, commit=True):
         clinic = super().save(commit=False)
-        
         pwd = (self.cleaned_data.get("password") or "").strip()
 
-        # Se não informou senha, NÃO cria usuário. Só salva a clínica.
+        self.created_username = None
+        self.updated_username = None
+        self.password_changed = False
+
+        existing_user = getattr(self.instance, "user", None)
+
+        # Se já existe user, sempre manter username alinhado com o nome (se mudou)
+        if existing_user:
+            base = _to_login_base(clinic.name)
+            new_username = _make_unique_username(base, exclude_user_id=existing_user.id)
+
+            if existing_user.username != new_username:
+                existing_user.username = new_username
+                self.updated_username = new_username
+
+            existing_user.first_name = clinic.name
+            if clinic.email:
+                existing_user.email = clinic.email or ""
+            existing_user.save()
+
+            profile, _ = Profile.objects.get_or_create(user=existing_user)
+            profile.role = 'BASIC'
+            if clinic.phone:
+                profile.whatsapp = clinic.phone or ""
+            profile.save()
+
+            # Se senha foi preenchida, atualiza senha
+            if pwd:
+                existing_user.set_password(pwd)
+                existing_user.save()
+                self.password_changed = True
+
+            clinic.user = existing_user
+
+            if commit:
+                clinic.save()
+
+            # mantém consistência da coluna na tabela de exames
+            from .models import Exam
+            Exam.objects.filter(assigned_user=existing_user).update(clinic_or_vet=clinic.name)
+
+            return clinic
+
+        # Se NÃO existe user:
+        # - Se não digitou senha: salva só a clínica, sem criar usuário
         if not pwd:
             if commit:
                 clinic.save()
-            self.created_username = None
             return clinic
 
+        # - Se digitou senha: cria user e vincula
         base = _to_login_base(clinic.name)
         username = _make_unique_username(base)
 
         user = User(username=username)
-        user.first_name = clinic.name  # para aparecer bonitinho no perfil/sidebar
+        user.first_name = clinic.name
         if clinic.email:
             user.email = clinic.email
-
         user.set_password(pwd)
         user.save()
 
-        # cria/ajusta profile BASIC
         profile, _ = Profile.objects.get_or_create(user=user)
         profile.role = 'BASIC'
-        if clinic.phone and not profile.whatsapp:
+        if clinic.phone:
             profile.whatsapp = clinic.phone
         profile.save()
 
@@ -267,9 +307,10 @@ class ClinicForm(forms.ModelForm):
         if commit:
             clinic.save()
 
-        # pra view mostrar a mensagem com o login
         self.created_username = username
+        self.password_changed = True
         return clinic
+
         
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -284,7 +325,6 @@ class VeterinarianForm(forms.ModelForm):
     password = forms.CharField(
         label="Senha",
         required=False,
-        min_length=6,
         widget=forms.PasswordInput(attrs={"placeholder": "Senha para login"})
     )
 
@@ -301,15 +341,69 @@ class VeterinarianForm(forms.ModelForm):
 
     def save(self, commit=True):
         vet = super().save(commit=False)
-        
         pwd = (self.cleaned_data.get("password") or "").strip()
 
+        # flags/mensagens para a view (opcional)
+        self.created_username = None
+        self.updated_username = None
+        self.password_changed = False
+
+        existing_user = getattr(self.instance, "user", None)
+
+        # =========================
+        # CASO 1: Já existe usuário
+        # =========================
+        if existing_user:
+            base = _to_login_base(vet.name)
+            new_username = _make_unique_username(base, exclude_user_id=existing_user.id)
+
+            # Se mudou o nome → atualiza username
+            if existing_user.username != new_username:
+                existing_user.username = new_username
+                self.updated_username = new_username
+
+            # Atualiza dados básicos do usuário
+            existing_user.first_name = vet.name
+            if vet.email:
+                existing_user.email = vet.email or ""
+            existing_user.save()
+
+            # Garante que role continua BASIC e atualiza whatsapp
+            profile, _ = Profile.objects.get_or_create(user=existing_user)
+            profile.role = 'BASIC'
+            if vet.phone:
+                profile.whatsapp = vet.phone or ""
+            profile.save()
+
+            # Se foi digitada senha, atualiza
+            if pwd:
+                existing_user.set_password(pwd)
+                existing_user.save()
+                self.password_changed = True
+
+            # Mantém vínculo
+            vet.user = existing_user
+
+            if commit:
+                vet.save()
+
+            # Atualiza a coluna exibida na tabela de exames
+            from .models import Exam
+            Exam.objects.filter(assigned_user=existing_user).update(clinic_or_vet=vet.name)
+
+            return vet
+
+        # =====================================
+        # CASO 2: NÃO existe usuário ainda (vet.user é None)
+        # =====================================
+
+        # Se não informou senha → salva só o veterinário, sem criar login
         if not pwd:
             if commit:
                 vet.save()
-            self.created_username = None
             return vet
 
+        # Se informou senha → cria usuário e vincula
         base = _to_login_base(vet.name)
         username = _make_unique_username(base)
 
@@ -317,13 +411,12 @@ class VeterinarianForm(forms.ModelForm):
         user.first_name = vet.name
         if vet.email:
             user.email = vet.email
-
         user.set_password(pwd)
         user.save()
 
         profile, _ = Profile.objects.get_or_create(user=user)
         profile.role = 'BASIC'
-        if vet.phone and not profile.whatsapp:
+        if vet.phone:
             profile.whatsapp = vet.phone
         profile.save()
 
@@ -332,7 +425,9 @@ class VeterinarianForm(forms.ModelForm):
             vet.save()
 
         self.created_username = username
+        self.password_changed = True
         return vet
+
         
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -377,13 +472,17 @@ def _to_login_base(name: str) -> str:
     return name or "user"
 
 
-def _make_unique_username(base: str) -> str:
+def _make_unique_username(base: str, exclude_user_id=None) -> str:
     username = base
     i = 2
-    while User.objects.filter(username=username).exists():
+    while True:
+        qs = User.objects.filter(username=username)
+        if exclude_user_id is not None:
+            qs = qs.exclude(id=exclude_user_id)
+        if not qs.exists():
+            return username
         username = f"{base}{i}"
         i += 1
-    return username
     
 class MultiExamUploadForm(forms.Form):
     clinic_or_vet = forms.ChoiceField(
