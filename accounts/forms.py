@@ -217,7 +217,7 @@ class TutorForm(forms.ModelForm):
 class ClinicForm(forms.ModelForm):
     password = forms.CharField(
         label="Senha",
-        required=True,
+        required=False,
         min_length=6,
         widget=forms.PasswordInput(attrs={"placeholder": "Senha para login"})
     )
@@ -225,9 +225,25 @@ class ClinicForm(forms.ModelForm):
     class Meta:
         model = Clinic
         fields = ['name', 'email', 'phone', 'password']
+        
+    def clean_password(self):
+        pwd = self.cleaned_data.get("password") or ""
+        pwd = pwd.strip()
+        if pwd and len(pwd) < 6:
+            raise forms.ValidationError("A senha deve ter pelo menos 6 caracteres.")
+        return pwd
 
     def save(self, commit=True):
         clinic = super().save(commit=False)
+        
+        pwd = (self.cleaned_data.get("password") or "").strip()
+
+        # Se não informou senha, NÃO cria usuário. Só salva a clínica.
+        if not pwd:
+            if commit:
+                clinic.save()
+            self.created_username = None
+            return clinic
 
         base = _to_login_base(clinic.name)
         username = _make_unique_username(base)
@@ -237,7 +253,7 @@ class ClinicForm(forms.ModelForm):
         if clinic.email:
             user.email = clinic.email
 
-        user.set_password(self.cleaned_data['password'])
+        user.set_password(pwd)
         user.save()
 
         # cria/ajusta profile BASIC
@@ -267,7 +283,7 @@ class ClinicForm(forms.ModelForm):
 class VeterinarianForm(forms.ModelForm):
     password = forms.CharField(
         label="Senha",
-        required=True,
+        required=False,
         min_length=6,
         widget=forms.PasswordInput(attrs={"placeholder": "Senha para login"})
     )
@@ -275,9 +291,24 @@ class VeterinarianForm(forms.ModelForm):
     class Meta:
         model = Veterinarian
         fields = ['name', 'email', 'phone', 'password']
+        
+    def clean_password(self):
+        pwd = self.cleaned_data.get("password") or ""
+        pwd = pwd.strip()
+        if pwd and len(pwd) < 6:
+            raise forms.ValidationError("A senha deve ter pelo menos 6 caracteres.")
+        return pwd
 
     def save(self, commit=True):
         vet = super().save(commit=False)
+        
+        pwd = (self.cleaned_data.get("password") or "").strip()
+
+        if not pwd:
+            if commit:
+                vet.save()
+            self.created_username = None
+            return vet
 
         base = _to_login_base(vet.name)
         username = _make_unique_username(base)
@@ -287,7 +318,7 @@ class VeterinarianForm(forms.ModelForm):
         if vet.email:
             user.email = vet.email
 
-        user.set_password(self.cleaned_data['password'])
+        user.set_password(pwd)
         user.save()
 
         profile, _ = Profile.objects.get_or_create(user=user)
