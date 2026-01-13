@@ -10,7 +10,7 @@ body.login-body {
     min-height: 100vh;
 
     /* Caminho da imagem de fundo (url pública /static/...) */
-    background-image: url("/static/accounts/img/login-bg.jpg");
+    background-image: url("/static/accounts/img/Background-Login.png");
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
