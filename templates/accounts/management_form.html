@@ -26,6 +26,9 @@
                     {% if field.errors %}
                         <div class="field-error">{{ field.errors.0 }}</div>
                     {% endif %}
+                    {% if field.help_text %}
+                      <div class="field-hint">{{ field.help_text }}</div>
+                    {% endif %}
                 </div>
             </div>
         {% endfor %}
@@ -61,5 +64,39 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 {% endif %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const phoneInput = document.getElementById('id_phone');
+    if (!phoneInput) return;
+
+    phoneInput.addEventListener('input', function () {
+        let digits = phoneInput.value.replace(/\D/g, '');
+
+        if (digits.length > 11) digits = digits.slice(0, 11);
+
+        if (!digits) {
+            phoneInput.value = '';
+            return;
+        }
+
+        let result = '(' + digits.slice(0, 2);
+        if (digits.length <= 2) {
+            phoneInput.value = result;
+            return;
+        }
+
+        result += ') ';
+        let rest = digits.slice(2);
+
+        if (rest.length <= 4) {
+            result += rest;
+        } else {
+            result += rest.slice(0, rest.length - 4) + '-' + rest.slice(-4);
+        }
+
+        phoneInput.value = result;
+    });
+});
+</script>
 {% endblock %}
 

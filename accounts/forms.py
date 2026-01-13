@@ -204,6 +204,14 @@ class TutorForm(forms.ModelForm):
     class Meta:
         model = Tutor
         fields = ['name', 'email', 'phone']
+        
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields['name'].widget.attrs.update({'placeholder': 'Nome do Tutor'})
+        self.fields['email'].widget.attrs.update({'placeholder': 'exemplo@email.com'})
+        self.fields['phone'].widget.attrs.update({'placeholder': '(xx) xxxx-xxxx'})
+        self.fields['phone'].help_text = 'Formato: (xx) 9xxxx-xxxx ou (xx) xxxx-xxxx'
 
 
 class ClinicForm(forms.ModelForm):
@@ -246,6 +254,14 @@ class ClinicForm(forms.ModelForm):
         # pra view mostrar a mensagem com o login
         self.created_username = username
         return clinic
+        
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields['name'].widget.attrs.update({'placeholder': 'Nome da Clínica'})
+        self.fields['email'].widget.attrs.update({'placeholder': 'exemplo@email.com'})
+        self.fields['phone'].widget.attrs.update({'placeholder': '(xx) xxxx-xxxx'})
+        self.fields['phone'].help_text = 'Formato: (xx) 9xxxx-xxxx ou (xx) xxxx-xxxx'
 
 
 class VeterinarianForm(forms.ModelForm):
@@ -286,12 +302,26 @@ class VeterinarianForm(forms.ModelForm):
 
         self.created_username = username
         return vet
+        
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields['name'].widget.attrs.update({'placeholder': 'Nome do Veterinário'})
+        self.fields['email'].widget.attrs.update({'placeholder': 'exemplo@email.com'})
+        self.fields['phone'].widget.attrs.update({'placeholder': '(xx) xxxx-xxxx'})
+        self.fields['phone'].help_text = 'Formato: (xx) 9xxxx-xxxx ou (xx) xxxx-xxxx'
 
 
 class PetForm(forms.ModelForm):
     class Meta:
         model = Pet
         fields = ['name', 'breed', 'tutor']
+        
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields['name'].widget.attrs.update({'placeholder': 'Nome do Pet'})
+        self.fields['breed'].widget.attrs.update({'placeholder': 'Raça do Pet'})
 
     def clean_breed(self):
         breed = self.cleaned_data.get('breed', '').strip()
