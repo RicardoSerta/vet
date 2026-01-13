@@ -1,0 +1,50 @@
+{% extends 'base_app.html' %}
+
+{% block title %}Upload em massa - LumaVet{% endblock %}
+{% block page_title %}Upload em massa{% endblock %}
+
+{% block main_content %}
+<div class="card">
+    <h2 class="card-title">Fazer upload de vários exames</h2>
+
+    <form method="post" enctype="multipart/form-data" class="exam-upload-form">
+        {% csrf_token %}
+
+        <div class="profile-form-row">
+            <div class="profile-form-group">
+                <label for="{{ form.clinic_or_vet.id_for_label }}">Clínica / Veterinário:</label>
+                {{ form.clinic_or_vet }}
+                {% if form.clinic_or_vet.errors %}
+                    <div class="field-error">{{ form.clinic_or_vet.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <div class="profile-form-group">
+                <label for="{{ form.pdf_files.id_for_label }}">Arquivos PDF:</label>
+                {{ form.pdf_files }}
+                {% if form.pdf_files.errors %}
+                    <div class="field-error">{{ form.pdf_files.errors.0 }}</div>
+                {% endif %}
+
+                <div class="field-hint">
+                    Formato do nome:
+                    <strong>Laudo Pet Raça Tutor Exame DD.MM.YYYY.pdf</strong><br>
+                    Exemplo:
+                    <strong>Laudo Nina SRD Maria_Silva Hemograma 05.03.2025.pdf</strong><br>
+                    (Você pode selecionar até 20 PDFs por vez.)
+                </div>
+            </div>
+        </div>
+
+        {% if form.non_field_errors %}
+            <div class="field-error">
+                {{ form.non_field_errors.0 }}
+            </div>
+        {% endif %}
+
+        <button type="submit" class="btn-primary">Enviar exames</button>
+        <a href="{% url 'exam_upload' %}" style="margin-left: 10px; font-size: 13px;">Voltar</a>
+    </form>
+</div>
+{% endblock %}
+

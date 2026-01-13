@@ -11,6 +11,66 @@ from django import forms
 
 from .models import Tutor, Clinic, Veterinarian, Pet
 
+def parse_exam_filename(filename: str):
+    """
+    Esperado: Laudo Pet Raça Tutor Exame DD.MM.YYYY.pdf
+    Campos separados por espaço. Usa _ para representar espaços dentro de cada campo.
+    """
+    name = Path(filename).name
+
+    if not name.lower().endswith(".pdf"):
+        raise forms.ValidationError("O arquivo precisa ser um PDF (.pdf).")
+
+    stem = name[:-4]  # remove .pdf
+    parts = stem.split()
+
+    if len(parts) != 6:
+        raise forms.ValidationError(
+            "Nome do arquivo inválido. Use: Laudo Pet Raça Tutor Exame DD.MM.YYYY.pdf"
+        )
+
+    if parts[0] != "Laudo":
+        raise forms.ValidationError('O nome do arquivo deve começar com "Laudo".')
+
+    pet_raw, breed_raw, tutor_raw, exam_raw, date_raw = parts[1:]
+
+    pet = pet_raw.replace("_", " ").strip()
+    breed = breed_raw.replace("_", " ").strip()
+    tutor = tutor_raw.replace("_", " ").strip()
+    exam_type = exam_raw.replace("_", " ").strip()
+
+    try:
+        date_realizacao = datetime.strptime(date_raw, "%d.%m.%Y").date()
+    except ValueError:
+        raise forms.ValidationError("Data inválida. Use DD.MM.YYYY (ex.: 05.03.2025).")
+
+    return {
+        "pet_name": pet,
+        "breed": breed,
+        "tutor_name": tutor,
+        "exam_type": exam_type,
+        "date_realizacao": date_realizacao,
+    }
+
+class MultipleFileInput(forms.ClearableFileInput):
+    allow_multiple_selected = True
+
+
+class MultipleFileField(forms.FileField):
+    widget = MultipleFileInput
+
+    def to_python(self, data):
+        if not data:
+            return []
+        if isinstance(data, (list, tuple)):
+            return list(data)
+        return [data]
+
+    def validate(self, data):
+        if self.required and not data:
+            raise forms.ValidationError("Selecione pelo menos um arquivo PDF.")
+
+
 
 class ExamUploadForm(forms.Form):
     clinic_or_vet = forms.ChoiceField(
@@ -263,3 +323,50 @@ def _make_unique_username(base: str) -> str:
         username = f"{base}{i}"
         i += 1
     return username
+    
+class MultiExamUploadForm(forms.Form):
+    clinic_or_vet = forms.ChoiceField(
+        label='Clínica / Veterinário',
+        choices=[],
+        widget=forms.Select()
+    )
+
+    pdf_files = MultipleFileField(
+        label="Arquivos PDF",
+        required=True,
+        widget=MultipleFileInput(attrs={"multiple": True})
+    )
+
+    MAX_FILES = 20  # pode mudar para 50 se quiser
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        clinics = Clinic.objects.all().order_by('name')
+        vets = Veterinarian.objects.all().order_by('name')
+
+        clinic_choices = [(f"CLINIC:{c.id}", c.name) for c in clinics]
+        vet_choices = [(f"VET:{v.id}", v.name) for v in vets]
+
+        self.fields['clinic_or_vet'].choices = [
+            ('', 'Selecione...'),
+            ('Clínicas', clinic_choices),
+            ('Veterinários', vet_choices),
+        ]
+
+    def clean_clinic_or_vet(self):
+        value = self.cleaned_data.get('clinic_or_vet')
+        if not value:
+            raise forms.ValidationError("Selecione uma clínica ou veterinário.")
+        return value
+
+    def clean_pdf_files(self):
+        files = self.cleaned_data.get("pdf_files", [])
+        if len(files) > self.MAX_FILES:
+            raise forms.ValidationError(f"Você pode enviar no máximo {self.MAX_FILES} PDFs por vez.")
+
+        # valida cada nome
+        for f in files:
+            parse_exam_filename(f.name)
+
+        return files

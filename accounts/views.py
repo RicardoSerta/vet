@@ -3,12 +3,13 @@ from django.contrib.auth import authenticate, login, logout, update_session_auth
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q
+from django.db import transaction
 from django.http import FileResponse, Http404
 from .authz import admin_required
 from .authz import is_admin_user
 
 from .models import Profile, Exam, Tutor, Clinic, Veterinarian, Pet
-from .forms import ExamUploadForm, TutorForm, ClinicForm, VeterinarianForm, PetForm
+from .forms import ExamUploadForm, TutorForm, ClinicForm, VeterinarianForm, PetForm, MultiExamUploadForm, parse_exam_filename
 
 MANAGEMENT_CATEGORIES = {
     'tutores': {
@@ -290,6 +291,72 @@ def exam_upload(request):
         'profile': profile,
         'form': form,
     })
+    
+@login_required
+@admin_required
+def exam_upload_multi(request):
+    profile, _ = Profile.objects.get_or_create(user=request.user)
+
+    if request.method == "POST":
+        form = MultiExamUploadForm(request.POST, request.FILES)
+
+        if form.is_valid():
+            selected = form.cleaned_data["clinic_or_vet"]
+            pdf_files = form.cleaned_data["pdf_files"]
+
+            assigned_user = None
+            clinic_or_vet_name = ""
+
+            if selected.startswith("CLINIC:"):
+                clinic_id = int(selected.split(":")[1])
+                clinic = Clinic.objects.get(id=clinic_id)
+                clinic_or_vet_name = clinic.name
+                assigned_user = clinic.user
+            elif selected.startswith("VET:"):
+                vet_id = int(selected.split(":")[1])
+                vet = Veterinarian.objects.get(id=vet_id)
+                clinic_or_vet_name = vet.name
+                assigned_user = vet.user
+
+            # segurança: se a clínica/vet não tiver user associado, não tem como ela ver os exames depois
+            if assigned_user is None:
+                messages.error(
+                    request,
+                    "Essa clínica/veterinário ainda não tem conta de acesso associada. "
+                    "Cadastre pela Gestão informando a senha."
+                )
+                return render(request, "accounts/exam_upload_multi.html", {"profile": profile, "form": form})
+
+            # cria todos em transação (ou cria tudo, ou cria nada)
+            created_count = 0
+            with transaction.atomic():
+                for f in pdf_files:
+                    data = parse_exam_filename(f.name)
+
+                    Exam.objects.create(
+                        date_realizacao=data["date_realizacao"],
+                        clinic_or_vet=clinic_or_vet_name,
+                        exam_type=data["exam_type"],
+                        pet_name=data["pet_name"],
+                        breed=data["breed"],
+                        tutor_name=data["tutor_name"],
+                        pdf_file=f,
+                        owner=request.user,
+                        assigned_user=assigned_user,
+                        # campos opcionais vazios no upload em massa:
+                        tutor_phone="",
+                        tutor_email="",
+                        observations="",
+                    )
+                    created_count += 1
+
+            messages.success(request, f"{created_count} exame(s) enviados com sucesso.")
+            return redirect("exames")
+    else:
+        form = MultiExamUploadForm()
+
+    return render(request, "accounts/exam_upload_multi.html", {"profile": profile, "form": form})
+
     
 @login_required
 @admin_required
