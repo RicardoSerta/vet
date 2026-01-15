@@ -686,7 +686,7 @@ def exam_types_create(request):
         form = ExamTypeAliasForm(request.POST)
         if form.is_valid():
             form.save()
-            messages.success(request, "Tipo de exame cadastrado com sucesso.")
+            messages.success(request, "Sigla de exame cadastrada com sucesso.")
             return redirect("exam_types")
     else:
         form = ExamTypeAliasForm()
@@ -696,7 +696,7 @@ def exam_types_create(request):
     return render(request, "accounts/exam_types_form.html", {
         "profile": profile,
         "form": form,
-        "title": "Cadastrar tipo de exame",
+        "title": "Cadastrar sigla de exame",
     })
 
 

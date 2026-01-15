@@ -1,13 +1,13 @@
 {% extends 'base_app.html' %}
 
-{% block title %}Tipos de Exames - LumaVet{% endblock %}
-{% block page_title %}Tipos de Exames{% endblock %}
+{% block title %}Siglas de Exames - LumaVet{% endblock %}
+{% block page_title %}Siglas de Exames{% endblock %}
 
 {% block main_content %}
 <div class="card">
   <div class="management-header">
     <div>
-      <h2 class="card-title" style="margin:0;">Tipos de Exames</h2>
+      <h2 class="card-title" style="margin:0;">Siglas de Exames</h2>
     </div>
 
     <div class="management-header-right">
@@ -16,7 +16,7 @@
         <button type="submit">Buscar</button>
       </form>
 
-      <a href="{% url 'exam_types_create' %}" class="btn-icon btn-icon-green management-add-btn" title="Novo tipo">
+      <a href="{% url 'exam_types_create' %}" class="btn-icon btn-icon-green management-add-btn" title="Nova sigla">
         +
       </a>
     </div>
@@ -56,7 +56,7 @@
           {% endfor %}
         {% else %}
           <tr>
-            <td colspan="2" style="text-align:center;">Nenhum tipo de exame cadastrado ainda.</td>
+            <td colspan="2" style="text-align:center;">Nenhuma sigla de exame cadastrado ainda.</td>
           </tr>
         {% endif %}
       </tbody>

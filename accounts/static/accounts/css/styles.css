@@ -566,3 +566,20 @@ body.app-body {
     box-sizing: border-box;
 }
 
+.btn-siglas {
+    background: #3b82f6;      /* azul moderado */
+    color: #fff;
+    border: 1px solid #2f6fe0;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-siglas:hover {
+    filter: brightness(0.95);
+}
+

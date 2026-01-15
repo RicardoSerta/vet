@@ -24,7 +24,7 @@
 
             <a href="{% url 'gestao_create' category %}"
                class="btn-icon btn-icon-green management-add-btn"
-               title="Novo {{ category_singular }}">
+               title="{% if category == 'clinicas' %}Nova{% else %}Novo{% endif %} {{ category_singular }}">
                 +
             </a>
         </div>
