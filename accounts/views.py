@@ -698,7 +698,17 @@ def exam_types_create(request):
         "form": form,
         "title": "Cadastrar sigla de exame",
     })
+    
+@login_required
+@admin_required
+def exam_types_delete(request, pk):
+    if request.method != "POST":
+        return redirect("exam_types")
 
+    obj = get_object_or_404(ExamTypeAlias, pk=pk)
+    obj.delete()
+    messages.success(request, "Sigla excluída com sucesso.")
+    return redirect("exam_types")
 
 def logout_view(request):
     logout(request)

@@ -38,6 +38,7 @@
           <th>
             <a href="?order=exame&direction={% if order == 'exame' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
               Exame
+              <th style="width: 80px; text-align:center;">Ações</th>
               {% if order == 'exame' %}
                 {% if direction == 'asc' %}▲{% else %}▼{% endif %}
               {% endif %}
@@ -52,11 +53,22 @@
             <tr>
               <td>{{ item.abbreviation }}</td>
               <td>{{ item.full_name }}</td>
+              <td style="text-align:center;">
+                <form method="post" action="{% url 'exam_types_delete' item.id %}"
+                      style="display:inline;"
+                      onsubmit="return confirm('Tem certeza que deseja excluir a sigla {{ item.abbreviation|escapejs }}?');">
+                  {% csrf_token %}
+                  <button type="submit" title="Excluir" class="btn-icon btn-icon-red"
+                          style="border:0; cursor:pointer;">
+                    🗑️
+                  </button>
+                </form>
+              </td>
             </tr>
           {% endfor %}
         {% else %}
           <tr>
-            <td colspan="2" style="text-align:center;">Nenhuma sigla de exame cadastrado ainda.</td>
+            <td colspan="3" style="text-align:center;">Nenhuma sigla de exame cadastrada ainda.</td>
           </tr>
         {% endif %}
       </tbody>
