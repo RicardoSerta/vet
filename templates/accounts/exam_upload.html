@@ -46,38 +46,48 @@
             </div>
         </div>
 
-        <!-- SEGUNDA LINHA: Celular + E-mail -->
-        <div class="profile-form-row">
-            <div class="profile-form-group">
+        <!-- CAMPOS OPCIONAIS (SUSPENSO) -->
+        <details class="optional-fields">
+          <summary class="optional-fields-summary">
+            Preencher campos opcionais
+          </summary>
+
+          <div class="optional-fields-body">
+            <!-- Celular + E-mail -->
+            <div class="profile-form-row" style="margin-top: 12px;">
+              <div class="profile-form-group">
                 <label for="{{ form.tutor_phone.id_for_label }}">Celular Tutor:</label>
                 {{ form.tutor_phone }}
                 {% if form.tutor_phone.errors %}
-                    <div class="field-error">{{ form.tutor_phone.errors.0 }}</div>
+                  <div class="field-error">{{ form.tutor_phone.errors.0 }}</div>
                 {% endif %}
                 <div class="field-hint">
-                    Formato: (XX) 9XXXX-XXXX ou (XX) XXXX-XXXX
+                  Formato: (XX) 9XXXX-XXXX ou (XX) XXXX-XXXX
                 </div>
-            </div>
+              </div>
 
-            <div class="profile-form-group">
+              <div class="profile-form-group">
                 <label for="{{ form.tutor_email.id_for_label }}">E-mail Tutor:</label>
                 {{ form.tutor_email }}
                 {% if form.tutor_email.errors %}
-                    <div class="field-error">{{ form.tutor_email.errors.0 }}</div>
+                  <div class="field-error">{{ form.tutor_email.errors.0 }}</div>
                 {% endif %}
+              </div>
             </div>
-        </div>
 
-        <!-- TERCEIRA LINHA: Observações ocupando tudo -->
-        <div class="profile-form-row">
-            <div class="profile-form-group" style="grid-column: 1 / -1;">
+            <!-- Observações -->
+            <div class="profile-form-row">
+              <div class="profile-form-group" style="grid-column: 1 / -1;">
                 <label for="{{ form.observations.id_for_label }}">Observações:</label>
                 {{ form.observations }}
                 {% if form.observations.errors %}
-                    <div class="field-error">{{ form.observations.errors.0 }}</div>
+                  <div class="field-error">{{ form.observations.errors.0 }}</div>
                 {% endif %}
+              </div>
             </div>
-        </div>
+          </div>
+        </details>
+
 
         <!-- BOTÕES -->
         <button type="submit" class="btn-primary">Enviar exame</button>

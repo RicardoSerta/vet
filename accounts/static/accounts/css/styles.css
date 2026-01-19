@@ -586,3 +586,27 @@ body.app-body {
     filter: brightness(0.95);
 }
 
+.optional-fields {
+    margin-top: 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    background: #f9fafb;
+    padding: 10px 12px;
+}
+
+.optional-fields-summary {
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+    user-select: none;
+}
+
+.optional-fields-summary::marker {
+    color: #6b7280;
+}
+
+.optional-fields-body {
+    margin-top: 6px;
+}
+
