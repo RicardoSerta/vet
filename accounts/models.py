@@ -141,5 +141,17 @@ class ExamTypeAlias(models.Model):
     def __str__(self):
         return f"{self.abbreviation} -> {self.full_name}"
 
+class ExamExtraPDF(models.Model):
+    exam = models.ForeignKey(
+        Exam,
+        on_delete=models.CASCADE,
+        related_name="extra_pdfs",
+    )
+    file = models.FileField(upload_to="exam_pdfs/extras/")
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Extra PDF ({self.exam_id})"
+
 
 

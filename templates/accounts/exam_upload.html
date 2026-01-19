@@ -74,6 +74,19 @@
                 {% endif %}
               </div>
             </div>
+            
+            <!-- PDFs extras (linha inteira) -->
+            <div class="profile-form-row">
+              <div class="profile-form-group" style="grid-column: 1 / -1;">
+                <label for="{{ form.extra_pdfs.id_for_label }}">PDFs extras:</label>
+                {{ form.extra_pdfs }}
+                {% if form.extra_pdfs.errors %}
+                  <div class="field-error">{{ form.extra_pdfs.errors.0 }}</div>
+                {% endif %}
+                <div class="field-hint">Aceita até 5 PDFs (opcional). Você pode selecionar vários de uma vez.</div>
+              </div>
+            </div>
+
 
             <!-- Observações -->
             <div class="profile-form-row">

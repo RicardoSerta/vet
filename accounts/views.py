@@ -9,7 +9,7 @@ from django.http import FileResponse, Http404
 from .authz import admin_required
 from .authz import is_admin_user
 
-from .models import Profile, Exam, Tutor, Clinic, Veterinarian, Pet, ExamTypeAlias
+from .models import Profile, Exam, Tutor, Clinic, Veterinarian, Pet, ExamTypeAlias, ExamExtraPDF
 from .forms import ExamUploadForm, TutorForm, ClinicForm, VeterinarianForm, PetForm, MultiExamUploadForm, parse_exam_filename, ExamTypeAliasForm
 
 MANAGEMENT_CATEGORIES = {
@@ -352,6 +352,9 @@ def exam_upload(request):
                 request,
                 f'Exame de {exam.pet_name} cadastrado com sucesso.'
             )
+            extra_files = form.cleaned_data.get("extra_pdfs", [])
+            for f in extra_files:
+                ExamExtraPDF.objects.create(exam=exam, file=f)
             return redirect('exames')
     else:
         form = ExamUploadForm()

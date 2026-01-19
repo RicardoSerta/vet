@@ -11,6 +11,25 @@ from django import forms
 
 from .models import Tutor, Clinic, Veterinarian, Pet, Profile, ExamTypeAlias
 
+class MultipleFileInput(forms.FileInput):
+    allow_multiple_selected = True
+
+
+class MultipleFileField(forms.FileField):
+    """
+    Aceita 0..N arquivos. Retorna uma lista de UploadedFile.
+    """
+    def clean(self, data, initial=None):
+        if not data:
+            return []
+        if not isinstance(data, (list, tuple)):
+            data = [data]
+
+        cleaned_files = []
+        for f in data:
+            cleaned_files.append(super().clean(f, initial))
+        return cleaned_files
+
 def parse_exam_filename(filename: str):
     """
     Esperado: Laudo Pet Raça Tutor Exame DD.MM.YYYY.pdf
@@ -110,6 +129,18 @@ class ExamUploadForm(forms.Form):
         widget=forms.ClearableFileInput(attrs={'accept': 'application/pdf'})
     )
     
+    extra_pdfs = MultipleFileField(
+        required=False,
+        widget=MultipleFileInput(attrs={
+            "multiple": True,
+            "accept": "application/pdf",
+        }),
+        label="PDFs extras",
+    )
+
+
+
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -198,7 +229,18 @@ class ExamUploadForm(forms.Form):
         cleaned_data["parsed_date_realizacao"] = date_realizacao
 
         return cleaned_data
+        
+    def clean_extra_pdfs(self):
+        files = self.cleaned_data.get("extra_pdfs", [])
 
+        if len(files) > 5:
+            raise forms.ValidationError("Você pode anexar no máximo 5 PDFs extras.")
+
+        for f in files:
+            if not f.name.lower().endswith(".pdf"):
+                raise forms.ValidationError("Apenas arquivos PDF são aceitos nos PDFs extras.")
+
+        return files
 
 class TutorForm(forms.ModelForm):
     class Meta:
