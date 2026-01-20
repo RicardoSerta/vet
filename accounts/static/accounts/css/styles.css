@@ -611,3 +611,96 @@ body.app-body {
     margin-top: 6px;
 }
 
+.file-list {
+    margin-top: 8px;
+    padding: 8px 10px;
+    border: 1px dashed #d1d5db;
+    border-radius: 4px;
+    background: #ffffff;
+    font-size: 12px;
+    color: #374151;
+}
+
+.file-list-title {
+    font-weight: 600;
+    margin-bottom: 6px;
+    font-size: 12px;
+}
+
+.file-list ul {
+    margin: 0;
+    padding-left: 16px;
+}
+
+.file-list li {
+    margin: 2px 0;
+}
+
+.file-input-hidden {
+    position: absolute;
+    left: -9999px;
+}
+
+.file-picker {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Botão com estilo parecido com o "Buscar" */
+.btn-file {
+    border: none;
+    background-color: #6b7280;
+    color: #ffffff;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.btn-file:hover {
+    filter: brightness(0.95);
+}
+
+.file-count {
+    font-size: 12px;
+    color: #374151;
+}
+
+/* Lista de arquivos */
+.file-list {
+    margin-top: 8px;
+    padding: 8px 10px;
+    border: 1px dashed #d1d5db;
+    border-radius: 4px;
+    background: #ffffff;
+    font-size: 12px;
+    color: #374151;
+}
+
+.file-list ul {
+    margin: 0;
+    padding-left: 0;
+    list-style: none;
+}
+
+.file-list li {
+    margin: 4px 0;
+}
+
+.file-remove {
+    border: none;
+    background: none;
+    padding: 0;
+    margin: 0;
+    font-size: 12px;
+    color: #2563eb;
+    cursor: pointer;
+    text-align: left;
+}
+
+.file-remove:hover {
+    text-decoration: underline;
+}
+
+

@@ -134,6 +134,7 @@ class ExamUploadForm(forms.Form):
         widget=MultipleFileInput(attrs={
             "multiple": True,
             "accept": "application/pdf",
+            "class": "file-input-hidden",
         }),
         label="PDFs extras",
     )
