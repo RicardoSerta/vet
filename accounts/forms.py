@@ -125,8 +125,12 @@ class ExamUploadForm(forms.Form):
     )
 
     pdf_file = forms.FileField(
-        label='Arquivo PDF',
-        widget=forms.ClearableFileInput(attrs={'accept': 'application/pdf'})
+        required=True,
+        widget=forms.ClearableFileInput(attrs={
+            "accept": "application/pdf",
+            "class": "file-input-hidden",
+        }),
+        label="Arquivo PDF",
     )
     
     extra_pdfs = MultipleFileField(
