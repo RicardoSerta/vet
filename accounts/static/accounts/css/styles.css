@@ -641,12 +641,6 @@ body.app-body {
     left: -9999px;
 }
 
-.file-picker {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
 /* Botão com estilo parecido com o "Buscar" */
 .btn-file {
     border: none;
@@ -703,4 +697,32 @@ body.app-body {
     text-decoration: underline;
 }
 
+.form-actions {
+    margin-top: 16px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.form-actions .btn-primary {
+    width: auto;              /* impede virar faixa */
+    min-width: 160px;
+    height: 38px;
+    padding: 8px 18px;
+}
+
+.btn-link {
+    font-size: 13px;
+    text-decoration: none;
+}
+.btn-link:hover {
+    text-decoration: underline;
+}
+
+.file-picker {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 2px;
+}
 
