@@ -539,10 +539,15 @@ class MultiExamUploadForm(forms.Form):
     )
 
     pdf_files = MultipleFileField(
-        label="Arquivos PDF",
         required=True,
-        widget=MultipleFileInput(attrs={"multiple": True})
+        widget=MultipleFileInput(attrs={
+            "multiple": True,
+            "accept": "application/pdf",
+            "class": "file-input-hidden",
+        }),
+        label="Arquivos PDF",
     )
+
 
     MAX_FILES = 50
 

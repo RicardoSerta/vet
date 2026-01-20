@@ -19,22 +19,33 @@
                 {% endif %}
             </div>
 
-            <div class="profile-form-group">
+            <div class="profile-form-row">
+              <div class="profile-form-group" style="grid-column: 1 / -1;">
                 <label for="{{ form.pdf_files.id_for_label }}">Arquivos PDF:</label>
-                {{ form.pdf_files }}
+
+                <div class="file-picker">
+                  {{ form.pdf_files }}
+                  <button type="button" class="btn-file" id="multi-pdfs-btn">Selecionar PDFs</button>
+                  <span class="file-count" id="multi-pdfs-count">Nenhum arquivo selecionado</span>
+                </div>
+
+                <div id="multi-pdfs-list" class="file-list"></div>
+
                 {% if form.pdf_files.errors %}
-                    <div class="field-error">{{ form.pdf_files.errors.0 }}</div>
+                  <div class="field-error">{{ form.pdf_files.errors.0 }}</div>
                 {% endif %}
 
                 <div class="field-hint">
-                    Formato do nome:
-                    <strong>Laudo Pet Raça Tutor Exame DD.MM.YYYY.pdf</strong><br>
-                    Exemplo:
-                    <strong>Laudo Rex Labrador Gustavo_Silva Ultrassonografia 31.12.2025.pdf</strong><br>
-                    (Você pode selecionar até 50 PDFs por vez.)
+                  Formato do nome:
+                  <strong>Laudo Pet Raça Tutor Exame DD.MM.YYYY.pdf</strong><br>
+                  Exemplo:
+                  <strong>Laudo Rex Labrador Gustavo_Silva Ultrassonografia 31.12.2025.pdf</strong>
+                  <br>
+                  Você pode selecionar até 50 PDFs por vez. Clique no nome do arquivo para remover.
                 </div>
+              </div>
             </div>
-        </div>
+
 
         {% if form.non_field_errors %}
             <div class="field-error">
@@ -46,5 +57,82 @@
         <a href="{% url 'exam_upload' %}" style="margin-left: 10px; font-size: 13px;">Voltar</a>
     </form>
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const input = document.getElementById('id_pdf_files');
+  const btn = document.getElementById('multi-pdfs-btn');
+  const count = document.getElementById('multi-pdfs-count');
+  const list = document.getElementById('multi-pdfs-list');
+
+  if (!input || !btn || !count || !list) return;
+
+  const MAX_FILES = 50; // se você quiser por limite. Se quiser ilimitado, pode remover esse check.
+  const dt = new DataTransfer();
+
+  function sameFile(a, b) {
+    return a.name === b.name && a.size === b.size && a.lastModified === b.lastModified;
+  }
+
+  function updateInputFiles() {
+    input.files = dt.files;
+  }
+
+  function render() {
+    const files = Array.from(dt.files);
+
+    if (files.length === 0) {
+      count.textContent = 'Nenhum arquivo selecionado';
+      list.innerHTML = '';
+      return;
+    }
+
+    count.textContent = files.length === 1
+      ? '1 arquivo selecionado'
+      : `${files.length} arquivos selecionados`;
+
+    const items = files.map((f, i) => (
+      `<li><button type="button" class="file-remove" data-index="${i}" title="Remover">${f.name}</button></li>`
+    )).join('');
+
+    list.innerHTML = `<ul>${items}</ul>`;
+  }
+
+  btn.addEventListener('click', () => input.click());
+
+  input.addEventListener('change', function () {
+    const newFiles = Array.from(input.files || []);
+
+    for (const f of newFiles) {
+      if (dt.files.length >= MAX_FILES) {
+        alert(`Você pode anexar no máximo ${MAX_FILES} PDFs por vez.`);
+        break;
+      }
+
+      const already = Array.from(dt.files).some(existing => sameFile(existing, f));
+      if (!already) dt.items.add(f);
+    }
+
+    updateInputFiles();
+    render();
+
+    // permite selecionar o mesmo arquivo de novo depois
+    input.value = '';
+  });
+
+  list.addEventListener('click', function (e) {
+    const btn = e.target.closest('.file-remove');
+    if (!btn) return;
+
+    const idx = Number(btn.getAttribute('data-index'));
+    if (Number.isNaN(idx)) return;
+
+    dt.items.remove(idx);
+    updateInputFiles();
+    render();
+  });
+
+  render();
+});
+</script>
 {% endblock %}
 
