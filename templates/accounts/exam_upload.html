@@ -22,12 +22,20 @@
         <!-- PRIMEIRA LINHA: Clínica / Vet + Arquivo PDF -->
         <div class="profile-form-row">
             <div class="profile-form-group">
+                <label for="{{ form.clinic_or_vet.id_for_label }}">Clínica / Veterinário:</label>
+                {{ form.clinic_or_vet }}
+                {% if form.clinic_or_vet.errors %}
+                    <div class="field-error">{{ form.clinic_or_vet.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <div class="profile-form-group">
                 <label for="{{ form.pdf_file.id_for_label }}">Arquivo PDF:</label>
 
                 <div class="file-picker">
                     {{ form.pdf_file }}
                     <button type="button" class="btn-file" id="main-pdf-btn">Selecionar PDF</button>
-                    <span class="file-count" id="main-pdf-name">Nenhum arquivo escolhido</span>
+                    <span class="file-count" id="main-pdf-name">Nenhum arquivo selecionado</span>
                 </div>
 
                 {% if form.pdf_file.errors %}
@@ -39,10 +47,11 @@
                     <strong>Laudo Pet Raça Tutor Exame DD.MM.YYYY.pdf</strong>
                     <br>
                     Exemplo:
-                    <strong>Laudo Rex Labrador João_Silva Hemograma 31.12.2025.pdf</strong>
+                    <strong>Laudo Rex Labrador Gustavo_Silva Ultrassonografia 31.12.2025.pdf</strong>
                 </div>
             </div>
         </div>
+
 
         <!-- CAMPOS OPCIONAIS (SUSPENSO) -->
         <details class="optional-fields">
@@ -173,7 +182,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (mainInput.files && mainInput.files.length > 0) {
         mainName.textContent = mainInput.files[0].name;
       } else {
-        mainName.textContent = 'Nenhum arquivo escolhido';
+        mainName.textContent = 'Nenhum arquivo selecionado';
       }
     });
   }
