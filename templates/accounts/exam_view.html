@@ -1,0 +1,125 @@
+{% extends 'base_app.html' %}
+
+{% block title %}Visualizar exame - LumaVet{% endblock %}
+{% block page_title %}Exames{% endblock %}
+
+{% block main_content %}
+<div class="card">
+  <div class="exams-header" style="margin-bottom: 14px;">
+    <div class="exams-header-left">
+      <h2 class="card-title" style="margin:0;">Visualizar exame</h2>
+    </div>
+
+    <div class="exams-header-right">
+      <a href="{% url 'exames' %}" class="btn-link">Voltar</a>
+    </div>
+  </div>
+
+  <div class="exam-view-grid">
+    <div class="exam-view-info">
+      <div class="exam-view-row">
+        <div class="exam-view-item">
+          <div class="exam-view-label">Data de realização</div>
+          <div class="exam-view-value">{{ exam.date_realizacao|date:"d/m/Y" }}</div>
+        </div>
+        <div class="exam-view-item">
+          <div class="exam-view-label">Clínica / Veterinário</div>
+          <div class="exam-view-value">{{ exam.clinic_or_vet }}</div>
+        </div>
+      </div>
+
+      <div class="exam-view-row">
+        <div class="exam-view-item">
+          <div class="exam-view-label">Exame</div>
+          <div class="exam-view-value">{{ exam.exam_type }}</div>
+        </div>
+        <div class="exam-view-item">
+          <div class="exam-view-label">Pet</div>
+          <div class="exam-view-value">{{ exam.pet_name }}</div>
+        </div>
+      </div>
+
+      <div class="exam-view-row">
+        <div class="exam-view-item">
+          <div class="exam-view-label">Raça</div>
+          <div class="exam-view-value">{{ exam.breed|default:"–" }}</div>
+        </div>
+        <div class="exam-view-item">
+          <div class="exam-view-label">Tutor</div>
+          <div class="exam-view-value">{{ exam.tutor_name }}</div>
+        </div>
+      </div>
+
+      <div class="exam-view-row">
+        <div class="exam-view-item">
+          <div class="exam-view-label">Alerta Email</div>
+          <div class="exam-view-value">
+            {% if exam.alerta_email %}{{ exam.alerta_email|date:"d/m/Y H:i" }}{% else %}–{% endif %}
+          </div>
+        </div>
+        <div class="exam-view-item">
+          <div class="exam-view-label">Alerta Zap</div>
+          <div class="exam-view-value">
+            {% if exam.alerta_zap %}{{ exam.alerta_zap|date:"d/m/Y H:i" }}{% else %}–{% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="exam-view-row">
+        <div class="exam-view-item">
+          <div class="exam-view-label">Retorno Previsto</div>
+          <div class="exam-view-value">
+            {% if exam.retorno_previsto %}{{ exam.retorno_previsto|date:"d/m/Y" }}{% else %}–{% endif %}
+          </div>
+        </div>
+        <div class="exam-view-item">
+          <div class="exam-view-label">Contato do tutor</div>
+          <div class="exam-view-value">
+            {% if exam.tutor_phone %}{{ exam.tutor_phone }}{% else %}–{% endif %}
+            {% if exam.tutor_email %}<div style="margin-top:4px;">{{ exam.tutor_email }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="exam-view-item" style="margin-top: 10px;">
+        <div class="exam-view-label">Observações</div>
+        <div class="exam-view-value exam-view-observations">
+          {% if exam.observations %}{{ exam.observations|linebreaksbr }}{% else %}–{% endif %}
+        </div>
+      </div>
+
+      <div style="margin-top: 14px;">
+        <div class="exam-view-label">PDFs extras</div>
+
+        {% if extras %}
+          <div class="exam-extra-list">
+            {% for e in extras %}
+              <a class="exam-extra-link" target="_blank"
+                 href="{% url 'exam_extra_pdf' exam.pk e.pk %}">
+                {{ e.file.name|cut:"exam_pdfs/extras/" }}
+              </a>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="exam-view-value">–</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="exam-view-pdf">
+      <div class="exam-view-label" style="margin-bottom: 6px;">PDF do exame</div>
+
+      {% if exam.pdf_file %}
+        <div class="exam-pdf-actions">
+          <a class="btn-icon btn-icon-green" target="_blank" href="{% url 'exam_pdf' exam.pk %}" title="Abrir em nova aba">👁</a>
+        </div>
+
+        <iframe class="exam-pdf-frame" src="{% url 'exam_pdf' exam.pk %}"></iframe>
+      {% else %}
+        <div class="exam-view-value">Nenhum PDF principal anexado.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+

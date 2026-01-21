@@ -22,5 +22,7 @@ urlpatterns = [
     path("exames/tipos/", views.exam_types_list, name="exam_types"),
     path("exames/tipos/novo/", views.exam_types_create, name="exam_types_create"),
     path("exames/tipos/<int:pk>/excluir/", views.exam_types_delete, name="exam_types_delete"),
+    path("exames/<int:pk>/ver/", views.exam_view, name="exam_view"),
+    path("exames/<int:pk>/extras/<int:extra_pk>/pdf/", views.exam_extra_pdf, name="exam_extra_pdf"),
 ]
 

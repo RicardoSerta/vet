@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.db.models import Q
 from django.db.models.deletion import ProtectedError
 from django.db import transaction
-from django.http import FileResponse, Http404
+from django.http import FileResponse, Http404, HttpResponseForbidden
 from .authz import admin_required
 from .authz import is_admin_user
 
@@ -192,11 +192,6 @@ def profile_view(request):
 @login_required
 def exam_pdf(request, pk):
     exam = get_object_or_404(Exam, pk=pk)
-    
-    
-    if not is_admin_user(request.user) and exam.assigned_user_id != request.user.id:
-        messages.error(request, "Você não tem permissão para visualizar este exame.")
-        return redirect('exames')
 
     if not is_admin_user(request.user) and exam.assigned_user_id != request.user.id:
         raise Http404()
@@ -426,7 +421,36 @@ def exam_upload_multi(request):
         form = MultiExamUploadForm()
 
     return render(request, "accounts/exam_upload_multi.html", {"profile": profile, "form": form})
+    
+@login_required
+def exam_view(request, pk):
+    profile, _ = Profile.objects.get_or_create(user=request.user)
+    exam = get_object_or_404(Exam, pk=pk)
 
+    if not is_admin_user(request.user) and exam.assigned_user_id != request.user.id:
+        return HttpResponseForbidden("Você não tem permissão para ver este exame.")
+
+    extras = exam.extra_pdfs.all().order_by("uploaded_at")
+
+    return render(request, "accounts/exam_view.html", {
+        "profile": profile,
+        "exam": exam,
+        "extras": extras,
+        "is_admin": is_admin_user(request.user),
+    })
+
+
+@login_required
+def exam_extra_pdf(request, pk, extra_pk):
+    exam = get_object_or_404(Exam, pk=pk)
+
+    if not is_admin_user(request.user) and exam.assigned_user_id != request.user.id:
+        return HttpResponseForbidden("Você não tem permissão para ver este exame.")
+
+    extra = get_object_or_404(ExamExtraPDF, pk=extra_pk, exam=exam)
+
+    # Exibe no navegador (inline)
+    return FileResponse(extra.file.open("rb"), content_type="application/pdf")
     
 @login_required
 @admin_required

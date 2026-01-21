@@ -136,11 +136,7 @@
                                   <a href="{% url 'exam_forward' exam.pk %}" title="Encaminhar" class="btn-icon btn-icon-blue">✉</a>
                                 {% endif %}
 
-                                {% if exam.pdf_file %}
-                                  <a href="{% url 'exam_pdf' exam.pk %}" title="Visualizar PDF" class="btn-icon btn-icon-green" target="_blank">👁</a>
-                                {% else %}
-                                  <a href="{% url 'exam_detail' exam.pk %}" title="Visualizar detalhes" class="btn-icon btn-icon-green">👁</a>
-                                {% endif %}
+                                <a href="{% url 'exam_view' exam.pk %}" title="Visualizar exame" class="btn-icon btn-icon-green">👁</a>
 
                                 {% if is_admin %}
                                   <form method="post" action="{% url 'exam_delete' exam.pk %}" style="display:inline;">

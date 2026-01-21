@@ -414,6 +414,96 @@ body.app-body {
     font-size: 12px;
 }
 
+.exam-view-grid{
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 16px;
+}
+
+.exam-view-info{
+  min-width: 0;
+}
+
+.exam-view-row{
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.exam-view-item{
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 10px;
+  background: #f9fafb;
+}
+
+.exam-view-label{
+  font-size: 11px;
+  color: #6b7280;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+.exam-view-value{
+  font-size: 13px;
+  color: #111827;
+  word-break: break-word;
+}
+
+.exam-view-observations{
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 10px;
+  min-height: 56px;
+}
+
+.exam-view-pdf{
+  min-width: 0;
+}
+
+.exam-pdf-frame{
+  width: 100%;
+  height: 520px; /* se quiser mais alto, pode subir */
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.exam-extra-list{
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.exam-extra-link{
+  color: #2563eb;
+  text-decoration: none;
+  font-size: 13px;
+}
+
+.exam-extra-link:hover{
+  text-decoration: underline;
+}
+
+.exam-pdf-actions{
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 6px;
+}
+
+@media (max-width: 1000px){
+  .exam-view-grid{
+    grid-template-columns: 1fr;
+  }
+  .exam-pdf-frame{
+    height: 460px;
+  }
+}
+
 .exams-table th a:hover {
     text-decoration: underline;
 }
