@@ -55,75 +55,65 @@
 </div>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-  const input = document.getElementById('id_pdf_files');
+  const fileInput = document.getElementById('id_pdf_files');
   const btn = document.getElementById('multi-pdfs-btn');
-  const count = document.getElementById('multi-pdfs-count');
+  const label = document.getElementById('multi-pdfs-count');
   const list = document.getElementById('multi-pdfs-list');
 
-  if (!input || !btn || !count || !list) return;
+  if (!fileInput || !btn || !label || !list) return;
 
-  const MAX_FILES = 50; // se você quiser por limite. Se quiser ilimitado, pode remover esse check.
-  const dt = new DataTransfer();
-
-  function sameFile(a, b) {
-    return a.name === b.name && a.size === b.size && a.lastModified === b.lastModified;
-  }
-
-  function updateInputFiles() {
-    input.files = dt.files;
-  }
+  const MAX_FILES = 50;
+  let dt = new DataTransfer();
 
   function render() {
-    const files = Array.from(dt.files);
+    const count = dt.files.length;
 
-    if (files.length === 0) {
-      count.textContent = 'Nenhum arquivo selecionado';
-      list.innerHTML = '';
+    if (count === 0) {
+      label.textContent = "Nenhum arquivo selecionado";
+      list.innerHTML = "";
       return;
     }
 
-    count.textContent = files.length === 1
-      ? '1 arquivo selecionado'
-      : `${files.length} arquivos selecionados`;
+    label.textContent = `${count} arquivo(s) selecionado(s)`;
 
-    const items = files.map((f, i) => (
-      `<li><button type="button" class="file-remove" data-index="${i}" title="Remover">${f.name}</button></li>`
-    )).join('');
+    list.innerHTML = "";
+    Array.from(dt.files).forEach((f, idx) => {
+      const item = document.createElement("div");
+      item.className = "selected-file-item";
+      item.textContent = f.name;
+      item.title = "Clique para remover";
 
-    list.innerHTML = `<ul>${items}</ul>`;
+      item.addEventListener("click", () => {
+        // remove pelo índice
+        const newDt = new DataTransfer();
+        Array.from(dt.files).forEach((file, i) => {
+          if (i !== idx) newDt.items.add(file);
+        });
+        dt = newDt;
+
+        // MUITO IMPORTANTE: sincroniza o input real
+        fileInput.files = dt.files;
+
+        render();
+      });
+
+      list.appendChild(item);
+    });
   }
 
-  btn.addEventListener('click', () => input.click());
+  btn.addEventListener("click", () => fileInput.click());
 
-  input.addEventListener('change', function () {
-    const newFiles = Array.from(input.files || []);
+  fileInput.addEventListener("change", function () {
+    const selected = Array.from(fileInput.files || []);
+    if (selected.length === 0) return;
 
-    for (const f of newFiles) {
-      if (dt.files.length >= MAX_FILES) {
-        alert(`Você pode anexar no máximo ${MAX_FILES} PDFs por vez.`);
-        break;
-      }
-
-      const already = Array.from(dt.files).some(existing => sameFile(existing, f));
-      if (!already) dt.items.add(f);
+    for (const f of selected) {
+      if (dt.files.length >= MAX_FILES) break;
+      dt.items.add(f);
     }
 
-    updateInputFiles();
-    render();
+    fileInput.files = dt.files;
 
-    // permite selecionar o mesmo arquivo de novo depois
-    input.value = '';
-  });
-
-  list.addEventListener('click', function (e) {
-    const btn = e.target.closest('.file-remove');
-    if (!btn) return;
-
-    const idx = Number(btn.getAttribute('data-index'));
-    if (Number.isNaN(idx)) return;
-
-    dt.items.remove(idx);
-    updateInputFiles();
     render();
   });
 
