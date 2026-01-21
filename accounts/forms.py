@@ -38,7 +38,7 @@ def parse_exam_filename(filename: str):
     name = Path(filename).name
 
     if not name.lower().endswith(".pdf"):
-        raise forms.ValidationError("O arquivo precisa ser um PDF (.pdf).")
+        raise forms.ValidationError("O arquivo precisa ser um PDF.")
 
     stem = name[:-4]  # remove .pdf
     parts = stem.split()
@@ -61,7 +61,7 @@ def parse_exam_filename(filename: str):
     try:
         date_realizacao = datetime.strptime(date_raw, "%d.%m.%Y").date()
     except ValueError:
-        raise forms.ValidationError("Data inválida. Use DD.MM.YYYY (ex.: 05.03.2025).")
+        raise forms.ValidationError("Data inválida. Use DD.MM.YYYY (ex.: 31.12.2025).")
 
     return {
         "pet_name": pet,
@@ -190,7 +190,7 @@ class ExamUploadForm(forms.Form):
 
         # valida extensão
         if not filename.lower().endswith(".pdf"):
-            raise forms.ValidationError("O arquivo precisa ser um PDF (.pdf).")
+            raise forms.ValidationError("O arquivo precisa ser um PDF.")
 
         stem = filename[:-4]  # remove ".pdf"
 
@@ -223,7 +223,7 @@ class ExamUploadForm(forms.Form):
             date_realizacao = datetime.strptime(date_raw, "%d.%m.%Y").date()
         except ValueError:
             raise forms.ValidationError(
-                "Data inválida no nome do arquivo. Use DD.MM.YYYY (ex.: 12.01.2026)."
+                "Data inválida no nome do arquivo. Use DD.MM.YYYY (ex.: 31.12.2025)."
             )
 
         # salva nos campos “parsed_...” que sua view já usa

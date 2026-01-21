@@ -390,15 +390,6 @@ def exam_upload_multi(request):
                 clinic_or_vet_name = vet.name
                 assigned_user = vet.user
 
-            # segurança: se a clínica/vet não tiver user associado, não tem como ela ver os exames depois
-            if assigned_user is None:
-                messages.error(
-                    request,
-                    "Essa clínica/veterinário ainda não tem conta de acesso associada. "
-                    "Cadastre pela Gestão informando a senha."
-                )
-                return render(request, "accounts/exam_upload_multi.html", {"profile": profile, "form": form})
-
             # cria todos em transação (ou cria tudo, ou cria nada)
             created_count = 0
             with transaction.atomic():
