@@ -704,11 +704,11 @@ body.app-body {
     align-items: center;
 }
 
-.form-actions .btn-primary {
-    width: auto;              /* impede virar faixa */
-    min-width: 160px;
-    height: 38px;
-    padding: 8px 18px;
+.form-actions {
+    margin-top: 16px;
+    display: flex;
+    gap: 12px;
+    align-itens: center;
 }
 
 .btn-link {
