@@ -28,26 +28,27 @@
                     <div class="field-error">{{ form.clinic_or_vet.errors.0 }}</div>
                 {% endif %}
             </div>
+            <div id="mainPdfDropZone" class="file-drop-zone">
+                <div class="profile-form-group">
+                    <label for="{{ form.pdf_file.id_for_label }}">Arquivo PDF:</label>
 
-            <div class="profile-form-group">
-                <label for="{{ form.pdf_file.id_for_label }}">Arquivo PDF:</label>
+                    <div class="file-picker">
+                        {{ form.pdf_file }}
+                        <button type="button" class="btn-file" id="main-pdf-btn">Selecionar PDF</button>
+                        <span class="file-count" id="main-pdf-name">Nenhum arquivo selecionado</span>
+                    </div>
 
-                <div class="file-picker">
-                    {{ form.pdf_file }}
-                    <button type="button" class="btn-file" id="main-pdf-btn">Selecionar PDF</button>
-                    <span class="file-count" id="main-pdf-name">Nenhum arquivo selecionado</span>
-                </div>
+                    {% if form.pdf_file.errors %}
+                        <div class="field-error">{{ form.pdf_file.errors.0 }}</div>
+                    {% endif %}
 
-                {% if form.pdf_file.errors %}
-                    <div class="field-error">{{ form.pdf_file.errors.0 }}</div>
-                {% endif %}
-
-                <div class="field-hint">
-                    Formato do nome:
-                    <strong>Laudo Pet Raça Tutor Exame DD.MM.YYYY.pdf</strong>
-                    <br>
-                    Exemplo:
-                    <strong>Laudo Rex Labrador Gustavo_Silva Ultrassonografia 31.12.2025.pdf</strong>
+                    <div class="field-hint">
+                        Formato do nome:
+                        <strong>Laudo Pet Raça Tutor Exame DD.MM.YYYY.pdf</strong>
+                        <br>
+                        Exemplo:
+                        <strong>Laudo Rex Labrador Gustavo_Silva Ultrassonografia 31.12.2025.pdf</strong>
+                    </div>
                 </div>
             </div>
         </div>
@@ -84,7 +85,7 @@
             
             <!-- PDFs extras (linha inteira) -->
             <div class="profile-form-row">
-              <div class="profile-form-group" style="grid-column: 1 / -1;">
+              <div id="extraPdfsDropZone" class="profile-form-group file-drop-zone" style="grid-column: 1 / -1;">
                 <label for="{{ form.extra_pdfs.id_for_label }}">PDFs extras:</label>
 
                 <div class="file-picker">
@@ -170,6 +171,33 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+
+  // ====== (NOVO) Helper de drag & drop ======
+  function bindDropZone(zone, onFiles) {
+    if (!zone) return;
+
+    ["dragenter", "dragover"].forEach(evt => {
+      zone.addEventListener(evt, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        zone.classList.add("dragover");
+      });
+    });
+
+    ["dragleave", "drop"].forEach(evt => {
+      zone.addEventListener(evt, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        zone.classList.remove("dragover");
+      });
+    });
+
+    zone.addEventListener("drop", (e) => {
+      const files = Array.from(e.dataTransfer?.files || []);
+      if (files.length) onFiles(files);
+    });
+  }
+
   // --- PDF principal (1 arquivo) ---
   const mainInput = document.getElementById('id_pdf_file');
   const mainBtn = document.getElementById('main-pdf-btn');
@@ -185,8 +213,19 @@ document.addEventListener('DOMContentLoaded', function () {
         mainName.textContent = 'Nenhum arquivo selecionado';
       }
     });
+
+    // ====== (NOVO) Drag & drop no PDF principal ======
+    const mainZone = document.getElementById('mainPdfDropZone');
+    bindDropZone(mainZone, (files) => {
+      const f = files[0]; // só 1
+      const dtMain = new DataTransfer();
+      dtMain.items.add(f);
+      mainInput.files = dtMain.files;
+      mainInput.dispatchEvent(new Event("change", { bubbles: true }));
+    });
   }
 
+  // --- PDFs extras (até 5) ---
   const input = document.getElementById('id_extra_pdfs');
   const btn = document.getElementById('extra-pdfs-btn');
   const count = document.getElementById('extra-pdfs-count');
@@ -227,26 +266,24 @@ document.addEventListener('DOMContentLoaded', function () {
 
   btn.addEventListener('click', () => input.click());
 
-  input.addEventListener('change', function () {
-    const newFiles = Array.from(input.files || []);
-
+  function addFilesToExtras(newFiles) {
     for (const f of newFiles) {
-      // limite
       if (dt.files.length >= MAX_FILES) {
         alert(`Você pode anexar no máximo ${MAX_FILES} PDFs extras.`);
         break;
       }
 
-      // evita duplicado (mesmo arquivo selecionado de novo)
       const already = Array.from(dt.files).some(existing => sameFile(existing, f));
       if (!already) dt.items.add(f);
     }
 
     updateInputFiles();
     render();
+    input.value = ''; // permite selecionar o mesmo arquivo depois
+  }
 
-    // Importantíssimo: limpa o input pra permitir selecionar o mesmo arquivo novamente depois
-    input.value = '';
+  input.addEventListener('change', function () {
+    addFilesToExtras(Array.from(input.files || []));
   });
 
   list.addEventListener('click', function (e) {
@@ -259,6 +296,12 @@ document.addEventListener('DOMContentLoaded', function () {
     dt.items.remove(idx);
     updateInputFiles();
     render();
+  });
+
+  // ====== (NOVO) Drag & drop nos PDFs extras ======
+  const extraZone = document.getElementById('extraPdfsDropZone');
+  bindDropZone(extraZone, (files) => {
+    addFilesToExtras(files);
   });
 
   render();

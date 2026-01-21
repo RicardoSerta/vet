@@ -23,25 +23,27 @@
 
       <!-- LINHA 2: PDFs (linha inteira) -->
       <div class="profile-form-row">
-        <div class="profile-form-group" style="grid-column: 1 / -1;">
-          <label for="{{ form.pdf_files.id_for_label }}">Arquivos PDF:</label>
+        <div id="multiPdfsDropZone" class="file-drop-zone">
+          <div class="profile-form-group" style="grid-column: 1 / -1;">
+            <label for="{{ form.pdf_files.id_for_label }}">Arquivos PDF:</label>
 
-          <div class="file-picker">
-            {{ form.pdf_files }}
-            <button type="button" class="btn-file" id="multi-pdfs-btn">Selecionar PDFs</button>
-            <span class="file-count" id="multi-pdfs-count">Nenhum arquivo selecionado</span>
-          </div>
+            <div class="file-picker">
+              {{ form.pdf_files }}
+              <button type="button" class="btn-file" id="multi-pdfs-btn">Selecionar PDFs</button>
+              <span class="file-count" id="multi-pdfs-count">Nenhum arquivo selecionado</span>
+            </div>
 
-          <div id="multi-pdfs-list" class="file-list"></div>
+            <div id="multi-pdfs-list" class="file-list"></div>
 
-          {% if form.pdf_files.errors %}
-            <div class="field-error">{{ form.pdf_files.errors.0 }}</div>
-          {% endif %}
+            {% if form.pdf_files.errors %}
+              <div class="field-error">{{ form.pdf_files.errors.0 }}</div>
+            {% endif %}
 
-          <div class="field-hint">
-            Formato do nome: <strong>Laudo Pet Raça Tutor Exame DD.MM.YYYY.pdf</strong><br>
-            Exemplo: <strong>Laudo Rex Labrador Gustavo_Silva Ultrassonografia 31.12.2025.pdf</strong><br>
-            Você pode selecionar até 50 PDFs por vez. Clique no nome do arquivo para remover.
+            <div class="field-hint">
+              Formato do nome: <strong>Laudo Pet Raça Tutor Exame DD.MM.YYYY.pdf</strong><br>
+              Exemplo: <strong>Laudo Rex Labrador Gustavo_Silva Ultrassonografia 31.12.2025.pdf</strong><br>
+              Você pode selecionar até 50 PDFs por vez. Clique no nome do arquivo para remover.
+            </div>
           </div>
         </div>
       </div>
@@ -111,7 +113,15 @@ document.addEventListener('DOMContentLoaded', function () {
       if (dt.files.length >= MAX_FILES) break;
       dt.items.add(f);
     }
+    
+    const multiZone = document.getElementById("multiPdfsDropZone");
 
+    bindDropZone(multiZone, (files) => {
+      for (const f of files) {
+        if (dt.files.length >= MAX_FILES) break;
+        dt.items.add(f);
+      }
+    
     fileInput.files = dt.files;
 
     render();

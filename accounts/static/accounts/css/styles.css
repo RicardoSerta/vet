@@ -726,3 +726,15 @@ body.app-body {
     margin-top: 2px;
 }
 
+/* Drop zone invisível por padrão; aparece só quando arrasta arquivo por cima */
+.file-drop-zone {
+    border: 1px dashed transparent;
+    border-radius: 6px;
+    padding: 6px;
+}
+
+.file-drop-zone.dragover {
+    border-color: #9ca3af;
+    background: rgba(17, 24, 39, 0.03);
+}
+
