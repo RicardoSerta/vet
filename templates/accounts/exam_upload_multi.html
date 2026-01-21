@@ -61,11 +61,42 @@ document.addEventListener('DOMContentLoaded', function () {
   const btn = document.getElementById('multi-pdfs-btn');
   const label = document.getElementById('multi-pdfs-count');
   const list = document.getElementById('multi-pdfs-list');
+  const multiZone = document.getElementById('multiPdfsDropZone');
 
   if (!fileInput || !btn || !label || !list) return;
 
   const MAX_FILES = 50;
   let dt = new DataTransfer();
+
+  function bindDropZone(zone, onFiles) {
+    if (!zone) return;
+
+    ["dragenter", "dragover"].forEach(evt => {
+      zone.addEventListener(evt, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        zone.classList.add("dragover");
+      });
+    });
+
+    ["dragleave", "drop"].forEach(evt => {
+      zone.addEventListener(evt, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        zone.classList.remove("dragover");
+      });
+    });
+
+    zone.addEventListener("drop", (e) => {
+      const files = Array.from(e.dataTransfer?.files || []);
+      if (files.length) onFiles(files);
+    });
+  }
+
+  function syncAndRender() {
+    fileInput.files = dt.files;
+    render();
+  }
 
   function render() {
     const count = dt.files.length;
@@ -77,27 +108,30 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     label.textContent = `${count} arquivo(s) selecionado(s)`;
+    list.innerHTML = "<ul></ul>";
+    const ul = list.querySelector("ul");
 
-    list.innerHTML = "";
     Array.from(dt.files).forEach((f, idx) => {
-      const item = document.createElement("div");
-      item.className = "selected-file-item";
-      item.textContent = f.name;
-      item.title = "Clique para remover";
+      const li = document.createElement("li");
 
-      item.addEventListener("click", () => {
-        // remove pelo índice
+      const removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.className = "file-remove";
+      removeBtn.textContent = f.name;
+      removeBtn.title = "Clique para remover";
+
+      removeBtn.addEventListener("click", () => {
         const newDt = new DataTransfer();
         Array.from(dt.files).forEach((file, i) => {
           if (i !== idx) newDt.items.add(file);
         });
         dt = newDt;
-
-        // MUITO IMPORTANTE: sincroniza o input real
-        fileInput.files = dt.files;
-
-        render();
+        syncAndRender();
       });
+
+      li.appendChild(removeBtn);
+      list.appendChild(li);
+    });
 
       list.appendChild(item);
     });
@@ -113,22 +147,21 @@ document.addEventListener('DOMContentLoaded', function () {
       if (dt.files.length >= MAX_FILES) break;
       dt.items.add(f);
     }
-    
-    const multiZone = document.getElementById("multiPdfsDropZone");
 
-    bindDropZone(multiZone, (files) => {
-      for (const f of files) {
-        if (dt.files.length >= MAX_FILES) break;
-        dt.items.add(f);
-      }
-    
-    fileInput.files = dt.files;
+    syncAndRender();
+  });
 
-    render();
+  bindDropZone(multiZone, (files) => {
+    for (const f of files) {
+      if (dt.files.length >= MAX_FILES) break;
+      dt.items.add(f);
+    }
+    syncAndRender();
   });
 
   render();
 });
 </script>
+
 {% endblock %}
 
