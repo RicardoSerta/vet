@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const list = document.getElementById('multi-pdfs-list');
   const multiZone = document.getElementById('multiPdfsDropZone');
 
-  if (!fileInput || !btn || !label || !list) return;
+  if (!fileInput || !btn || !label || !list || !multiZone) return;
 
   const MAX_FILES = 50;
   let dt = new DataTransfer();
@@ -108,6 +108,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     label.textContent = `${count} arquivo(s) selecionado(s)`;
+
     list.innerHTML = "<ul></ul>";
     const ul = list.querySelector("ul");
 
@@ -130,12 +131,10 @@ document.addEventListener('DOMContentLoaded', function () {
       });
 
       li.appendChild(removeBtn);
-      list.appendChild(li);
-    });
-
-      list.appendChild(item);
+      ul.appendChild(li);   // ✅ aqui é UL, não LIST
     });
   }
+
 
   btn.addEventListener("click", () => fileInput.click());
 
