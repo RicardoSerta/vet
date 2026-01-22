@@ -76,10 +76,27 @@ class BaseContact(models.Model):
         return self.name
 
 
-class Tutor(BaseContact):
-    class Meta(BaseContact.Meta):
-        verbose_name = "Tutor"
-        verbose_name_plural = "Tutores"
+class Tutor(models.Model):
+    name = models.CharField(max_length=255)
+    email = models.CharField(max_length=255, blank=True)
+    phone = models.CharField(max_length=20, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    # NOVOS CAMPOS
+    surname = models.CharField("Sobrenome", max_length=255, blank=True)
+    identification = models.CharField("Complemento", max_length=255, blank=True)
+
+    @property
+    def display_name(self):
+        base = self.name.strip()
+        if self.surname:
+            base = f"{base} {self.surname.strip()}"
+        if self.identification:
+            base = f"{base} ({self.identification.strip()})"
+        return base
+
+    def __str__(self):
+        return self.display_name
 
 
 class Clinic(BaseContact):

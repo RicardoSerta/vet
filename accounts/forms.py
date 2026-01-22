@@ -250,15 +250,15 @@ class ExamUploadForm(forms.Form):
 class TutorForm(forms.ModelForm):
     class Meta:
         model = Tutor
-        fields = ['name', 'email', 'phone']
-        
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        fields = ["name", "surname", "identification", "email", "phone"]
 
-        self.fields['name'].widget.attrs.update({'placeholder': 'Nome do Tutor'})
-        self.fields['email'].widget.attrs.update({'placeholder': 'exemplo@email.com'})
-        self.fields['phone'].widget.attrs.update({'placeholder': '(XX) XXXX-XXXX'})
-        self.fields['phone'].help_text = 'Formato: (XX) 9XXXX-XXXX ou (XX) XXXX-XXXX'
+        widgets = {
+            "name": forms.TextInput(attrs={"placeholder": "Nome do tutor"}),
+            "surname": forms.TextInput(attrs={"placeholder": "Sobrenome do tutor"}),
+            "identification": forms.TextInput(attrs={"placeholder": "Para identificação do tutor"}),
+            "email": forms.EmailInput(attrs={"placeholder": "exemplo@email.com"}),
+            "phone": forms.TextInput(attrs={"placeholder": "(XX) XXXX-XXXX"}),
+        }
 
 
 class ClinicForm(forms.ModelForm):
@@ -362,7 +362,7 @@ class ClinicForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.fields['name'].widget.attrs.update({'placeholder': 'Nome da Clínica'})
+        self.fields['name'].widget.attrs.update({'placeholder': 'Nome da clínica'})
         self.fields['email'].widget.attrs.update({'placeholder': 'exemplo@email.com'})
         self.fields['phone'].widget.attrs.update({'placeholder': '(XX) XXXX-XXXX'})
         self.fields['phone'].help_text = 'Formato: (XX) 9XXXX-XXXX ou (XX) XXXX-XXXX'
@@ -479,7 +479,7 @@ class VeterinarianForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.fields['name'].widget.attrs.update({'placeholder': 'Nome do Veterinário'})
+        self.fields['name'].widget.attrs.update({'placeholder': 'Nome do veterinário'})
         self.fields['email'].widget.attrs.update({'placeholder': 'exemplo@email.com'})
         self.fields['phone'].widget.attrs.update({'placeholder': '(XX) XXXX-XXXX'})
         self.fields['phone'].help_text = 'Formato: (XX) 9XXXX-XXXX ou (XX) XXXX-XXXX'
@@ -493,8 +493,8 @@ class PetForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.fields['name'].widget.attrs.update({'placeholder': 'Nome do Pet'})
-        self.fields['breed'].widget.attrs.update({'placeholder': 'Raça do Pet'})
+        self.fields['name'].widget.attrs.update({'placeholder': 'Nome do pet'})
+        self.fields['breed'].widget.attrs.update({'placeholder': 'Raça do pet'})
 
     def clean_breed(self):
         breed = self.cleaned_data.get('breed', '').strip()
