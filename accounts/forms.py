@@ -260,7 +260,7 @@ class TutorForm(forms.ModelForm):
             "phone": forms.TextInput(attrs={"placeholder": "(XX) XXXX-XXXX"}),
         }
         
-        def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.fields['name'].widget.attrs.update({'placeholder': 'Nome do tutor'})
