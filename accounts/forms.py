@@ -152,8 +152,8 @@ class ExamUploadForm(forms.Form):
         clinics = Clinic.objects.all().order_by('name')
         vets = Veterinarian.objects.all().order_by('name')
 
-        clinic_choices = [(f"CLINIC:{c.id}", c.name) for c in clinics]
-        vet_choices = [(f"VET:{v.id}", v.name) for v in vets]
+        clinic_choices = [(f"CLINIC:{c.id}", c.display_name) for c in clinics]
+        vet_choices = [(f"VET:{v.id}", v.display_name) for v in vets]
 
         # Opção 1 (recomendada): dividir em grupos (Clínicas / Veterinários)
         self.fields['clinic_or_vet'].choices = [
@@ -259,7 +259,14 @@ class TutorForm(forms.ModelForm):
             "email": forms.EmailInput(attrs={"placeholder": "exemplo@email.com"}),
             "phone": forms.TextInput(attrs={"placeholder": "(XX) XXXX-XXXX"}),
         }
+        
+        def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
+        self.fields['name'].widget.attrs.update({'placeholder': 'Nome do tutor'})
+        self.fields['email'].widget.attrs.update({'placeholder': 'exemplo@email.com'})
+        self.fields['phone'].widget.attrs.update({'placeholder': '(XX) XXXX-XXXX'})
+        self.fields['phone'].help_text = 'Formato: (XX) 9XXXX-XXXX ou (XX) XXXX-XXXX'
 
 class ClinicForm(forms.ModelForm):
     password = forms.CharField(
@@ -270,7 +277,14 @@ class ClinicForm(forms.ModelForm):
 
     class Meta:
         model = Clinic
-        fields = ['name', 'email', 'phone', 'password']
+        fields = ["name", "complement", "email", "phone", "password"]  # password se existir aí
+
+        widgets = {
+            "name": forms.TextInput(attrs={"placeholder": "Nome da clínica"}),
+            "complement": forms.TextInput(attrs={"placeholder": "Para identificação da clínica"}),
+            "email": forms.EmailInput(attrs={"placeholder": "exemplo@email.com"}),
+            "phone": forms.TextInput(attrs={"placeholder": "(XX) XXXX-XXXX"}),
+        }
         
     def clean_password(self):
         pwd = self.cleaned_data.get("password") or ""
@@ -377,7 +391,15 @@ class VeterinarianForm(forms.ModelForm):
 
     class Meta:
         model = Veterinarian
-        fields = ['name', 'email', 'phone', 'password']
+        fields = ["name", "surname", "complement", "email", "phone", "password"]  # password se existir aí
+
+        widgets = {
+            "name": forms.TextInput(attrs={"placeholder": "Nome do Veterinário"}),
+            "surname": forms.TextInput(attrs={"placeholder": "Sobrenome do veterinário"}),
+            "complement": forms.TextInput(attrs={"placeholder": "Para identificação do veterinário"}),
+            "email": forms.EmailInput(attrs={"placeholder": "exemplo@email.com"}),
+            "phone": forms.TextInput(attrs={"placeholder": "(XX) XXXX-XXXX"}),
+        }
         
     def clean_password(self):
         pwd = self.cleaned_data.get("password") or ""
@@ -557,8 +579,8 @@ class MultiExamUploadForm(forms.Form):
         clinics = Clinic.objects.all().order_by('name')
         vets = Veterinarian.objects.all().order_by('name')
 
-        clinic_choices = [(f"CLINIC:{c.id}", c.name) for c in clinics]
-        vet_choices = [(f"VET:{v.id}", v.name) for v in vets]
+        clinic_choices = [(f"CLINIC:{c.id}", c.display_name) for c in clinics]
+        vet_choices = [(f"VET:{v.id}", v.display_name) for v in vets]
 
         self.fields['clinic_or_vet'].choices = [
             ('', 'Selecione...'),

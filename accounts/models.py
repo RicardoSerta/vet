@@ -76,7 +76,7 @@ class BaseContact(models.Model):
         return self.name
 
 
-class Tutor(models.Model):
+class Tutor(BaseContact):
     name = models.CharField(max_length=255)
     email = models.CharField(max_length=255, blank=True)
     phone = models.CharField(max_length=20, blank=True)
@@ -97,30 +97,63 @@ class Tutor(models.Model):
 
     def __str__(self):
         return self.display_name
+        
+    class Meta(BaseContact.Meta):
+        verbose_name = "Tutor"
+        verbose_name_plural = "Tutores"
 
 
-class Clinic(BaseContact):
-    user = models.OneToOneField(
-        User,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='clinic_account'
-    )
+class Clinic(models.Model):
+    name = models.CharField(max_length=255)
+    email = models.CharField(max_length=255, blank=True)
+    phone = models.CharField(max_length=20, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    # já deve existir
+    user = models.OneToOneField(User, null=True, blank=True, on_delete=models.SET_NULL)
+
+    # NOVO
+    complement = models.CharField("Complemento", max_length=255, blank=True)
+
+    @property
+    def display_name(self):
+        base = self.name.strip()
+        if self.complement:
+            base = f"{base} ({self.complement.strip()})"
+        return base
+
+    def __str__(self):
+        return self.display_name
 
     class Meta(BaseContact.Meta):
         verbose_name = "Clínica"
         verbose_name_plural = "Clínicas"
 
 
-class Veterinarian(BaseContact):
-    user = models.OneToOneField(
-        User,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='vet_account'
-    )
+class Veterinarian(models.Model):
+    name = models.CharField(max_length=255)
+    email = models.CharField(max_length=255, blank=True)
+    phone = models.CharField(max_length=20, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    # já deve existir
+    user = models.OneToOneField(User, null=True, blank=True, on_delete=models.SET_NULL)
+
+    # NOVOS
+    surname = models.CharField("Sobrenome", max_length=255, blank=True)
+    complement = models.CharField("Complemento", max_length=255, blank=True)
+
+    @property
+    def display_name(self):
+        base = self.name.strip()
+        if self.surname:
+            base = f"{base} {self.surname.strip()}"
+        if self.complement:
+            base = f"{base} ({self.complement.strip()})"
+        return base
+
+    def __str__(self):
+        return self.display_name
 
     class Meta(BaseContact.Meta):
         verbose_name = "Veterinário"
