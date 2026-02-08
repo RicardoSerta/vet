@@ -250,12 +250,11 @@ class ExamUploadForm(forms.Form):
 class TutorForm(forms.ModelForm):
     class Meta:
         model = Tutor
-        fields = ["name", "surname", "identification", "email", "phone"]
+        fields = ["name", "surname", "email", "phone"]
 
         widgets = {
             "name": forms.TextInput(attrs={"placeholder": "Nome do tutor"}),
             "surname": forms.TextInput(attrs={"placeholder": "Sobrenome do tutor"}),
-            "identification": forms.TextInput(attrs={"placeholder": "Para identificação do tutor"}),
             "email": forms.EmailInput(attrs={"placeholder": "exemplo@email.com"}),
             "phone": forms.TextInput(attrs={"placeholder": "(XX) XXXX-XXXX"}),
         }
@@ -277,11 +276,10 @@ class ClinicForm(forms.ModelForm):
 
     class Meta:
         model = Clinic
-        fields = ["name", "complement", "email", "phone", "password"]  # password se existir aí
+        fields = ["name", "email", "phone", "password"]  # password se existir aí
 
         widgets = {
             "name": forms.TextInput(attrs={"placeholder": "Nome da clínica"}),
-            "complement": forms.TextInput(attrs={"placeholder": "Para identificação da clínica"}),
             "email": forms.EmailInput(attrs={"placeholder": "exemplo@email.com"}),
             "phone": forms.TextInput(attrs={"placeholder": "(XX) XXXX-XXXX"}),
         }
@@ -391,12 +389,11 @@ class VeterinarianForm(forms.ModelForm):
 
     class Meta:
         model = Veterinarian
-        fields = ["name", "surname", "complement", "email", "phone", "password"]  # password se existir aí
+        fields = ["name", "surname", "email", "phone", "password"]  # password se existir aí
 
         widgets = {
             "name": forms.TextInput(attrs={"placeholder": "Nome do Veterinário"}),
             "surname": forms.TextInput(attrs={"placeholder": "Sobrenome do veterinário"}),
-            "complement": forms.TextInput(attrs={"placeholder": "Para identificação do veterinário"}),
             "email": forms.EmailInput(attrs={"placeholder": "exemplo@email.com"}),
             "phone": forms.TextInput(attrs={"placeholder": "(XX) XXXX-XXXX"}),
         }
