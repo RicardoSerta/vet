@@ -83,21 +83,21 @@
               </div>
             </div>
             
-            <!-- PDFs extras (linha inteira) -->
+            <!-- Arquivos extras (linha inteira) -->
             <div class="profile-form-row">
-              <div id="extraPdfsDropZone" class="profile-form-group file-drop-zone" style="grid-column: 1 / -1;">
-                <label for="{{ form.extra_pdfs.id_for_label }}">Arquivos Extras:</label>
+              <div id="extraFilesDropZone" class="profile-form-group file-drop-zone" style="grid-column: 1 / -1;">
+                <label for="{{ form.extra_files.id_for_label }}">Arquivos Extras:</label>
 
                 <div class="file-picker">
-                  {{ form.extra_pdfs }}
-                  <button type="button" class="btn-file" id="extra-pdfs-btn">Selecionar Arquivos</button>
-                  <span class="file-count" id="extra-pdfs-count">Nenhum arquivo selecionado</span>
+                  {{ form.extra_files }}
+                  <button type="button" class="btn-file" id="extra-files-btn">Selecionar Arquivos</button>
+                  <span class="file-count" id="extra-files-count">Nenhum arquivo selecionado</span>
                 </div>
 
-                <div id="extra-pdfs-list" class="file-list"></div>
+                <div id="extra-files-list" class="file-list"></div>
 
-                {% if form.extra_pdfs.errors %}
-                  <div class="field-error">{{ form.extra_pdfs.errors.0 }}</div>
+                {% if form.extra_files.errors %}
+                  <div class="field-error">{{ form.extra_files.errors.0 }}</div>
                 {% endif %}
 
                 <div class="field-hint">Aceita até 5 arquivos. Formatos: .pdf, .avi, .png, .jpg, .jpeg. Clique no nome do arquivo para remover.</div>
@@ -225,11 +225,11 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  // --- PDFs extras (até 5) ---
-  const input = document.getElementById('id_extra_pdfs');
-  const btn = document.getElementById('extra-pdfs-btn');
-  const count = document.getElementById('extra-pdfs-count');
-  const list = document.getElementById('extra-pdfs-list');
+  // --- Arquivos extras (até 5) ---
+  const input = document.getElementById('id_extra_files');
+  const btn = document.getElementById('extra-files-btn');
+  const count = document.getElementById('extra-files-count');
+  const list = document.getElementById('extra-files-list');
 
   if (!input || !btn || !count || !list) return;
 
@@ -298,8 +298,8 @@ document.addEventListener('DOMContentLoaded', function () {
     render();
   });
 
-  // ====== (NOVO) Drag & drop nos PDFs extras ======
-  const extraZone = document.getElementById('extraPdfsDropZone');
+  // ====== Drag & drop nos arquivos extras ======
+  const extraZone = document.getElementById('extraFilesDropZone');
   bindDropZone(extraZone, (files) => {
     addFilesToExtras(files);
   });
