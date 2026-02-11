@@ -130,8 +130,12 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT = Path(os.environ.get("MEDIA_ROOT", BASE_DIR / "media"))
+MEDIA_URL = "/media/"
+
+if os.environ.get("RENDER_EXTERNAL_HOSTNAME"):
+    MEDIA_ROOT = Path("/var/data") / "media"
+else:
+    MEDIA_ROOT = BASE_DIR / "media"
 
 
 # Default primary key field type

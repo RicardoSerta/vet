@@ -347,7 +347,7 @@ def exam_upload(request):
                 request,
                 f'Exame de {exam.pet_name} cadastrado com sucesso.'
             )
-            extra_files = form.cleaned_data.get("extra_pdfs", [])
+            extra_files = form.cleaned_data.get("extra_files", [])
             for f in extra_files:
                 ExamExtraPDF.objects.create(exam=exam, file=f)
             return redirect('exames')

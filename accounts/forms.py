@@ -6,10 +6,13 @@ from .models import Profile
 from datetime import date
 from datetime import datetime
 from pathlib import Path
-
+from django.core.exceptions import ValidationError
 from django import forms
 
 from .models import Tutor, Clinic, Veterinarian, Pet, Profile, ExamTypeAlias
+
+ALLOWED_EXTRA_EXTENSIONS = {".pdf", ".avi", ".png", ".jpg", ".jpeg"}
+MAX_EXTRA_FILES = 5
 
 class MultipleFileInput(forms.FileInput):
     allow_multiple_selected = True
@@ -133,16 +136,15 @@ class ExamUploadForm(forms.Form):
         label="Arquivo PDF",
     )
     
-    extra_pdfs = MultipleFileField(
+    extra_files = MultipleFileField(
         required=False,
         widget=MultipleFileInput(attrs={
             "multiple": True,
-            "accept": "application/pdf",
+            "accept": ".pdf,.avi,.png,.jpg,.jpeg",
             "class": "file-input-hidden",
         }),
-        label="PDFs extras",
+        label="Arquivos extras",
     )
-
 
 
     
@@ -226,7 +228,6 @@ class ExamUploadForm(forms.Form):
                 "Data inválida no nome do arquivo. Use DD.MM.YYYY (ex.: 31.12.2025)."
             )
 
-        # salva nos campos “parsed_...” que sua view já usa
         cleaned_data["parsed_pet_name"] = pet
         cleaned_data["parsed_breed"] = breed
         cleaned_data["parsed_tutor_name"] = tutor
@@ -235,15 +236,20 @@ class ExamUploadForm(forms.Form):
 
         return cleaned_data
         
-    def clean_extra_pdfs(self):
-        files = self.cleaned_data.get("extra_pdfs", [])
+    def clean_extra_files(self):
+        files = self.cleaned_data.get("extra_files") or []
 
         if len(files) > 5:
-            raise forms.ValidationError("Você pode anexar no máximo 5 PDFs extras.")
+            raise forms.ValidationError("Você pode anexar no máximo 5 arquivos extras.")
+
+        allowed_exts = {".pdf", ".avi", ".png", ".jpg", ".jpeg"}
 
         for f in files:
-            if not f.name.lower().endswith(".pdf"):
-                raise forms.ValidationError("Apenas arquivos PDF são aceitos nos PDFs extras.")
+            ext = Path(f.name).suffix.lower()
+            if ext not in allowed_exts:
+                raise forms.ValidationError(
+                    "Formato inválido nos arquivos extras. Use apenas: PDF, AVI, PNG, JPG ou JPEG."
+                )
 
         return files
 
