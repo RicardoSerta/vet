@@ -86,11 +86,11 @@
             <!-- PDFs extras (linha inteira) -->
             <div class="profile-form-row">
               <div id="extraPdfsDropZone" class="profile-form-group file-drop-zone" style="grid-column: 1 / -1;">
-                <label for="{{ form.extra_pdfs.id_for_label }}">PDFs extras:</label>
+                <label for="{{ form.extra_pdfs.id_for_label }}">Arquivos Extras:</label>
 
                 <div class="file-picker">
                   {{ form.extra_pdfs }}
-                  <button type="button" class="btn-file" id="extra-pdfs-btn">Selecionar PDFs</button>
+                  <button type="button" class="btn-file" id="extra-pdfs-btn">Selecionar Arquivos</button>
                   <span class="file-count" id="extra-pdfs-count">Nenhum arquivo selecionado</span>
                 </div>
 
@@ -100,7 +100,7 @@
                   <div class="field-error">{{ form.extra_pdfs.errors.0 }}</div>
                 {% endif %}
 
-                <div class="field-hint">Você pode selecionar até 5 PDFs. Clique no nome do arquivo para remover.</div>
+                <div class="field-hint">Aceita até 5 arquivos. Formatos: .pdf, .avi, .png, .jpg, .jpeg. Clique no nome do arquivo para remover.</div>
               </div>
             </div>
 
@@ -269,7 +269,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function addFilesToExtras(newFiles) {
     for (const f of newFiles) {
       if (dt.files.length >= MAX_FILES) {
-        alert(`Você pode anexar no máximo ${MAX_FILES} PDFs extras.`);
+        alert(`Você pode anexar no máximo ${MAX_FILES} arquivos extras.`);
         break;
       }
 
