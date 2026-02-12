@@ -225,8 +225,8 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  // --- Arquivos extras (até 5) ---
-  const input = document.getElementById('id_extra_files');
+    // --- Arquivos extras (até 5) ---
+  const input = document.getElementById('id_extra_files'); // input REAL (o que o Django envia)
   const btn = document.getElementById('extra-files-btn');
   const count = document.getElementById('extra-files-count');
   const list = document.getElementById('extra-files-list');
@@ -235,12 +235,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
   const MAX_FILES = 5;
   const dt = new DataTransfer();
+  const ALLOWED_EXTS = ['.pdf', '.avi', '.png', '.jpg', '.jpeg'];
+
+  function hasAllowedExtension(file) {
+    const name = (file.name || '').toLowerCase();
+    return ALLOWED_EXTS.some(ext => name.endsWith(ext));
+  }
 
   function sameFile(a, b) {
     return a.name === b.name && a.size === b.size && a.lastModified === b.lastModified;
   }
 
   function updateInputFiles() {
+    // garante que o Django receba os arquivos no POST
     input.files = dt.files;
   }
 
@@ -264,13 +271,38 @@ document.addEventListener('DOMContentLoaded', function () {
     list.innerHTML = `<ul>${items}</ul>`;
   }
 
-  btn.addEventListener('click', () => input.click());
+  // IMPORTANTE:
+  // Não usamos o input real como seletor (input.click()), porque alguns navegadores
+  // “se perdem” quando o JS mexe em input.files e isso pode fazer o Django receber vazio.
+  // Então usamos um input TEMPORÁRIO só para escolher arquivos.
+  btn.addEventListener('click', () => {
+    const picker = document.createElement('input');
+    picker.type = 'file';
+    picker.multiple = true;
+    picker.accept = input.getAttribute('accept') || '';
+    picker.style.display = 'none';
+    document.body.appendChild(picker);
+
+    picker.addEventListener('change', () => {
+      addFilesToExtras(Array.from(picker.files || []));
+      picker.remove();
+    }, { once: true });
+
+    picker.click();
+  });
 
   function addFilesToExtras(newFiles) {
+    const invalid = [];
+
     for (const f of newFiles) {
       if (dt.files.length >= MAX_FILES) {
         alert(`Você pode anexar no máximo ${MAX_FILES} arquivos extras.`);
         break;
+      }
+
+      if (!hasAllowedExtension(f)) {
+        invalid.push(f.name);
+        continue;
       }
 
       const already = Array.from(dt.files).some(existing => sameFile(existing, f));
@@ -279,18 +311,22 @@ document.addEventListener('DOMContentLoaded', function () {
 
     updateInputFiles();
     render();
-    input.value = ''; // permite selecionar o mesmo arquivo depois
+
+    if (invalid.length) {
+      alert(
+        'Alguns arquivos foram ignorados por formato inválido:\n' +
+        invalid.join('\n') +
+        `\n\nFormatos aceitos: ${ALLOWED_EXTS.join(', ')}`
+      );
+    }
   }
 
-  input.addEventListener('change', function () {
-    addFilesToExtras(Array.from(input.files || []));
-  });
-
+  // remover arquivo ao clicar no nome
   list.addEventListener('click', function (e) {
-    const btn = e.target.closest('.file-remove');
-    if (!btn) return;
+    const b = e.target.closest('.file-remove');
+    if (!b) return;
 
-    const idx = Number(btn.getAttribute('data-index'));
+    const idx = Number(b.getAttribute('data-index'));
     if (Number.isNaN(idx)) return;
 
     dt.items.remove(idx);
@@ -298,7 +334,7 @@ document.addEventListener('DOMContentLoaded', function () {
     render();
   });
 
-  // ====== Drag & drop nos arquivos extras ======
+  // Drag & drop nos arquivos extras
   const extraZone = document.getElementById('extraFilesDropZone');
   bindDropZone(extraZone, (files) => {
     addFilesToExtras(files);

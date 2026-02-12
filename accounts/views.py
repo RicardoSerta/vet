@@ -8,7 +8,8 @@ from django.db import transaction
 from django.http import FileResponse, Http404, HttpResponseForbidden
 from .authz import admin_required
 from .authz import is_admin_user
-
+import os
+import mimetypes
 from .models import Profile, Exam, Tutor, Clinic, Veterinarian, Pet, ExamTypeAlias, ExamExtraPDF
 from .forms import ExamUploadForm, TutorForm, ClinicForm, VeterinarianForm, PetForm, MultiExamUploadForm, parse_exam_filename, ExamTypeAliasForm
 
@@ -449,8 +450,16 @@ def exam_extra_pdf(request, pk, extra_pk):
 
     extra = get_object_or_404(ExamExtraPDF, pk=extra_pk, exam=exam)
 
-    # Exibe no navegador (inline)
-    return FileResponse(extra.file.open("rb"), content_type="application/pdf")
+    content_type, _ = mimetypes.guess_type(extra.file.name)
+    if not content_type:
+        content_type = "application/octet-stream"
+
+    response = FileResponse(extra.file.open("rb"), content_type=content_type)
+
+    filename = os.path.basename(extra.file.name)
+    response["Content-Disposition"] = f'inline; filename="{filename}"'
+    return response
+
     
 @login_required
 @admin_required
