@@ -489,12 +489,6 @@ body.app-body {
   text-decoration: underline;
 }
 
-.exam-pdf-actions{
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 6px;
-}
-
 @media (max-width: 1000px){
   .exam-view-grid{
     grid-template-columns: 1fr;
@@ -826,5 +820,20 @@ body.app-body {
 .file-drop-zone.dragover {
     border-color: #9ca3af;
     background: rgba(17, 24, 39, 0.03);
+}
+
+.exam-pdf-wrapper{
+  position: relative;
+}
+
+.exam-pdf-open{
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 5;
+  padding: 8px 12px;
+  font-size: 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 

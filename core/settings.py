@@ -147,6 +147,8 @@ LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'meu_perfil'
 LOGOUT_REDIRECT_URL = 'login'
 
+X_FRAME_OPTIONS = "SAMEORIGIN"
+
 STORAGES = {
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",

@@ -110,11 +110,15 @@
       <div class="exam-view-label" style="margin-bottom: 6px;">PDF do exame</div>
 
       {% if exam.pdf_file %}
-        <div class="exam-pdf-actions">
-          <a class="btn-icon btn-icon-green" target="_blank" href="{% url 'exam_pdf' exam.pk %}" title="Abrir em nova aba">👁</a>
+        <div class="exam-pdf-wrapper">
+          <a class="btn-icon btn-icon-green exam-pdf-open"
+             target="_blank"
+             href="{% url 'exam_pdf' exam.pk %}"
+             title="Abrir em nova aba">👁</a>
+
+          <iframe class="exam-pdf-frame" src="{% url 'exam_pdf' exam.pk %}"></iframe>
         </div>
 
-        <iframe class="exam-pdf-frame" src="{% url 'exam_pdf' exam.pk %}"></iframe>
       {% else %}
         <div class="exam-view-value">Nenhum PDF principal anexado.</div>
       {% endif %}
