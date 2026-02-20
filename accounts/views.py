@@ -1,6 +1,10 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
+from django.contrib.auth import authenticate, get_user_model, login, logout, update_session_auth_hash
+from django.contrib.auth.forms import SetPasswordForm
+from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth.decorators import login_required
+from django.utils.encoding import force_str
+from django.utils.http import urlsafe_base64_decode
 from django.contrib import messages
 from django.db.models import Q
 from django.db.models.deletion import ProtectedError
@@ -529,13 +533,8 @@ def management_create(request, category):
     if request.method == 'POST':
         form = FormClass(request.POST)
         if form.is_valid():
-            obj = form.save()
-            created_username = getattr(form, "created_username", None)
-
-            if created_username:
-                messages.success(request, f'{info["singular"]} cadastrado(a). Login: {created_username}')
-            else:
-                messages.success(request, f'{info["singular"]} cadastrado(a) com sucesso.')
+            form.save()
+            messages.success(request, f'{info["singular"]} cadastrado(a) com sucesso.')
 
             return redirect('gestao_category', category=category)
 
@@ -592,18 +591,11 @@ def management_edit(request, category, pk):
         if form.is_valid():
             form.save()
 
-            # mensagens opcionais (se o form setar)
-            created_username = getattr(form, "created_username", None)
             updated_username = getattr(form, "updated_username", None)
-            password_changed = getattr(form, "password_changed", False)
 
             msg = f"{info['singular']} atualizado(a) com sucesso."
-            if created_username:
-                msg += f" Login criado: {created_username}"
-            elif updated_username:
+            if updated_username:
                 msg += f" Login atualizado: {updated_username}"
-            if password_changed:
-                msg += " Senha atualizada."
 
             messages.success(request, msg)
             return redirect('gestao_category', category=category)
@@ -670,6 +662,29 @@ def management_delete(request, category, pk):
 
     messages.success(request, f'"{name}" foi excluído com sucesso.')
     return redirect('gestao_category', category=category)
+    
+def activate_account(request, uidb64, token):
+    User = get_user_model()
+
+    try:
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = User.objects.get(pk=uid)
+    except Exception:
+        user = None
+
+    if user is None or not default_token_generator.check_token(user, token):
+        return render(request, "accounts/activate_account_invalid.html")
+
+    if request.method == "POST":
+        form = SetPasswordForm(user=user, data=request.POST)
+        if form.is_valid():
+            form.save()  # salva a nova senha
+            login(request, user)  # já loga automaticamente
+            return redirect("exames")  # ajustar se o nome for outro
+    else:
+        form = SetPasswordForm(user=user)
+
+    return render(request, "accounts/activate_account.html", {"form": form})
     
 @login_required
 @admin_required

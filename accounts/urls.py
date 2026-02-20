@@ -24,5 +24,6 @@ urlpatterns = [
     path("exames/tipos/<int:pk>/excluir/", views.exam_types_delete, name="exam_types_delete"),
     path("exames/<int:pk>/ver/", views.exam_view, name="exam_view"),
     path("exames/<int:pk>/extras/<int:extra_pk>/pdf/", views.exam_extra_pdf, name="exam_extra_pdf"),
+    path("ativar/<uidb64>/<token>/", views.activate_account, name="activate_account"),
 ]
 

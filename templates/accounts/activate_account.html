@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <title>Ativar conta</title>
+  <style>
+    body{font-family:Arial; background:#f6f6f6; padding:30px;}
+    .box{max-width:420px; margin:0 auto; background:#fff; padding:20px; border-radius:10px;}
+    label{display:block; margin-top:12px;}
+    input{width:100%; padding:10px; margin-top:6px;}
+    button{margin-top:16px; width:100%; padding:10px;}
+    .errorlist{color:#b00020;}
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h2>Crie sua senha</h2>
+    <form method="post">
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+      <label>Nova senha</label>
+      {{ form.new_password1 }}
+      {{ form.new_password1.errors }}
+
+      <label>Confirme a senha</label>
+      {{ form.new_password2 }}
+      {{ form.new_password2.errors }}
+
+      <button type="submit">Salvar senha</button>
+    </form>
+  </div>
+</body>
+</html>
+
