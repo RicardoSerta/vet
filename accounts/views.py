@@ -5,7 +5,7 @@ from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.utils.encoding import force_str, force_bytes
-from django.utils.http import urlsafe_base64_decode
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.contrib import messages
 from django.db.models import Q
 from django.urls import reverse
@@ -148,7 +148,7 @@ def _make_unique_username(base: str) -> str:
         i += 1
     return username
 
-def build_activation_link(request, user: User) -> str:
+def build_activation_link(request, user):
     uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
     token = default_token_generator.make_token(user)
     path = reverse("activate_account", args=[uidb64, token])
@@ -195,6 +195,25 @@ def translate_exam_type(exam_type_raw: str) -> str:
         return exam_type_raw
     alias = ExamTypeAlias.objects.filter(abbreviation=key).first()
     return alias.full_name if alias else exam_type_raw
+    
+def user_can_view_exam(user, exam) -> bool:
+    """
+    Regras:
+    - Admin vê tudo
+    - Tutor vê exames onde exam.tutor_email == user.email
+    - Clínica/Vet (BASIC) vê exames onde exam.assigned_user == user
+    """
+    if is_admin_user(user):
+        return True
+
+    profile, _ = Profile.objects.get_or_create(user=user)
+
+    if profile.role == "TUTOR":
+        user_email = (user.email or "").strip().lower()
+        exam_email = (exam.tutor_email or "").strip().lower()
+        return bool(user_email) and (user_email == exam_email)
+
+    return exam.assigned_user_id == user.id
 
 def login_view(request):
     if request.user.is_authenticated:
@@ -227,6 +246,8 @@ def login_view(request):
 def profile_view(request):
     # Garante que exista um Profile para o usuário logado
     profile, created = Profile.objects.get_or_create(user=request.user)
+    
+    old_email = request.user.email or ""
 
     if request.method == 'POST':
         name = request.POST.get('name') or ''
@@ -239,6 +260,12 @@ def profile_view(request):
         request.user.first_name = name
         request.user.email = email
         request.user.save()
+        
+        # Se for tutor e mudou o email, atualiza os exames antigos para manter acesso
+        if profile.role == "TUTOR":
+            new_email = request.user.email or ""
+            if old_email.strip() and new_email.strip() and old_email.strip().lower() != new_email.strip().lower():
+                Exam.objects.filter(tutor_email__iexact=old_email.strip()).update(tutor_email=new_email.strip())
 
         # Atualiza dados do Profile
         profile.whatsapp = whatsapp
@@ -265,7 +292,7 @@ def profile_view(request):
 def exam_pdf(request, pk):
     exam = get_object_or_404(Exam, pk=pk)
 
-    if not is_admin_user(request.user) and exam.assigned_user_id != request.user.id:
+    if not user_can_view_exam(request.user, exam):
         raise Http404()
 
     if not exam.pdf_file:
@@ -333,7 +360,7 @@ def exam_detail(request, pk):
     exam = get_object_or_404(Exam, pk=pk)
     
     
-    if not is_admin_user(request.user) and exam.assigned_user_id != request.user.id:
+    if not user_can_view_exam(request.user, exam):
         messages.error(request, "Você não tem permissão para visualizar este exame.")
         return redirect('exames')
 
@@ -570,7 +597,7 @@ def exam_view(request, pk):
     profile, _ = Profile.objects.get_or_create(user=request.user)
     exam = get_object_or_404(Exam, pk=pk)
 
-    if not is_admin_user(request.user) and exam.assigned_user_id != request.user.id:
+    if not user_can_view_exam(request.user, exam):
         return HttpResponseForbidden("Você não tem permissão para ver este exame.")
 
     extras = exam.extra_pdfs.all().order_by("uploaded_at")
@@ -587,7 +614,7 @@ def exam_view(request, pk):
 def exam_extra_pdf(request, pk, extra_pk):
     exam = get_object_or_404(Exam, pk=pk)
 
-    if not is_admin_user(request.user) and exam.assigned_user_id != request.user.id:
+    if not user_can_view_exam(request.user, exam):
         return HttpResponseForbidden("Você não tem permissão para ver este exame.")
 
     extra = get_object_or_404(ExamExtraPDF, pk=extra_pk, exam=exam)
