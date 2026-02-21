@@ -3,10 +3,12 @@ from django.contrib.auth import authenticate, get_user_model, login, logout, upd
 from django.contrib.auth.forms import SetPasswordForm
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth.decorators import login_required
-from django.utils.encoding import force_str
+from django.contrib.auth.models import User
+from django.utils.encoding import force_str, force_bytes
 from django.utils.http import urlsafe_base64_decode
 from django.contrib import messages
 from django.db.models import Q
+from django.urls import reverse
 from django.db.models.deletion import ProtectedError
 from django.db import transaction
 from django.http import FileResponse, Http404, HttpResponseForbidden
@@ -14,6 +16,8 @@ from .authz import admin_required
 from .authz import is_admin_user
 import os
 import mimetypes
+import re
+import unicodedata
 from .models import Profile, Exam, Tutor, Clinic, Veterinarian, Pet, ExamTypeAlias, ExamExtraPDF
 from .forms import ExamUploadForm, TutorForm, ClinicForm, VeterinarianForm, PetForm, MultiExamUploadForm, parse_exam_filename, ExamTypeAliasForm
 
@@ -128,6 +132,63 @@ def ensure_tutor_and_pet(tutor_name, pet_name, breed, tutor_email="", tutor_phon
 
     return tutor, pet
     
+def _to_login_base(name: str) -> str:
+    name = (name or "").strip().lower()
+    name = unicodedata.normalize("NFKD", name)
+    name = "".join([c for c in name if not unicodedata.combining(c)])
+    name = re.sub(r"\s+", ".", name)
+    name = re.sub(r"[^a-z0-9@.+-_]", "", name)
+    return name or "user"
+
+def _make_unique_username(base: str) -> str:
+    username = base
+    i = 2
+    while User.objects.filter(username=username).exists():
+        username = f"{base}{i}"
+        i += 1
+    return username
+
+def build_activation_link(request, user: User) -> str:
+    uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+    token = default_token_generator.make_token(user)
+    path = reverse("activate_account", args=[uidb64, token])
+    return request.build_absolute_uri(path)
+
+def ensure_pending_user_for_provider(name: str, email: str, phone: str, role: str):
+    """
+    Cria (se necessário) um User com senha inutilizável.
+    Retorna (user, created_now, needs_activation)
+    """
+    email = (email or "").strip()
+    phone = (phone or "").strip()
+    name = (name or "").strip()
+
+    # Só cria user se tiver algum contato (email OU telefone)
+    if not email and not phone:
+        return None, False, False
+
+    user = None
+    if email:
+        user = User.objects.filter(email__iexact=email).first()
+
+    created_now = False
+    if not user:
+        base = _to_login_base(email.split("@")[0] if email else name)
+        username = _make_unique_username(base)
+        user = User(username=username, email=email, first_name=name)
+        user.set_unusable_password()
+        user.save()
+        created_now = True
+
+    profile, _ = Profile.objects.get_or_create(user=user)
+    profile.role = role
+    if phone and not profile.whatsapp:
+        profile.whatsapp = phone
+    profile.save()
+
+    needs_activation = not user.has_usable_password()
+    return user, created_now, needs_activation
+    
 def translate_exam_type(exam_type_raw: str) -> str:
     key = (exam_type_raw or "").strip().lower()
     if not key:
@@ -142,16 +203,22 @@ def login_view(request):
     error = None
 
     if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
+        identifier = request.POST.get("username", "").strip()
+        password = request.POST.get("password", "")
 
-        user = authenticate(request, username=username, password=password)
+        user = authenticate(request, username=identifier, password=password)
+
+        if user is None:
+            # tenta achar por email
+            u = User.objects.filter(email__iexact=identifier).first()
+            if u:
+                user = authenticate(request, username=u.username, password=password)
 
         if user is not None:
             login(request, user)
-            return redirect('meu_perfil')
+            return redirect("exames")
         else:
-            error = 'Login ou senha inválidos.'
+            messages.error(request, "Usuário/e-mail ou senha inválidos.")
 
     return render(request, 'accounts/login.html', {'error': error})
 
@@ -211,9 +278,14 @@ def exams_list(request):
     profile, _ = Profile.objects.get_or_create(user=request.user)
 
     exams = Exam.objects.all()
-    
+
     if not is_admin_user(request.user):
-        exams = exams.filter(assigned_user=request.user)
+        if profile.role == "TUTOR":
+            # Tutor vê exames onde o tutor_email do exame é o email do usuário
+            exams = exams.filter(tutor_email__iexact=(request.user.email or ""))
+        else:
+            # Clínica/Vet (BASIC)
+            exams = exams.filter(assigned_user=request.user)
 
     # Busca simples
     search_query = request.GET.get('q', '').strip()
@@ -309,17 +381,67 @@ def exam_upload(request):
             
             selected = cd['clinic_or_vet']
             assigned_user = None
-
+            
+            links_to_show = []
+            
             if selected.startswith("CLINIC:"):
                 clinic_id = int(selected.split(":")[1])
                 clinic = Clinic.objects.get(id=clinic_id)
                 clinic_or_vet_name = clinic.name
-                assigned_user = clinic.user  # pode ser None se alguma clínica antiga não tiver user
+
+                # garante user pendente se tiver contato
+                if clinic.user is None:
+                    u, created_now, needs_activation = ensure_pending_user_for_provider(
+                        name=clinic.name,
+                        email=clinic.email,
+                        phone=clinic.phone,
+                        role="BASIC",
+                    )
+                    if u:
+                        clinic.user = u
+                        clinic.save(update_fields=["user"])
+                        assigned_user = u
+
+                        if needs_activation:
+                            link = build_activation_link(request, u)
+                            links_to_show.append(("Clínica/Vet", clinic.email or clinic.name, link))
+                    else:
+                        assigned_user = None
+                else:
+                    assigned_user = clinic.user
+                    # se já existe user mas ainda não ativou
+                    if not assigned_user.has_usable_password():
+                        link = build_activation_link(request, assigned_user)
+                        links_to_show.append(("Clínica/Vet", clinic.email or clinic.name, link))
+                        
             elif selected.startswith("VET:"):
                 vet_id = int(selected.split(":")[1])
                 vet = Veterinarian.objects.get(id=vet_id)
                 clinic_or_vet_name = vet.name
-                assigned_user = vet.user
+
+                if vet.user is None:
+                    u, created_now, needs_activation = ensure_pending_user_for_provider(
+                        name=vet.name,
+                        email=vet.email,
+                        phone=vet.phone,
+                        role="BASIC",
+                    )
+                    if u:
+                        vet.user = u
+                        vet.save(update_fields=["user"])
+                        assigned_user = u
+
+                        if needs_activation:
+                            link = build_activation_link(request, u)
+                            links_to_show.append(("Clínica/Vet", vet.email or vet.name, link))
+                    else:
+                        assigned_user = None
+                else:
+                    assigned_user = vet.user
+                    if not assigned_user.has_usable_password():
+                        link = build_activation_link(request, assigned_user)
+                        links_to_show.append(("Clínica/Vet", vet.email or vet.name, link))
+                
             else:
                 clinic_or_vet_name = ""
                 assigned_user = None
@@ -332,6 +454,20 @@ def exam_upload(request):
                 tutor_phone=cd.get('tutor_phone', ''),
             )
 
+            tutor_user = None
+            tutor_email = (cd.get("tutor_email") or "").strip()
+            tutor_phone = (cd.get("tutor_phone") or "").strip()
+
+            if tutor_email:
+                tutor_user, created_now, needs_activation = ensure_pending_user_for_provider(
+                    name=cd["parsed_tutor_name"],
+                    email=tutor_email,
+                    phone=tutor_phone,
+                    role="TUTOR",
+                )
+                if tutor_user and needs_activation:
+                    link = build_activation_link(request, tutor_user)
+                    links_to_show.append(("Tutor", tutor_email, link))
 
             exam = Exam.objects.create(
                 date_realizacao=cd['parsed_date_realizacao'],
@@ -355,6 +491,8 @@ def exam_upload(request):
             extra_files = form.cleaned_data.get("extra_files", [])
             for f in extra_files:
                 ExamExtraPDF.objects.create(exam=exam, file=f)
+            for kind, who, link in links_to_show:
+                messages.info(request, f"Link de ativação ({kind} - {who}): {link}")
             return redirect('exames')
     else:
         form = ExamUploadForm()
