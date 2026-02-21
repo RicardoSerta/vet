@@ -6,6 +6,9 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.utils.encoding import force_str, force_bytes
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from django.utils import timezone
+from django.conf import settings
+from .notifications import send_exam_email
 from django.contrib import messages
 from django.db.models import Q
 from django.urls import reverse
@@ -408,8 +411,9 @@ def exam_upload(request):
             
             selected = cd['clinic_or_vet']
             assigned_user = None
-            
             links_to_show = []
+            provider_activation_link = None
+            tutor_activation_link = None
             
             if selected.startswith("CLINIC:"):
                 clinic_id = int(selected.split(":")[1])
@@ -430,16 +434,14 @@ def exam_upload(request):
                         assigned_user = u
 
                         if needs_activation:
-                            link = build_activation_link(request, u)
-                            links_to_show.append(("Clínica/Vet", clinic.email or clinic.name, link))
+                            provider_activation_link = build_activation_link(request, u)
                     else:
                         assigned_user = None
                 else:
                     assigned_user = clinic.user
                     # se já existe user mas ainda não ativou
                     if not assigned_user.has_usable_password():
-                        link = build_activation_link(request, assigned_user)
-                        links_to_show.append(("Clínica/Vet", clinic.email or clinic.name, link))
+                        provider_activation_link = build_activation_link(request, assigned_user)
                         
             elif selected.startswith("VET:"):
                 vet_id = int(selected.split(":")[1])
@@ -459,15 +461,13 @@ def exam_upload(request):
                         assigned_user = u
 
                         if needs_activation:
-                            link = build_activation_link(request, u)
-                            links_to_show.append(("Clínica/Vet", vet.email or vet.name, link))
+                            provider_activation_link = build_activation_link(request, u)
                     else:
                         assigned_user = None
                 else:
                     assigned_user = vet.user
                     if not assigned_user.has_usable_password():
-                        link = build_activation_link(request, assigned_user)
-                        links_to_show.append(("Clínica/Vet", vet.email or vet.name, link))
+                        provider_activation_link = build_activation_link(request, assigned_user)
                 
             else:
                 clinic_or_vet_name = ""
@@ -493,8 +493,7 @@ def exam_upload(request):
                     role="TUTOR",
                 )
                 if tutor_user and needs_activation:
-                    link = build_activation_link(request, tutor_user)
-                    links_to_show.append(("Tutor", tutor_email, link))
+                    tutor_activation_link = build_activation_link(request, tutor_user)
 
             exam = Exam.objects.create(
                 date_realizacao=cd['parsed_date_realizacao'],
@@ -510,6 +509,51 @@ def exam_upload(request):
                 owner=request.user,
                 assigned_user=assigned_user,
             )
+            
+            sent_any = False
+
+            # 1) Tutor (se preencheu e-mail)
+            if tutor_email:
+                try:
+                    ok = send_exam_email(
+                        request,
+                        exam=exam,
+                        to_email=tutor_email,
+                        recipient_label=exam.tutor_name,
+                        activation_link=tutor_activation_link,
+                    )
+                    sent_any = sent_any or ok
+                except Exception as e:
+                    messages.error(request, f"Falha ao enviar e-mail para o tutor: {e}")
+
+            # 2) Clínica/Vet selecionado (se tiver e-mail cadastrado)
+            provider_email = ""
+            if selected.startswith("CLINIC:"):
+                provider_email = (clinic.email or "").strip()
+                provider_label = clinic.name
+            elif selected.startswith("VET:"):
+                provider_email = (vet.email or "").strip()
+                provider_label = vet.name
+            else:
+                provider_label = "Clínica/Veterinário"
+
+            if provider_email:
+                try:
+                    ok = send_exam_email(
+                        request,
+                        exam=exam,
+                        to_email=provider_email,
+                        recipient_label=provider_label,
+                        activation_link=provider_activation_link,
+                    )
+                    sent_any = sent_any or ok
+                except Exception as e:
+                    messages.error(request, f"Falha ao enviar e-mail para a clínica/vet: {e}")
+
+            # Se enviou pelo menos 1 e-mail, marca a coluna Alerta Email
+            if sent_any:
+                exam.alerta_email = timezone.now()
+                exam.save(update_fields=["alerta_email"])
 
             messages.success(
                 request,
@@ -518,8 +562,6 @@ def exam_upload(request):
             extra_files = form.cleaned_data.get("extra_files", [])
             for f in extra_files:
                 ExamExtraPDF.objects.create(exam=exam, file=f)
-            for kind, who, link in links_to_show:
-                messages.info(request, f"Link de ativação ({kind} - {who}): {link}")
             return redirect('exames')
     else:
         form = ExamUploadForm()
