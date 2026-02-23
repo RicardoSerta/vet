@@ -27,12 +27,12 @@ SECRET_KEY = 'django-insecure-4pohxecht0qm8bvcb7lg7d59swa$%(7sz(3y9*6mwlcm-@*#ru
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+ALLOWED_HOSTS = ["lumavet.onrender.com", "lumavet.pet", "www.lumavet.pet", "localhost", "127.0.0.1"]
 
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
-    CSRF_TRUSTED_ORIGINS = [f"https://{RENDER_EXTERNAL_HOSTNAME}"]
+    CSRF_TRUSTED_ORIGINS = ["https://lumavet.pet", "https://www.lumavet.pet", "https://lumavet.onrender.com"]
 
 
 
