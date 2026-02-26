@@ -166,14 +166,17 @@ class ExamUploadForm(forms.Form):
         clinic_choices = [(f"CLINIC:{c.id}", c.display_name) for c in clinics]
         vet_choices = [(f"VET:{v.id}", v.display_name) for v in vets]
         
-        choices = [
+        self.fields['clinic_or_vet'].choices = [
             ('', 'Selecione...'),
             ('Clínicas', clinic_choices),
             ('Veterinários', vet_choices),
         ]
 
-        self.fields['clinic_or_vet'].choices = choices
-        self.fields['additional_clinic_or_vet'].choices = choices
+        # No múltiplo
+        self.fields['additional_clinic_or_vet'].choices = [
+            ('Clínicas', clinic_choices),
+            ('Veterinários', vet_choices),
+        ]
         
     def clean_clinic_or_vet(self):
         value = self.cleaned_data.get('clinic_or_vet')

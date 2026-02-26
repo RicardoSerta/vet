@@ -862,3 +862,48 @@ body.app-body {
   background: #f3f3f3;
   cursor: pointer;
 }
+
+/* ===== Novo campo: Adicionar Clínicas/Veterinários ===== */
+.cv-hidden {
+  display: none;
+}
+
+.cv-box {
+  margin-top: 10px;
+}
+
+#id_additional_clinic_or_vet {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 3px;
+  border: 1px solid #d1d5db;
+  font-size: 13px;
+  background: #fff;
+}
+
+/* Caixa do seletor (dropdown aberto) */
+.cv-box{
+  margin-top: 8px;
+  padding: 10px;
+  border: 1px dashed #d1d5db;
+  border-radius: 4px;
+  background: #ffffff;
+}
+
+/* Select múltiplo */
+#id_additional_clinic_or_vet{
+  height: 160px;        /* controla o tamanho visível */
+  width: 100%;
+}
+
+/* Área dos botões OK/Limpar */
+.cv-actions{
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.cv-actions .cv-ok{
+  padding: 6px 14px;
+}
