@@ -83,24 +83,41 @@
               </div>
             </div>
             
-            <!-- Arquivos extras (linha inteira) -->
-            <div class="profile-form-row">
-              <div id="extraFilesDropZone" class="profile-form-group file-drop-zone" style="grid-column: 1 / -1;">
-                <label for="{{ form.extra_files.id_for_label }}">Arquivos Extras:</label>
+            <div class="two-cols-row">
+            
+              <!-- Clinica/Vet (esquerda) -->
+              <div class="col">
+                <label>ADICIONAR CLÍNICAS / VETERINÁRIOS:</label>
 
-                <div class="file-picker">
-                  {{ form.extra_files }}
-                  <button type="button" class="btn-file" id="extra-files-btn">Selecionar Arquivos</button>
-                  <span class="file-count" id="extra-files-count">Nenhum arquivo selecionado</span>
+                <button type="button" id="additional-cv-btn" class="btn-secondary">
+                  Adicionar Clínicas/Veterinários
+                </button>
+
+                <div id="additional-cv-box" class="hidden-box">
+                  {{ form.additional_clinic_or_vet }}
+                  <div class="field-hint">Selecione no máximo 2.</div>
                 </div>
+              </div>
 
-                <div id="extra-files-list" class="file-list"></div>
+              <!-- Arquivos extras (direita) -->
+              <div class="col">
+                <div id="extraFilesDropZone" class="profile-form-group file-drop-zone" style="grid-column: 1 / -1;">
+                  <label for="{{ form.extra_files.id_for_label }}">Arquivos Extras:</label>
 
-                {% if form.extra_files.errors %}
-                  <div class="field-error">{{ form.extra_files.errors.0 }}</div>
-                {% endif %}
+                  <div class="file-picker">
+                    {{ form.extra_files }}
+                    <button type="button" class="btn-file" id="extra-files-btn">Selecionar Arquivos</button>
+                    <span class="file-count" id="extra-files-count">Nenhum arquivo selecionado</span>
+                  </div>
 
-                <div class="field-hint">Aceita até 5 arquivos. Formatos: .pdf, .avi, .png, .jpg, .jpeg. Clique no nome do arquivo para remover.</div>
+                  <div id="extra-files-list" class="file-list"></div>
+
+                  {% if form.extra_files.errors %}
+                    <div class="field-error">{{ form.extra_files.errors.0 }}</div>
+                  {% endif %}
+
+                  <div class="field-hint">Aceita até 5 arquivos. Formatos: .pdf, .avi, .png, .jpg, .jpeg. Clique no nome do arquivo para remover.</div>
+                </div>
               </div>
             </div>
 
@@ -342,6 +359,32 @@ document.addEventListener('DOMContentLoaded', function () {
 
   render();
 });
+</script>
+<script>
+  (function () {
+    const btn = document.getElementById("additional-cv-btn");
+    const box = document.getElementById("additional-cv-box");
+    const sel = document.getElementById("id_additional_clinic_or_vet");
+
+    if (!btn || !box || !sel) return;
+
+    btn.addEventListener("click", () => {
+      box.classList.toggle("hidden-box");
+      // se quiser, rolar a página até o box
+      // box.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
+
+    sel.addEventListener("change", () => {
+      const selected = Array.from(sel.selectedOptions);
+      if (selected.length > 2) {
+        // mantém só os 2 primeiros selecionados
+        for (let i = 2; i < selected.length; i++) {
+          selected[i].selected = false;
+        }
+        alert("Você pode selecionar no máximo 2 clínicas/veterinários.");
+      }
+    });
+  })();
 </script>
 {% endblock %}
 

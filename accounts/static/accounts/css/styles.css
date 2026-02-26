@@ -837,3 +837,28 @@ body.app-body {
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 
+.two-cols-row{
+  display: flex;
+  gap: 16px;
+}
+
+.two-cols-row .col{
+  flex: 1;
+}
+
+.hidden-box{
+  display: none;
+  margin-top: 8px;
+}
+
+#additional-cv-box{
+  margin-top: 10px;
+}
+
+.btn-secondary{
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background: #f3f3f3;
+  cursor: pointer;
+}

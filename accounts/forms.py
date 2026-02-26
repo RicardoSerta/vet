@@ -136,6 +136,15 @@ class ExamUploadForm(forms.Form):
         label="Arquivo PDF",
     )
     
+    additional_clinic_or_vet = forms.MultipleChoiceField(
+        label="Adicionar Clínicas/Veterinários",
+        required=False,
+        choices=[],
+        widget=forms.SelectMultiple(attrs={
+            "size": 6,   # altura do select quando abrir
+        })
+    )
+    
     extra_files = MultipleFileField(
         required=False,
         widget=MultipleFileInput(attrs={
@@ -156,19 +165,27 @@ class ExamUploadForm(forms.Form):
 
         clinic_choices = [(f"CLINIC:{c.id}", c.display_name) for c in clinics]
         vet_choices = [(f"VET:{v.id}", v.display_name) for v in vets]
-
-        # Opção 1 (recomendada): dividir em grupos (Clínicas / Veterinários)
-        self.fields['clinic_or_vet'].choices = [
+        
+        choices = [
             ('', 'Selecione...'),
             ('Clínicas', clinic_choices),
             ('Veterinários', vet_choices),
         ]
+
+        self.fields['clinic_or_vet'].choices = choices
+        self.fields['additional_clinic_or_vet'].choices = choices
         
     def clean_clinic_or_vet(self):
         value = self.cleaned_data.get('clinic_or_vet')
         if not value:
             raise forms.ValidationError("Selecione uma clínica ou veterinário.")
         return value
+        
+    def clean_additional_clinic_or_vet(self):
+        items = self.cleaned_data.get("additional_clinic_or_vet") or []
+        if len(items) > 2:
+            raise forms.ValidationError("Selecione no máximo 2 clínicas/veterinários.")
+        return items
 
     def clean_tutor_phone(self):
         phone = self.cleaned_data.get('tutor_phone', '').strip()
