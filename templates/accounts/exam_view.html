@@ -24,7 +24,12 @@
         </div>
         <div class="exam-view-item">
           <div class="exam-view-label">Clínica / Veterinário</div>
-          <div class="exam-view-value">{{ exam.clinic_or_vet }}</div>
+          <div class="exam-view-value">
+            {{ exam.clinic_or_vet }}
+            {% if exam.additional_clinic_or_vet_display %}
+              <div class="exam-view-sub">({{ exam.additional_clinic_or_vet_display }})</div>
+            {% endif %}
+          </div>
         </div>
       </div>
 

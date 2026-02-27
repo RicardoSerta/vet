@@ -399,7 +399,7 @@ document.addEventListener('DOMContentLoaded', function () {
   btn.addEventListener("click", () => {
     box.classList.toggle("cv-hidden");
     if (!box.classList.contains("cv-hidden")) {
-      sel.focus();
+      if (ok) ok.focus();
     }
   });
 

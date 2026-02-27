@@ -907,3 +907,14 @@ body.app-body {
 .cv-actions .cv-ok{
   padding: 6px 14px;
 }
+
+.exam-view-sub{
+  margin-top: 4px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* Alinhar a coluna de "Arquivos extras" com a coluna da esquerda */
+.profile-form-group.file-drop-zone{
+  padding: 0;
+}

@@ -508,6 +508,7 @@ def exam_upload(request):
                 pdf_file=cd['pdf_file'],
                 owner=request.user,
                 assigned_user=assigned_user,
+                additional_clinic_or_vet=cd.get("additional_clinic_or_vet") or [],
             )
             
             sent_any = False

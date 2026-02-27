@@ -35,6 +35,12 @@ class Exam(models.Model):
     alerta_email = models.DateTimeField("Alerta Email", blank=True, null=True)
     alerta_zap = models.DateTimeField("Alerta Zap", blank=True, null=True)
     retorno_previsto = models.DateField("Retorno previsto", blank=True, null=True)
+    
+    additional_clinic_or_vet = models.JSONField(
+        "Clínicas/Vets adicionais",
+        default=list,
+        blank=True,
+    )
 
     pdf_file = models.FileField("Arquivo PDF", upload_to='exam_pdfs/', blank=True, null=True)
 
@@ -56,6 +62,44 @@ class Exam(models.Model):
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    def get_additional_clinic_or_vet_names(self):
+        """
+        Retorna lista de nomes extras resolvidos.
+          - se tiver clínica(s) e vet(s): clínicas primeiro, depois vets
+          - se tiver só um tipo: mantém a ordem em que foi selecionado
+        """
+        tokens = self.additional_clinic_or_vet or []
+        resolved = []  # lista de tuplas ("C"|"V", "Nome")
+
+        for token in tokens:
+            try:
+                kind, raw_id = token.split(":", 1)
+                obj_id = int(raw_id)
+            except Exception:
+                continue
+
+            if kind == "CLINIC":
+                c = Clinic.objects.filter(id=obj_id).first()
+                if c:
+                    resolved.append(("C", c.display_name))
+            elif kind == "VET":
+                v = Veterinarian.objects.filter(id=obj_id).first()
+                if v:
+                    resolved.append(("V", v.display_name))
+
+        clinic_names = [name for k, name in resolved if k == "C"]
+        vet_names = [name for k, name in resolved if k == "V"]
+
+        if clinic_names and vet_names:
+            return clinic_names + vet_names
+
+        return [name for _, name in resolved]
+
+    @property
+    def additional_clinic_or_vet_display(self):
+        names = self.get_additional_clinic_or_vet_names()
+        return ", ".join(names)
 
     class Meta:
         ordering = ['-date_realizacao', '-created_at']
