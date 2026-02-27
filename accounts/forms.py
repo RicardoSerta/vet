@@ -253,6 +253,18 @@ class ExamUploadForm(forms.Form):
         cleaned_data["parsed_tutor_name"] = tutor
         cleaned_data["parsed_exam_type"] = exam_type
         cleaned_data["parsed_date_realizacao"] = date_realizacao
+        
+        main = (cleaned_data.get("clinic_or_vet") or "").strip()
+        extras = cleaned_data.get("additional_clinic_or_vet") or []
+
+        # remove do extras se for igual ao principal
+        if main:
+            extras = [x for x in extras if x != main]
+
+        # mantém no máximo 2 (garantia backend)
+        extras = extras[:2]
+
+        cleaned_data["additional_clinic_or_vet"] = extras
 
         return cleaned_data
         

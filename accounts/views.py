@@ -200,12 +200,6 @@ def translate_exam_type(exam_type_raw: str) -> str:
     return alias.full_name if alias else exam_type_raw
     
 def user_can_view_exam(user, exam) -> bool:
-    """
-    Regras:
-    - Admin vê tudo
-    - Tutor vê exames onde exam.tutor_email == user.email
-    - Clínica/Vet (BASIC) vê exames onde exam.assigned_user == user
-    """
     if is_admin_user(user):
         return True
 
@@ -216,7 +210,31 @@ def user_can_view_exam(user, exam) -> bool:
         exam_email = (exam.tutor_email or "").strip().lower()
         return bool(user_email) and (user_email == exam_email)
 
-    return exam.assigned_user_id == user.id
+    return user_is_provider_for_exam(user, exam)
+    
+def user_is_provider_for_exam(user, exam) -> bool:
+    # principal
+    if exam.assigned_user_id == user.id:
+        return True
+
+    # adicionais: exam.additional_clinic_or_vet é lista ["CLINIC:1", "VET:3"]
+    profile, _ = Profile.objects.get_or_create(user=user)
+    if profile.role != "BASIC":
+        return False
+
+    tokens = exam.additional_clinic_or_vet or []
+
+    # se for user de clínica:
+    clinic = Clinic.objects.filter(user=user).first()
+    if clinic and f"CLINIC:{clinic.id}" in tokens:
+        return True
+
+    # se for user de vet:
+    vet = Veterinarian.objects.filter(user=user).first()
+    if vet and f"VET:{vet.id}" in tokens:
+        return True
+
+    return False
 
 def login_view(request):
     if request.user.is_authenticated:

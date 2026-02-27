@@ -375,10 +375,15 @@ document.addEventListener('DOMContentLoaded', function () {
   const sel = document.getElementById("id_additional_clinic_or_vet");
   const summary = document.getElementById("additional-cv-summary");
 
-  if (!btn || !box || !sel || !summary) return;
+  const mainSel = document.getElementById("id_clinic_or_vet");
 
-  // Mantém a ordem de seleção (para remover o "mais antigo" quando escolher o 3º)
+  if (!btn || !box || !sel || !summary || !mainSel) return;
+
+  // ordem de seleção (pra remover o "mais antigo" ao escolher o 3º)
   const order = [];
+
+  // guarda todas as opções originais (pra reativar quando trocar principal)
+  const allOptions = Array.from(sel.options);
 
   function updateSummary() {
     const texts = Array.from(sel.selectedOptions).map(o => (o.textContent || "").trim());
@@ -391,15 +396,64 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function setSelected(value, on) {
-    const opt = Array.from(sel.options).find(o => o.value === value);
+    const opt = allOptions.find(o => o.value === value);
     if (opt) opt.selected = on;
   }
 
-  // Abre/fecha
+  function disableAdditionalOption(valueToDisable) {
+    allOptions.forEach(opt => {
+      if (!opt.value) return;
+      const shouldDisable = opt.value === valueToDisable;
+
+      // reabilita tudo primeiro; depois desabilita apenas o principal atual
+      // (essa função será chamada após a gente reabilitar globalmente)
+      if (shouldDisable) {
+        opt.disabled = true;
+        opt.hidden = true; // some da lista
+        // se estava selecionado, desmarca
+        if (opt.selected) {
+          opt.selected = false;
+          removeFromOrder(opt.value);
+        }
+      }
+    });
+  }
+
+  function enableAllAdditionalOptions() {
+    allOptions.forEach(opt => {
+      if (!opt.value) return;
+      opt.disabled = false;
+      opt.hidden = false;
+    });
+  }
+
+  function syncMainVsAdditional() {
+    // 1) reabilita tudo
+    enableAllAdditionalOptions();
+
+    // 2) desabilita o principal atual
+    const mainValue = (mainSel.value || "").trim();
+    if (mainValue) {
+      disableAdditionalOption(mainValue);
+    }
+
+    // 3) garante limite de 2 (caso algo tenha sido removido)
+    const selected = Array.from(sel.selectedOptions);
+    if (selected.length > 2) {
+      for (let i = 2; i < selected.length; i++) {
+        selected[i].selected = false;
+        removeFromOrder(selected[i].value);
+      }
+    }
+
+    updateSummary();
+  }
+
+  // abre/fecha caixa
   btn.addEventListener("click", () => {
     box.classList.toggle("cv-hidden");
     if (!box.classList.contains("cv-hidden")) {
-      if (ok) ok.focus();
+      if (ok) ok.focus(); // evita “highlight” automático do primeiro item
     }
   });
 
@@ -411,7 +465,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  // Limpar
+  // limpar
   if (clear) {
     clear.addEventListener("click", () => {
       Array.from(sel.options).forEach(o => o.selected = false);
@@ -420,24 +474,19 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  // Seleção sem Ctrl:
-  // - clique em um item alterna selecionado/não selecionado
-  // - mantém no máximo 2
-  // - ao selecionar o 3º, remove o mais antigo
+  // seleção sem Ctrl
   sel.addEventListener("mousedown", (e) => {
     const opt = e.target.closest("option");
-    if (!opt || !opt.value) return;
+    if (!opt || !opt.value || opt.disabled) return;
 
-    e.preventDefault(); // impede o comportamento padrão (que exigiria Ctrl)
+    e.preventDefault();
 
     const val = opt.value;
 
     if (opt.selected) {
-      // desmarca
       opt.selected = false;
       removeFromOrder(val);
     } else {
-      // marca
       if (order.length >= 2) {
         const oldest = order.shift();
         setSelected(oldest, false);
@@ -449,8 +498,13 @@ document.addEventListener('DOMContentLoaded', function () {
     updateSummary();
   });
 
-  // Inicializa resumo
-  updateSummary();
+  // quando muda o principal, sincroniza (remove do adicional / reativa o antigo)
+  mainSel.addEventListener("change", () => {
+    syncMainVsAdditional();
+  });
+
+  // inicial
+  syncMainVsAdditional();
 })();
 </script>
 {% endblock %}
