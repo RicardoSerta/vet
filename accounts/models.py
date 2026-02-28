@@ -6,6 +6,7 @@ from django.conf import settings
 class Profile(models.Model):
     ROLE_CHOICES = [
         ('ADMIN', 'Admin'),
+        ('ADMIN_AUX', 'Administrador Auxiliar'),
         ('BASIC', 'Básico'),
         ('TUTOR', 'Tutor'),
     ]

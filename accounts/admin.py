@@ -4,8 +4,8 @@ from .models import Profile, Exam, Tutor, Clinic, Veterinarian, Pet
 
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
-    list_display = ('user', 'whatsapp')
-
+    list_display = ('user', 'role', 'whatsapp')
+    list_filter = ('role',)
 
 @admin.register(Exam)
 class ExamAdmin(admin.ModelAdmin):
