@@ -6,6 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.utils.encoding import force_str, force_bytes
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from django.utils.text import slugify
 from django.utils import timezone
 from django.conf import settings
 from .notifications import send_exam_email
@@ -801,6 +802,7 @@ def management_view(request, category='tutores'):
     categories_nav = [
         {'slug': key, 'label': value['label']}
         for key, value in MANAGEMENT_CATEGORIES.items()
+        if (key != 'admin' or is_superadmin)
     ]
 
     context = {
@@ -824,6 +826,9 @@ def management_create(request, category):
 
     if category not in MANAGEMENT_CATEGORIES:
         return redirect('gestao')
+        
+    if category == 'admin':
+        return redirect('gestao_admin_create')
 
     info = MANAGEMENT_CATEGORIES[category]
     FormClass = info['form']
@@ -960,6 +965,49 @@ def management_delete(request, category, pk):
 
     messages.success(request, f'"{name}" foi excluído com sucesso.')
     return redirect('gestao_category', category=category)
+    
+@login_required
+@superadmin_required
+def admin_user_create(request):
+    profile, _ = Profile.objects.get_or_create(user=request.user)
+
+    if request.method == 'POST':
+        first_name = (request.POST.get('first_name') or '').strip()
+        last_name = (request.POST.get('last_name') or '').strip()
+        email = (request.POST.get('email') or '').strip()
+        phone = (request.POST.get('phone') or '').strip()
+
+        if not first_name:
+            messages.error(request, "O nome é obrigatório.")
+            return render(request, 'accounts/admin_user_form.html', {'profile': profile})
+
+        # username único (baseado no email ou nome)
+        base = (email.split('@')[0] if email else slugify(first_name)) or 'aux'
+        username = base
+        i = 2
+        while User.objects.filter(username=username).exists():
+            username = f"{base}{i}"
+            i += 1
+
+        # cria user sem senha (não loga até receber ativação)
+        user = User.objects.create(
+            username=username,
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+        )
+        user.set_unusable_password()
+        user.save()
+
+        p, _ = Profile.objects.get_or_create(user=user)
+        p.role = 'ADMIN_AUX'
+        p.whatsapp = phone
+        p.save()
+
+        messages.success(request, f'Auxiliar "{first_name}" criado com sucesso.')
+        return redirect('gestao_category', category='admin')
+
+    return render(request, 'accounts/admin_user_form.html', {'profile': profile})
     
 @login_required
 @superadmin_required

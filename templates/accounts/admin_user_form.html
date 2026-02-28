@@ -1,0 +1,38 @@
+{% extends 'base_app.html' %}
+
+{% block title %}Novo Auxiliar - LumaVet{% endblock %}
+{% block page_title %}Cadastrar Auxiliar{% endblock %}
+
+{% block main_content %}
+<div class="card">
+  <form method="post" class="profile-form">
+    {% csrf_token %}
+
+    <div class="profile-form-group">
+      <label>NOME:</label>
+      <input type="text" name="first_name" placeholder="Nome do auxiliar" required>
+    </div>
+
+    <div class="profile-form-group">
+      <label>SOBRENOME:</label>
+      <input type="text" name="last_name" placeholder="Sobrenome do auxiliar">
+    </div>
+
+    <div class="profile-form-group">
+      <label>EMAIL:</label>
+      <input type="email" name="email" placeholder="exemplo@email.com">
+    </div>
+
+    <div class="profile-form-group">
+      <label>PHONE:</label>
+      <input type="text" name="phone" placeholder="(XX) XXXX-XXXX">
+      <small class="input-hint">Formato: (XX) 9XXXX-XXXX ou (XX) XXXX-XXXX</small>
+    </div>
+
+    <div style="margin-top: 16px;">
+      <button type="submit" class="btn-icon btn-icon-green" style="border:0; padding:8px 16px;">Salvar</button>
+      <a href="{% url 'gestao_category' 'admin' %}" style="margin-left: 12px;">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -22,13 +22,14 @@
                 <button type="submit">Buscar</button>
             </form>
 
-            {# Botão +: NÃO aparece na aba Admin #}
-            {% if category != 'admin' %}
-            <a href="{% url 'gestao_create' category %}"
-               class="btn-icon btn-icon-green management-add-btn"
-               title="{% if category == 'clinicas' %}Nova{% else %}Novo{% endif %} {{ category_singular }}">
-                +
-            </a>
+            {% if category == 'admin' %}
+              <a href="{% url 'gestao_admin_create' %}"
+                 class="btn-icon btn-icon-green management-add-btn"
+                 title="Novo Auxiliar">+</a>
+            {% else %}
+              <a href="{% url 'gestao_create' category %}"
+                 class="btn-icon btn-icon-green management-add-btn"
+                 title="{% if category == 'clinicas' %}Nova{% else %}Novo{% endif %} {{ category_singular }}">+</a>
             {% endif %}
         </div>
     </div>

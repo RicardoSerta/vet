@@ -17,6 +17,7 @@ urlpatterns = [
     path('gestao/', views.management_view, name='gestao'),
     path('gestao/<str:category>/', views.management_view, name='gestao_category'),
     path('gestao/admin/<int:user_id>/excluir/', views.admin_user_delete, name='gestao_admin_delete'),
+    path('gestao/admin/novo/', views.admin_user_create, name='gestao_admin_create'),
     path('gestao/<str:category>/novo/', views.management_create, name='gestao_create'),
     path('gestao/<str:category>/<int:pk>/editar/', views.management_edit, name='gestao_edit'),
     path('gestao/<str:category>/<int:pk>/excluir/', views.management_delete, name='gestao_delete'),
