@@ -22,11 +22,14 @@
                 <button type="submit">Buscar</button>
             </form>
 
+            {# Botão +: NÃO aparece na aba Admin #}
+            {% if category != 'admin' %}
             <a href="{% url 'gestao_create' category %}"
                class="btn-icon btn-icon-green management-add-btn"
                title="{% if category == 'clinicas' %}Nova{% else %}Novo{% endif %} {{ category_singular }}">
                 +
             </a>
+            {% endif %}
         </div>
     </div>
 
@@ -34,7 +37,45 @@
         <table class="exams-table">
             <thead>
                 {% with qparam=search_query|default_if_none:'' %}
-                {% if category == 'pets' %}
+
+                {# ===== ABA ADMIN (6 colunas) ===== #}
+                {% if category == 'admin' %}
+                    <tr>
+                        <th>
+                            <a href="?order=nome&direction={% if order == 'nome' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
+                                Nome
+                                {% if order == 'nome' %}{% if direction == 'asc' %}▲{% else %}▼{% endif %}{% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            <a href="?order=email&direction={% if order == 'email' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
+                                E-mail
+                                {% if order == 'email' %}{% if direction == 'asc' %}▲{% else %}▼{% endif %}{% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            <a href="?order=telefone&direction={% if order == 'telefone' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
+                                Telefone
+                                {% if order == 'telefone' %}{% if direction == 'asc' %}▲{% else %}▼{% endif %}{% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            <a href="?order=data&direction={% if order == 'data' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
+                                Data de cadastro
+                                {% if order == 'data' %}{% if direction == 'asc' %}▲{% else %}▼{% endif %}{% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            <a href="?order=funcao&direction={% if order == 'funcao' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
+                                Função
+                                {% if order == 'funcao' %}{% if direction == 'asc' %}▲{% else %}▼{% endif %}{% endif %}
+                            </a>
+                        </th>
+                        <th style="width: 110px; text-align:center;">Ações</th>
+                    </tr>
+
+                {# ===== ABA PETS (5 colunas) ===== #}
+                {% elif category == 'pets' %}
                     <tr>
                         <th>
                             <a href="?order=nome&direction={% if order == 'nome' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
@@ -70,6 +111,8 @@
                         </th>
                         <th style="width: 110px; text-align:center;">Ações</th>
                     </tr>
+
+                {# ===== OUTRAS ABAS (5 colunas) ===== #}
                 {% else %}
                     <tr>
                         <th>
@@ -109,10 +152,41 @@
                 {% endif %}
                 {% endwith %}
             </thead>
+
             <tbody>
                 {% if items %}
                     {% for item in items %}
-                        {% if category == 'pets' %}
+
+                        {# ===== ABA ADMIN ===== #}
+                        {% if category == 'admin' %}
+                            <tr>
+                                <td>{{ item.name }}</td>
+                                <td>{{ item.email }}</td>
+                                <td>{{ item.phone }}</td>
+                                <td>{{ item.created_at|date:"d/m/Y" }}</td>
+                                <td>{{ item.role_label }}</td>
+                                <td style="text-align:center; white-space:nowrap;">
+                                    {# lápis sem função por enquanto #}
+                                    <span title="Editar"
+                                          class="btn-icon btn-icon-blue"
+                                          style="display:inline-flex; align-items:center; justify-content:center; opacity:0.85;">
+                                        ✏️
+                                    </span>
+
+                                    {# lixeira só para Auxiliar #}
+                                    {% if item.can_delete %}
+                                        <a href="{% url 'gestao_admin_delete' item.id %}"
+                                           title="Excluir"
+                                           class="btn-icon btn-icon-red"
+                                           style="display:inline-flex; align-items:center; justify-content:center; margin-left:6px;">
+                                            🗑️
+                                        </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+
+                        {# ===== ABA PETS ===== #}
+                        {% elif category == 'pets' %}
                             <tr>
                                 <td>{{ item.name }}</td>
                                 <td>{{ item.breed }}</td>
@@ -136,6 +210,8 @@
                                     </form>
                                 </td>
                             </tr>
+
+                        {# ===== OUTRAS ABAS ===== #}
                         {% else %}
                             <tr>
                                 <td>{{ item.display_name }}</td>
@@ -161,10 +237,11 @@
                                 </td>
                             </tr>
                         {% endif %}
+
                     {% endfor %}
                 {% else %}
                     <tr>
-                        <td colspan="5" style="text-align:center;">
+                        <td colspan="{% if category == 'admin' %}6{% else %}5{% endif %}" style="text-align:center;">
                             {{ empty_message }}
                         </td>
                     </tr>
@@ -174,4 +251,3 @@
     </div>
 </div>
 {% endblock %}
-

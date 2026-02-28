@@ -1,0 +1,20 @@
+{% extends 'base_app.html' %}
+
+{% block title %}Excluir auxiliar - LumaVet{% endblock %}
+{% block page_title %}Excluir auxiliar{% endblock %}
+
+{% block main_content %}
+<div class="card">
+  <p>Tem certeza que deseja excluir <strong>{{ target_user.first_name|default:target_user.username }}</strong>?</p>
+
+  <form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn-icon btn-icon-blue" style="border:0; padding:8px 14px;">OK</button>
+    <a href="{% url 'gestao_category' 'admin' %}"
+       class="btn-icon"
+       style="margin-left:10px; padding:8px 14px; background:#e5e7eb; color:#111;">
+       Cancelar
+    </a>
+  </form>
+</div>
+{% endblock %}

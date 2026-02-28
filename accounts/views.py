@@ -15,8 +15,7 @@ from django.urls import reverse
 from django.db.models.deletion import ProtectedError
 from django.db import transaction
 from django.http import FileResponse, Http404, HttpResponseForbidden
-from .authz import admin_required
-from .authz import is_admin_user
+from .authz import admin_required, is_admin_user, is_superadmin_user, superadmin_required
 import os
 import mimetypes
 import re
@@ -80,6 +79,11 @@ MANAGEMENT_CATEGORIES = {
             'data': 'created_at',
         },
         'empty_message': 'Nenhum pet cadastrado ainda.',
+    },
+    'admin': {
+        'label': 'Admin',
+        'singular': 'Admin',
+        'empty_message': 'Nenhum administrador cadastrado ainda.',
     },
 }
 
@@ -695,9 +699,77 @@ def exam_extra_pdf(request, pk, extra_pk):
 @admin_required
 def management_view(request, category='tutores'):
     profile, _ = Profile.objects.get_or_create(user=request.user)
+    is_superadmin = is_superadmin_user(request.user)
 
     if category not in MANAGEMENT_CATEGORIES:
         category = 'tutores'
+        
+    if category == 'admin':
+        if not is_superadmin:
+            messages.error(request, "Você não tem permissão para acessar essa aba.")
+            return redirect('gestao')
+
+        qs = Profile.objects.select_related('user').filter(role__in=['ADMIN', 'ADMIN_AUX'])
+
+        search_query = request.GET.get('q', '').strip()
+        if search_query:
+            qs = qs.filter(
+                Q(user__first_name__icontains=search_query) |
+                Q(user__username__icontains=search_query) |
+                Q(user__email__icontains=search_query) |
+                Q(whatsapp__icontains=search_query)
+            )
+
+        order = request.GET.get('order', '')
+        direction = request.GET.get('direction', 'asc')
+        order_map = {
+            'nome': 'user__first_name',
+            'email': 'user__email',
+            'telefone': 'whatsapp',
+            'data': 'user__date_joined',
+            'funcao': 'role',
+        }
+
+        if order in order_map:
+            field_name = order_map[order]
+            if direction == 'desc':
+                field_name = '-' + field_name
+            qs = qs.order_by(field_name)
+        else:
+            qs = qs.order_by('-user__date_joined')
+
+        items = []
+        for p in qs:
+            role_label = 'Administrador' if p.role == 'ADMIN' else 'Auxiliar'
+            items.append({
+                'id': p.user_id,
+                'name': (p.user.first_name or p.user.username),
+                'email': (p.user.email or ''),
+                'phone': (p.whatsapp or ''),
+                'created_at': p.user.date_joined,
+                'role_label': role_label,
+                'can_delete': (p.role == 'ADMIN_AUX') and (not p.user.is_superuser),
+            })
+
+        categories_nav = [
+            {'slug': key, 'label': value['label']}
+            for key, value in MANAGEMENT_CATEGORIES.items()
+            if (key != 'admin' or is_superadmin)
+        ]
+
+        return render(request, 'accounts/management.html', {
+            'profile': profile,
+            'category': 'admin',
+            'category_label': MANAGEMENT_CATEGORIES['admin']['label'],
+            'category_singular': MANAGEMENT_CATEGORIES['admin']['singular'],
+            'categories_nav': categories_nav,
+            'items': items,
+            'empty_message': MANAGEMENT_CATEGORIES['admin']['empty_message'],
+            'search_query': search_query,
+            'order': order,
+            'direction': direction,
+            'is_superadmin': is_superadmin,
+        })
 
     info = MANAGEMENT_CATEGORIES[category]
     Model = info['model']
@@ -888,6 +960,39 @@ def management_delete(request, category, pk):
 
     messages.success(request, f'"{name}" foi excluído com sucesso.')
     return redirect('gestao_category', category=category)
+    
+@login_required
+@superadmin_required
+def admin_user_delete(request, user_id: int):
+    profile, _ = Profile.objects.get_or_create(user=request.user)
+
+    target_user = get_object_or_404(User, pk=user_id)
+    target_profile, _ = Profile.objects.get_or_create(user=target_user)
+
+    if target_user.is_superuser or target_profile.role == 'ADMIN':
+        messages.error(request, "Não é permitido excluir um Administrador por aqui.")
+        return redirect('gestao_category', category='admin')
+
+    if target_profile.role != 'ADMIN_AUX':
+        messages.error(request, "Este usuário não é um Administrador Auxiliar.")
+        return redirect('gestao_category', category='admin')
+
+    if request.method == 'POST':
+        # segurança extra (caso esteja vinculado a algo por acidente)
+        Clinic.objects.filter(user=target_user).update(user=None)
+        Veterinarian.objects.filter(user=target_user).update(user=None)
+        Exam.objects.filter(assigned_user=target_user).update(assigned_user=None)
+
+        name = target_user.first_name or target_user.username
+        target_user.delete()
+        messages.success(request, f'"{name}" foi excluído com sucesso.')
+        return redirect('gestao_category', category='admin')
+
+    return render(request, 'accounts/admin_confirm_delete.html', {
+        'profile': profile,
+        'target_user': target_user,
+        'target_profile': target_profile,
+    })
     
 def activate_account(request, uidb64, token):
     User = get_user_model()
