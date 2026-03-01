@@ -99,6 +99,7 @@
                   <div class="field-error">{{ form.tutor_email.errors.0 }}</div>
                 {% endif %}
               </div>
+            </div>
             
             <div class="profile-form-row" style="margin-top: 6px;">
 
@@ -530,48 +531,135 @@ document.addEventListener("DOMContentLoaded", function () {
     bell.classList.remove("notify-empty", "notify-enabled", "notify-disabled");
     bell.classList.add("notify-" + state);
 
-    // ajuda MUITO porque o emoji muda:
-    if (state === "disabled") bell.textContent = "🔕";
-    else bell.textContent = "🔔";
+    // opcional: troca ícone quando desativado
+    bell.textContent = (state === "disabled") ? "🔕" : "🔔";
   }
 
-  function setupBell(inputId, hiddenId, bellId) {
+  function classifyPhone(v) {
+    v = (v || "").trim();
+    if (!v) return "empty";
+    if (/^\(\d{2}\)\s?9\d{4}-\d{4}$/.test(v)) return "whatsapp";
+    if (/^\(\d{2}\)\s?\d{4}-\d{4}$/.test(v)) return "landline";
+    return "invalid";
+  }
+
+  function syncPhone(input, hidden, bell) {
+    const kind = classifyPhone(input.value);
+
+    if (kind === "empty") {
+      hidden.value = "0";
+      bell.dataset.userToggled = "";
+      applyState(bell, "empty");
+      bell.title = "Notificar via WhatsApp";
+      bell.dataset.eligible = "0";
+      return;
+    }
+
+    if (kind === "invalid") {
+      hidden.value = "0";
+      bell.dataset.userToggled = "";
+      applyState(bell, "empty");
+      bell.title = "Celular inválido.";
+      bell.dataset.eligible = "0";
+      return;
+    }
+
+    if (kind === "landline") {
+      hidden.value = "0";
+      bell.dataset.userToggled = "";
+      applyState(bell, "empty");
+      bell.title = "Não é possível enviar um alerta para este número";
+      bell.dataset.eligible = "0";
+      return;
+    }
+
+    // whatsapp válido
+    bell.dataset.eligible = "1";
+    bell.title = "Notificar via WhatsApp";
+
+    if (!bell.dataset.userToggled) hidden.value = "1";
+    applyState(bell, hidden.value === "1" ? "enabled" : "disabled");
+  }
+
+  function syncEmail(input, hidden, bell) {
+    const v = (input.value || "").trim();
+
+    if (!v) {
+      hidden.value = "0";
+      bell.dataset.userToggled = "";
+      applyState(bell, "empty");
+      bell.title = "Notificar via e-mail";
+      bell.dataset.eligible = "0";
+      return;
+    }
+
+    // usa a validação nativa do type=email
+    const ok = input.checkValidity();
+    if (!ok) {
+      hidden.value = "0";
+      bell.dataset.userToggled = "";
+      applyState(bell, "empty");
+      bell.title = "E-mail inválido.";
+      bell.dataset.eligible = "0";
+      return;
+    }
+
+    bell.dataset.eligible = "1";
+    bell.title = "Notificar via e-mail";
+
+    if (!bell.dataset.userToggled) hidden.value = "1";
+    applyState(bell, hidden.value === "1" ? "enabled" : "disabled");
+  }
+
+  function setupBell(inputId, hiddenId, bellId, syncFn) {
     const input = document.getElementById(inputId);
     const hidden = document.getElementById(hiddenId);
     const bell = document.getElementById(bellId);
     if (!input || !hidden || !bell) return;
 
-    function syncFromInput() {
-      const v = (input.value || "").trim();
-
-      if (!v) {
-        hidden.value = "0";
-        bell.dataset.userToggled = "";
-        applyState(bell, "empty");
-        return;
-      }
-
-      // se o usuário nunca clicou, padrão = ligado
-      if (!bell.dataset.userToggled) hidden.value = "1";
-
-      applyState(bell, hidden.value === "1" ? "enabled" : "disabled");
-    }
-
     bell.addEventListener("click", function () {
-      const v = (input.value || "").trim();
-      if (!v) return; // vazio = cinza e não clica
+      if (bell.dataset.eligible !== "1") return; // cinza = não clicável
 
       bell.dataset.userToggled = "1";
       hidden.value = (hidden.value === "1") ? "0" : "1";
-      applyState(bell, hidden.value === "1" ? "enabled" : "disabled");
+      // re-sincroniza pra atualizar visual
+      syncFn(input, hidden, bell);
     });
 
-    input.addEventListener("input", syncFromInput);
-    syncFromInput();
+    input.addEventListener("input", () => syncFn(input, hidden, bell));
+    syncFn(input, hidden, bell);
   }
 
-  setupBell("id_tutor_phone", "id_notify_tutor_phone", "bell-tutor-phone");
-  setupBell("id_tutor_email", "id_notify_tutor_email", "bell-tutor-email");
+  setupBell("id_tutor_phone", "id_notify_tutor_phone", "bell-tutor-phone", syncPhone);
+  setupBell("id_tutor_email", "id_notify_tutor_email", "bell-tutor-email", syncEmail);
+});
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const phone = document.getElementById("id_tutor_phone");
+  const email = document.getElementById("id_tutor_email");
+
+  if (phone) {
+    phone.addEventListener("invalid", function () {
+      if ((phone.value || "").trim()) {
+        phone.setCustomValidity("Celular inválido.");
+      } else {
+        phone.setCustomValidity("");
+      }
+    });
+    phone.addEventListener("input", () => phone.setCustomValidity(""));
+  }
+
+  if (email) {
+    email.addEventListener("invalid", function () {
+      if ((email.value || "").trim()) {
+        email.setCustomValidity("E-mail inválido.");
+      } else {
+        email.setCustomValidity("");
+      }
+    });
+    email.addEventListener("input", () => email.setCustomValidity(""));
+  }
 });
 </script>
 {% endblock %}

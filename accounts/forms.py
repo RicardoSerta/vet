@@ -110,15 +110,21 @@ class ExamUploadForm(forms.Form):
         required=False,
         widget=forms.TextInput(attrs={
             'placeholder': '(XX) XXXX-XXXX',
+            # HTML5: só valida se tiver algo preenchido
+            'pattern': r'^\(\d{2}\)\s?(\d{4}-\d{4}|9\d{4}-\d{4})$',
+            'title': 'Use (XX) XXXX-XXXX ou (XX) 9XXXX-XXXX',
         })
     )
 
-    tutor_email = forms.CharField(
+    tutor_email = forms.EmailField(
         label='E-mail do tutor',
         max_length=255,
         required=False,
+        error_messages={
+            "invalid": "Informe um e-mail válido (ex: nome@email.com)."
+        },
         widget=forms.EmailInput(attrs={
-            'placeholder': 'exemplo@email.com',
+            "placeholder": "exemplo@email.com",
         })
     )
 
@@ -196,11 +202,9 @@ class ExamUploadForm(forms.Form):
     def clean_tutor_phone(self):
         phone = self.cleaned_data.get('tutor_phone', '').strip()
         if phone:
-            pattern = r'^\(\d{2}\)\s?\d{4,5}-\d{4}$'
+            pattern = r'^\(\d{2}\)\s?(\d{4}-\d{4}|9\d{4}-\d{4})$'
             if not re.match(pattern, phone):
-                raise forms.ValidationError(
-                    'Use o formato (XX) XXXX-XXXX ou (xx) 9XXXX-XXXXX.'
-                )
+                raise forms.ValidationError("Use o formato (XX) XXXX-XXXX ou (XX) 9XXXX-XXXX.")
         return phone
 
     def clean(self):
