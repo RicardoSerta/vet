@@ -11,6 +11,9 @@ from django import forms
 
 from .models import Tutor, Clinic, Veterinarian, Pet, Profile, ExamTypeAlias
 
+PHONE_ANY_RE = re.compile(r'^\(\d{2}\)\s?(\d{4}-\d{4}|9\d{4}-\d{4})$')  # aceita fixo ou celular 9xxxx
+PHONE_WA_RE  = re.compile(r'^\(\d{2}\)\s?9\d{4}-\d{4}$')               # só whatsapp (celular)
+
 ALLOWED_EXTRA_EXTENSIONS = {".pdf", ".avi", ".png", ".jpg", ".jpeg"}
 MAX_EXTRA_FILES = 5
 
@@ -293,10 +296,12 @@ class ExamUploadForm(forms.Form):
         return files
 
 class TutorForm(forms.ModelForm):
+    notify_phone = forms.CharField(required=False, initial="1", widget=forms.HiddenInput())
+    notify_email = forms.CharField(required=False, initial="1", widget=forms.HiddenInput())
+
     class Meta:
         model = Tutor
         fields = ["name", "surname", "email", "phone"]
-
         widgets = {
             "name": forms.TextInput(attrs={"placeholder": "Nome do tutor"}),
             "surname": forms.TextInput(attrs={"placeholder": "Sobrenome do tutor"}),
@@ -311,12 +316,33 @@ class TutorForm(forms.ModelForm):
         self.fields['email'].widget.attrs.update({'placeholder': 'exemplo@email.com'})
         self.fields['phone'].widget.attrs.update({'placeholder': '(XX) XXXX-XXXX'})
         self.fields['phone'].help_text = 'Formato: (XX) 9XXXX-XXXX ou (XX) XXXX-XXXX'
+        self.fields['phone'].widget.attrs.update({
+            'placeholder': '(XX) XXXX-XXXX',
+            'pattern': r'^\(\d{2}\)\s?(\d{4}-\d{4}|9\d{4}-\d{4})$',
+            'title': 'Use (XX) XXXX-XXXX ou (XX) 9XXXX-XXXX',
+        })
+        
+    def clean_phone(self):
+        phone = (self.cleaned_data.get("phone") or "").strip()
+        if phone and not PHONE_ANY_RE.match(phone):
+            raise forms.ValidationError("Use o formato (XX) XXXX-XXXX ou (XX) 9XXXX-XXXX.")
+        return phone
+
+    def clean_email(self):
+        email = (self.cleaned_data.get("email") or "").strip()
+        # o campo do model pode não validar; então forçamos aqui:
+        if email:
+            from django.core.validators import validate_email
+            validate_email(email)
+        return email
 
 class ClinicForm(forms.ModelForm):
+    notify_phone = forms.CharField(required=False, initial="1", widget=forms.HiddenInput())
+    notify_email = forms.CharField(required=False, initial="1", widget=forms.HiddenInput())
+
     class Meta:
         model = Clinic
         fields = ["name", "email", "phone"]
-
         widgets = {
             "name": forms.TextInput(attrs={"placeholder": "Nome da clínica"}),
             "email": forms.EmailInput(attrs={"placeholder": "exemplo@email.com"}),
@@ -374,13 +400,34 @@ class ClinicForm(forms.ModelForm):
         self.fields['email'].widget.attrs.update({'placeholder': 'exemplo@email.com'})
         self.fields['phone'].widget.attrs.update({'placeholder': '(XX) XXXX-XXXX'})
         self.fields['phone'].help_text = 'Formato: (XX) 9XXXX-XXXX ou (XX) XXXX-XXXX'
+        self.fields['phone'].widget.attrs.update({
+            'placeholder': '(XX) XXXX-XXXX',
+            'pattern': r'^\(\d{2}\)\s?(\d{4}-\d{4}|9\d{4}-\d{4})$',
+            'title': 'Use (XX) XXXX-XXXX ou (XX) 9XXXX-XXXX',
+        })
+        
+    def clean_phone(self):
+        phone = (self.cleaned_data.get("phone") or "").strip()
+        if phone and not PHONE_ANY_RE.match(phone):
+            raise forms.ValidationError("Use o formato (XX) XXXX-XXXX ou (XX) 9XXXX-XXXX.")
+        return phone
+
+    def clean_email(self):
+        email = (self.cleaned_data.get("email") or "").strip()
+        # o campo do model pode não validar; então forçamos aqui:
+        if email:
+            from django.core.validators import validate_email
+            validate_email(email)
+        return email
 
 
 class VeterinarianForm(forms.ModelForm):
+    notify_phone = forms.CharField(required=False, initial="1", widget=forms.HiddenInput())
+    notify_email = forms.CharField(required=False, initial="1", widget=forms.HiddenInput())
+
     class Meta:
         model = Veterinarian
         fields = ["name", "surname", "email", "phone"]
-
         widgets = {
             "name": forms.TextInput(attrs={"placeholder": "Nome do Veterinário"}),
             "surname": forms.TextInput(attrs={"placeholder": "Sobrenome do veterinário"}),
@@ -440,7 +487,25 @@ class VeterinarianForm(forms.ModelForm):
         self.fields['email'].widget.attrs.update({'placeholder': 'exemplo@email.com'})
         self.fields['phone'].widget.attrs.update({'placeholder': '(XX) XXXX-XXXX'})
         self.fields['phone'].help_text = 'Formato: (XX) 9XXXX-XXXX ou (XX) XXXX-XXXX'
+        self.fields['phone'].widget.attrs.update({
+            'placeholder': '(XX) XXXX-XXXX',
+            'pattern': r'^\(\d{2}\)\s?(\d{4}-\d{4}|9\d{4}-\d{4})$',
+            'title': 'Use (XX) XXXX-XXXX ou (XX) 9XXXX-XXXX',
+        })
+        
+    def clean_phone(self):
+        phone = (self.cleaned_data.get("phone") or "").strip()
+        if phone and not PHONE_ANY_RE.match(phone):
+            raise forms.ValidationError("Use o formato (XX) XXXX-XXXX ou (XX) 9XXXX-XXXX.")
+        return phone
 
+    def clean_email(self):
+        email = (self.cleaned_data.get("email") or "").strip()
+        # o campo do model pode não validar; então forçamos aqui:
+        if email:
+            from django.core.validators import validate_email
+            validate_email(email)
+        return email
 
 class PetForm(forms.ModelForm):
     class Meta:
@@ -582,10 +647,19 @@ class AdminAuxForm(forms.Form):
         label="PHONE",
         required=False,
         max_length=20,
-        widget=forms.TextInput(attrs={"placeholder": "(XX) XXXX-XXXX"}),
+        widget=forms.TextInput(attrs={
+            "placeholder": "(XX) XXXX-XXXX",
+            "pattern": r'^\(\d{2}\)\s?(\d{4}-\d{4}|9\d{4}-\d{4})$',
+            "title": "Use (XX) XXXX-XXXX ou (XX) 9XXXX-XXXX",
+        }),
     )
+    
+    notify_phone = forms.CharField(required=False, initial="1", widget=forms.HiddenInput())
+    notify_email = forms.CharField(required=False, initial="1", widget=forms.HiddenInput())
 
     def clean_phone(self):
-        # (deixa simples por enquanto)
-        return (self.cleaned_data.get("phone") or "").strip()
+        phone = (self.cleaned_data.get("phone") or "").strip()
+        if phone and not PHONE_ANY_RE.match(phone):
+            raise forms.ValidationError("Use o formato (XX) XXXX-XXXX ou (XX) 9XXXX-XXXX.")
+        return phone
 

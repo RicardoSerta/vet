@@ -981,3 +981,5 @@ body.app-body {
 .exam-upload-form input:invalid {
   border-color: #ef4444 !important;
 }
+
+.notify-bell.notify-empty { cursor: help !important; }

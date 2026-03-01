@@ -10,7 +10,12 @@
     <form method="post" class="exam-upload-form">
         {% csrf_token %}
 
-        {% for field in form %}
+        {# Renderiza hidden fields (notify_email / notify_phone etc) sem aparecer #}
+        {% for hidden in form.hidden_fields %}
+            {{ hidden }}
+        {% endfor %}
+
+        {% for field in form.visible_fields %}
             <div class="profile-form-row">
                 <div class="profile-form-group" style="grid-column: 1 / -1;">
                     {% if category == 'pets' and field.name == 'tutor' %}
@@ -19,13 +24,38 @@
                                placeholder="Digite para filtrar tutores..."
                                style="margin-bottom: 6px;">
                         {{ field }}
+
+                    {% elif field.name == 'phone' %}
+                        <label for="{{ field.id_for_label }}">{{ field.label }}:</label>
+
+                        <div class="notify-input-wrap">
+                            {{ field }}
+                            <button type="button"
+                                    class="notify-bell notify-empty"
+                                    id="bell-phone"
+                                    title="Notificar via WhatsApp">🔔</button>
+                        </div>
+
+                    {% elif field.name == 'email' %}
+                        <label for="{{ field.id_for_label }}">{{ field.label }}:</label>
+
+                        <div class="notify-input-wrap">
+                            {{ field }}
+                            <button type="button"
+                                    class="notify-bell notify-empty"
+                                    id="bell-email"
+                                    title="Notificar via e-mail">🔔</button>
+                        </div>
+
                     {% else %}
                         <label for="{{ field.id_for_label }}">{{ field.label }}:</label>
                         {{ field }}
                     {% endif %}
+
                     {% if field.errors %}
                         <div class="field-error">{{ field.errors.0 }}</div>
                     {% endif %}
+
                     {% if field.help_text %}
                       <div class="field-hint">{{ field.help_text }}</div>
                     {% endif %}
@@ -37,6 +67,8 @@
         <a href="{% url 'gestao_category' category %}" style="margin-left: 10px; font-size: 13px;">Cancelar</a>
     </form>
 </div>
+
+{# ===== Filtro de Tutor (pets) ===== #}
 {% if category == 'pets' %}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -64,6 +96,8 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 {% endif %}
+
+{# ===== Máscara do telefone (mantém) ===== #}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const phoneInput = document.getElementById('id_phone');
@@ -98,5 +132,111 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 </script>
-{% endblock %}
 
+{# ===== Sinos (notify_phone / notify_email) ===== #}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  function applyState(bell, state) {
+    bell.classList.remove("notify-empty", "notify-enabled", "notify-disabled");
+    bell.classList.add("notify-" + state);
+    bell.textContent = (state === "disabled") ? "🔕" : "🔔";
+  }
+
+  function classifyPhone(v) {
+    v = (v || "").trim();
+    if (!v) return "empty";
+    if (/^\(\d{2}\)\s?9\d{4}-\d{4}$/.test(v)) return "whatsapp";
+    if (/^\(\d{2}\)\s?\d{4}-\d{4}$/.test(v)) return "landline";
+    return "invalid";
+  }
+
+  function syncPhone(input, hidden, bell) {
+    const kind = classifyPhone(input.value);
+
+    if (kind === "empty") {
+      hidden.value = "0";
+      bell.dataset.userToggled = "";
+      applyState(bell, "empty");
+      bell.title = "Notificar via WhatsApp";
+      bell.dataset.eligible = "0";
+      return;
+    }
+
+    if (kind === "invalid") {
+      hidden.value = "0";
+      bell.dataset.userToggled = "";
+      applyState(bell, "empty");
+      bell.title = "Celular inválido.";
+      bell.dataset.eligible = "0";
+      return;
+    }
+
+    if (kind === "landline") {
+      hidden.value = "0";
+      bell.dataset.userToggled = "";
+      applyState(bell, "empty");
+      bell.title = "Não é possível enviar um alerta para este número";
+      bell.dataset.eligible = "0";
+      return;
+    }
+
+    // whatsapp válido
+    bell.dataset.eligible = "1";
+    bell.title = "Notificar via WhatsApp";
+    if (!bell.dataset.userToggled) hidden.value = "1";
+    applyState(bell, hidden.value === "1" ? "enabled" : "disabled");
+  }
+
+  function syncEmail(input, hidden, bell) {
+    const v = (input.value || "").trim();
+
+    if (!v) {
+      hidden.value = "0";
+      bell.dataset.userToggled = "";
+      applyState(bell, "empty");
+      bell.title = "Notificar via e-mail";
+      bell.dataset.eligible = "0";
+      return;
+    }
+
+    // validação nativa do input type=email (ou pattern)
+    const ok = input.checkValidity();
+    if (!ok) {
+      hidden.value = "0";
+      bell.dataset.userToggled = "";
+      applyState(bell, "empty");
+      bell.title = "E-mail inválido.";
+      bell.dataset.eligible = "0";
+      return;
+    }
+
+    bell.dataset.eligible = "1";
+    bell.title = "Notificar via e-mail";
+    if (!bell.dataset.userToggled) hidden.value = "1";
+    applyState(bell, hidden.value === "1" ? "enabled" : "disabled");
+  }
+
+  function setupBell(inputId, hiddenId, bellId, syncFn) {
+    const input = document.getElementById(inputId);
+    const hidden = document.getElementById(hiddenId);
+    const bell = document.getElementById(bellId);
+    if (!input || !hidden || !bell) return;
+
+    // tooltip sempre funciona; clique só quando elegível
+    bell.addEventListener("click", function () {
+      if (bell.dataset.eligible !== "1") return;
+
+      bell.dataset.userToggled = "1";
+      hidden.value = (hidden.value === "1") ? "0" : "1";
+      syncFn(input, hidden, bell);
+    });
+
+    input.addEventListener("input", () => syncFn(input, hidden, bell));
+    syncFn(input, hidden, bell);
+  }
+
+  setupBell("id_phone", "id_notify_phone", "bell-phone", syncPhone);
+  setupBell("id_email", "id_notify_email", "bell-email", syncEmail);
+});
+</script>
+{% endblock %}

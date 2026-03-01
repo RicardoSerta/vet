@@ -16,6 +16,7 @@ from django.urls import reverse
 from django.db.models.deletion import ProtectedError
 from django.db import transaction
 from django.http import FileResponse, Http404, HttpResponseForbidden
+from django.core.mail import send_mail
 from .authz import admin_required, is_admin_user, is_superadmin_user, superadmin_required
 import os
 import mimetypes
@@ -240,6 +241,20 @@ def user_is_provider_for_exam(user, exam) -> bool:
         return True
 
     return False
+    
+PHONE_WA_RE = re.compile(r'^\(\d{2}\)\s?9\d{4}-\d{4}$')
+
+def is_whatsapp_phone(phone: str) -> bool:
+    return bool(phone and PHONE_WA_RE.match(phone.strip()))
+
+def send_simple_email(to_email: str, subject: str, body: str):
+    send_mail(
+        subject,
+        body,
+        settings.DEFAULT_FROM_EMAIL,
+        [to_email],
+        fail_silently=False
+    )
 
 def login_view(request):
     if request.user.is_authenticated:
@@ -840,7 +855,48 @@ def management_create(request, category):
     if request.method == 'POST':
         form = FormClass(request.POST)
         if form.is_valid():
-            form.save()
+            obj = form.save()
+
+            notify_email = (form.cleaned_data.get("notify_email") or "1") != "0"
+            notify_phone = (form.cleaned_data.get("notify_phone") or "1") != "0"
+
+            email = (getattr(obj, "email", "") or "").strip()
+            phone = (getattr(obj, "phone", "") or "").strip()
+
+            # elegibilidade
+            if not email:
+                notify_email = False
+            if not is_whatsapp_phone(phone):
+                notify_phone = False  # por enquanto não envia WhatsApp
+
+            if notify_email:
+                # cria user pendente e monta link
+                role = "TUTOR" if category == "tutores" else "BASIC"
+                u, created_now, needs_activation = ensure_pending_user_for_provider(
+                    name=getattr(obj, "display_name", None) or getattr(obj, "name", ""),
+                    email=email,
+                    phone=phone,
+                    role=role,
+                )
+
+                activation_link = build_activation_link(request, u) if (u and needs_activation) else None
+                login_link = request.build_absolute_uri(reverse("login"))
+
+                subject = "LumaVet — Seu cadastro foi criado"
+                body = (
+                    f"Olá!\n\n"
+                    f"Você agora tem um cadastro no LumaVet.\n\n"
+                    f"E-mail cadastrado: {email or '-'}\n"
+                    f"Telefone cadastrado: {phone or '-'}\n\n"
+                    + (f"Para definir sua senha e acessar, use este link:\n{activation_link}\n\n" if activation_link else
+                       f"Acesse o portal em:\n{login_link}\n\n")
+                    + "Se você não reconhece esta mensagem, pode ignorar."
+                )
+
+                try:
+                    send_simple_email(email, subject, body)
+                except Exception as e:
+                    messages.error(request, f"Falha ao enviar e-mail de cadastro: {e}")
             messages.success(request, f'{info["singular"]} cadastrado(a) com sucesso.')
 
             return redirect('gestao_category', category=category)
@@ -892,12 +948,46 @@ def management_edit(request, category, pk):
 
     info = category_map[category]
     obj = get_object_or_404(info['model'], pk=pk)
+    
+    old_email = (obj.email or "").strip()
+    old_phone = (obj.phone or "").strip()
 
     if request.method == "POST":
         form = info['form'](request.POST, request.FILES, instance=obj)
         if form.is_valid():
-            form.save()
+            obj = form.save()
+            new_email = (obj.email or "").strip()
+            new_phone = (obj.phone or "").strip()
 
+            notify_email = (form.cleaned_data.get("notify_email") or "1") != "0"
+            notify_phone = (form.cleaned_data.get("notify_phone") or "1") != "0"
+
+            email_changed = (new_email.lower() != old_email.lower()) if (new_email and old_email) else (new_email != old_email)
+            phone_changed = (new_phone != old_phone)
+
+            if notify_email and new_email and email_changed:
+                role = "TUTOR" if category == "tutores" else "BASIC"
+                u, created_now, needs_activation = ensure_pending_user_for_provider(
+                    name=getattr(obj, "display_name", None) or getattr(obj, "name", ""),
+                    email=new_email,
+                    phone=new_phone,
+                    role=role,
+                )
+                login_link = request.build_absolute_uri(reverse("login"))
+
+                subject = "LumaVet — Seus dados foram atualizados"
+                body = (
+                    f"Olá!\n\n"
+                    f"Seus dados de contato foram atualizados no LumaVet.\n\n"
+                    f"Novo e-mail: {new_email or '-'}\n"
+                    f"Novo telefone: {new_phone or '-'}\n\n"
+                    f"Acesse o portal em:\n{login_link}\n\n"
+                    f"Se você não reconhece esta alteração, pode ignorar."
+                )
+                try:
+                    send_simple_email(new_email, subject, body)
+                except Exception as e:
+                    messages.error(request, f"Falha ao enviar e-mail de atualização: {e}")
             updated_username = getattr(form, "updated_username", None)
 
             msg = f"{info['singular']} atualizado(a) com sucesso."
@@ -997,8 +1087,22 @@ def admin_user_create(request):
                 last_name=last_name,
                 email=email,
             )
+            
             user.set_unusable_password()
             user.save()
+            
+            notify_email = (form.cleaned_data.get("notify_email") or "1") != "0"
+            if notify_email and email:
+                activation_link = build_activation_link(request, user)
+                subject = "LumaVet — Seu acesso foi criado"
+                body = (
+                    f"Olá {first_name}!\n\n"
+                    f"Você agora tem um cadastro no LumaVet.\n\n"
+                    f"E-mail cadastrado: {email}\n"
+                    f"Telefone cadastrado: {phone or '-'}\n\n"
+                    f"Para definir sua senha e acessar, use este link:\n{activation_link}\n\n"
+                )
+                send_simple_email(email, subject, body)
 
             p, _ = Profile.objects.get_or_create(user=user)
             p.role = "ADMIN_AUX"
