@@ -65,7 +65,16 @@
             <div class="profile-form-row" style="margin-top: 12px;">
               <div class="profile-form-group">
                 <label for="{{ form.tutor_phone.id_for_label }}">Celular Tutor:</label>
-                {{ form.tutor_phone }}
+
+                <div class="notify-input-wrap">
+                  {{ form.tutor_phone }}
+                  {{ form.notify_tutor_phone }}
+                  <button type="button"
+                          class="notify-bell notify-empty"
+                          id="bell-tutor-phone"
+                          title="Notificar via WhatsApp">🔔</button>
+                </div>
+
                 {% if form.tutor_phone.errors %}
                   <div class="field-error">{{ form.tutor_phone.errors.0 }}</div>
                 {% endif %}
@@ -76,12 +85,20 @@
 
               <div class="profile-form-group">
                 <label for="{{ form.tutor_email.id_for_label }}">E-mail Tutor:</label>
-                {{ form.tutor_email }}
+
+                <div class="notify-input-wrap">
+                  {{ form.tutor_email }}
+                  {{ form.notify_tutor_email }}
+                  <button type="button"
+                          class="notify-bell notify-empty"
+                          id="bell-tutor-email"
+                          title="Notificar via e-mail">🔔</button>
+                </div>
+
                 {% if form.tutor_email.errors %}
                   <div class="field-error">{{ form.tutor_email.errors.0 }}</div>
                 {% endif %}
               </div>
-            </div>
             
             <div class="profile-form-row" style="margin-top: 6px;">
 
@@ -506,6 +523,52 @@ document.addEventListener('DOMContentLoaded', function () {
   // inicial
   syncMainVsAdditional();
 })();
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  function applyState(bell, state) {
+    bell.classList.remove("notify-empty", "notify-enabled", "notify-disabled");
+    bell.classList.add("notify-" + state);
+  }
+
+  function setupBell(inputId, hiddenId, bellId) {
+    const input = document.getElementById(inputId);
+    const hidden = document.getElementById(hiddenId);
+    const bell = document.getElementById(bellId);
+    if (!input || !hidden || !bell) return;
+
+    function syncFromInput() {
+      const v = (input.value || "").trim();
+
+      if (!v) {
+        hidden.value = "0";
+        bell.dataset.userToggled = "";
+        applyState(bell, "empty");
+        return;
+      }
+
+      // se o usuário nunca clicou, padrão = ligado
+      if (!bell.dataset.userToggled) hidden.value = "1";
+
+      applyState(bell, hidden.value === "1" ? "enabled" : "disabled");
+    }
+
+    bell.addEventListener("click", function () {
+      const v = (input.value || "").trim();
+      if (!v) return; // vazio = cinza e não clica
+
+      bell.dataset.userToggled = "1";
+      hidden.value = (hidden.value === "1") ? "0" : "1";
+      applyState(bell, hidden.value === "1" ? "enabled" : "disabled");
+    });
+
+    input.addEventListener("input", syncFromInput);
+    syncFromInput();
+  }
+
+  setupBell("id_tutor_phone", "id_notify_tutor_phone", "bell-tutor-phone");
+  setupBell("id_tutor_email", "id_notify_tutor_email", "bell-tutor-email");
+});
 </script>
 {% endblock %}
 

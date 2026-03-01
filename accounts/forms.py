@@ -95,6 +95,9 @@ class MultipleFileField(forms.FileField):
 
 
 class ExamUploadForm(forms.Form):
+    notify_tutor_phone = forms.CharField(required=False, initial="1", widget=forms.HiddenInput())
+    notify_tutor_email = forms.CharField(required=False, initial="1", widget=forms.HiddenInput())
+    
     clinic_or_vet = forms.ChoiceField(
         label='Clínica / Veterinário',
         choices=[],
@@ -553,4 +556,32 @@ class ExamTypeAliasForm(forms.ModelForm):
         if not name:
             raise forms.ValidationError("Informe o nome real do exame.")
         return name
+        
+class AdminAuxForm(forms.Form):
+    first_name = forms.CharField(
+        label="NAME",
+        max_length=150,
+        widget=forms.TextInput(attrs={"placeholder": "Nome do auxiliar"}),
+    )
+    last_name = forms.CharField(
+        label="SOBRENOME",
+        max_length=150,
+        required=False,
+        widget=forms.TextInput(attrs={"placeholder": "Sobrenome do auxiliar"}),
+    )
+    email = forms.EmailField(
+        label="EMAIL",
+        required=False,
+        widget=forms.EmailInput(attrs={"placeholder": "exemplo@email.com"}),
+    )
+    phone = forms.CharField(
+        label="PHONE",
+        required=False,
+        max_length=20,
+        widget=forms.TextInput(attrs={"placeholder": "(XX) XXXX-XXXX"}),
+    )
+
+    def clean_phone(self):
+        # (deixa simples por enquanto)
+        return (self.cleaned_data.get("phone") or "").strip()
 

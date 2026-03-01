@@ -672,7 +672,7 @@ body.app-body {
 
 .optional-fields {
     margin-top: 12px;
-    margin-bottom: 14px
+    margin-bottom: 14px;
     border: 1px solid #e5e7eb;
     border-radius: 4px;
     background: #f9fafb;
@@ -917,4 +917,40 @@ body.app-body {
 /* Alinhar a coluna de "Arquivos extras" com a coluna da esquerda */
 .profile-form-group.file-drop-zone{
   padding: 0;
+}
+
+.notify-input-wrap {
+  position: relative;
+}
+
+.notify-input-wrap input[type="text"],
+.notify-input-wrap input[type="email"] {
+  padding-right: 40px; /* espaço pro sino */
+}
+
+.notify-bell {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 6px;
+}
+
+.notify-bell.notify-empty {
+  color: #9ca3af;
+  opacity: 0.6;
+  cursor: default;
+}
+
+.notify-bell.notify-enabled {
+  color: #10b981; /* verde */
+}
+
+.notify-bell.notify-disabled {
+  color: #ef4444; /* vermelho */
 }

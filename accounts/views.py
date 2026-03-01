@@ -22,7 +22,7 @@ import mimetypes
 import re
 import unicodedata
 from .models import Profile, Exam, Tutor, Clinic, Veterinarian, Pet, ExamTypeAlias, ExamExtraPDF
-from .forms import ExamUploadForm, TutorForm, ClinicForm, VeterinarianForm, PetForm, MultiExamUploadForm, parse_exam_filename, ExamTypeAliasForm
+from .forms import ExamUploadForm, TutorForm, ClinicForm, VeterinarianForm, PetForm, MultiExamUploadForm, parse_exam_filename, ExamTypeAliasForm, AdminAuxForm
 
 MANAGEMENT_CATEGORIES = {
     'tutores': {
@@ -507,8 +507,12 @@ def exam_upload(request):
             tutor_user = None
             tutor_email = (cd.get("tutor_email") or "").strip()
             tutor_phone = (cd.get("tutor_phone") or "").strip()
+            
+            notify_tutor_email = (cd.get("notify_tutor_email") or "1") != "0"
+            if not tutor_email:
+                notify_tutor_email = False
 
-            if tutor_email:
+            if tutor_email and notify_tutor_email:
                 tutor_user, created_now, needs_activation = ensure_pending_user_for_provider(
                     name=cd["parsed_tutor_name"],
                     email=tutor_email,
@@ -537,7 +541,7 @@ def exam_upload(request):
             sent_any = False
 
             # 1) Tutor (se preencheu e-mail)
-            if tutor_email:
+            if tutor_email and notify_tutor_email:
                 try:
                     ok = send_exam_email(
                         request,
@@ -971,43 +975,49 @@ def management_delete(request, category, pk):
 def admin_user_create(request):
     profile, _ = Profile.objects.get_or_create(user=request.user)
 
-    if request.method == 'POST':
-        first_name = (request.POST.get('first_name') or '').strip()
-        last_name = (request.POST.get('last_name') or '').strip()
-        email = (request.POST.get('email') or '').strip()
-        phone = (request.POST.get('phone') or '').strip()
+    if request.method == "POST":
+        form = AdminAuxForm(request.POST)
+        if form.is_valid():
+            first_name = form.cleaned_data["first_name"].strip()
+            last_name = (form.cleaned_data.get("last_name") or "").strip()
+            email = (form.cleaned_data.get("email") or "").strip()
+            phone = (form.cleaned_data.get("phone") or "").strip()
 
-        if not first_name:
-            messages.error(request, "O nome é obrigatório.")
-            return render(request, 'accounts/admin_user_form.html', {'profile': profile})
+            # username único (baseado no email ou nome)
+            base = (email.split("@")[0] if email else slugify(first_name)) or "aux"
+            username = base
+            i = 2
+            while User.objects.filter(username=username).exists():
+                username = f"{base}{i}"
+                i += 1
 
-        # username único (baseado no email ou nome)
-        base = (email.split('@')[0] if email else slugify(first_name)) or 'aux'
-        username = base
-        i = 2
-        while User.objects.filter(username=username).exists():
-            username = f"{base}{i}"
-            i += 1
+            user = User.objects.create(
+                username=username,
+                first_name=first_name,
+                last_name=last_name,
+                email=email,
+            )
+            user.set_unusable_password()
+            user.save()
 
-        # cria user sem senha (não loga até receber ativação)
-        user = User.objects.create(
-            username=username,
-            first_name=first_name,
-            last_name=last_name,
-            email=email,
-        )
-        user.set_unusable_password()
-        user.save()
+            p, _ = Profile.objects.get_or_create(user=user)
+            p.role = "ADMIN_AUX"
+            p.whatsapp = phone
+            p.save()
 
-        p, _ = Profile.objects.get_or_create(user=user)
-        p.role = 'ADMIN_AUX'
-        p.whatsapp = phone
-        p.save()
+            messages.success(request, f'Auxiliar "{first_name}" criado com sucesso.')
+            return redirect("gestao_category", category="admin")
+    else:
+        form = AdminAuxForm()
 
-        messages.success(request, f'Auxiliar "{first_name}" criado com sucesso.')
-        return redirect('gestao_category', category='admin')
-
-    return render(request, 'accounts/admin_user_form.html', {'profile': profile})
+    return render(request, "accounts/management_form.html", {
+        "profile": profile,
+        "category": "admin",
+        "category_label": "Admin",
+        "category_singular": "Auxiliar",
+        "form": form,
+        "title": "Cadastrar Auxiliar",
+    })
     
 @login_required
 @superadmin_required
