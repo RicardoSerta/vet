@@ -919,38 +919,60 @@ body.app-body {
   padding: 0;
 }
 
-.notify-input-wrap {
-  position: relative;
-}
-
-.notify-input-wrap input[type="text"],
-.notify-input-wrap input[type="email"] {
-  padding-right: 40px; /* espaço pro sino */
-}
-
-.notify-bell {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  border: none;
-  background: transparent;
-  font-size: 16px;
-  cursor: pointer;
-  padding: 2px 4px;
-  border-radius: 6px;
-}
-
 .notify-bell.notify-empty {
   color: #9ca3af;
   opacity: 0.6;
   cursor: default;
 }
 
-.notify-bell.notify-enabled {
-  color: #10b981; /* verde */
+.notify-input-wrap {
+  position: relative;
 }
 
+.notify-input-wrap input[type="text"],
+.notify-input-wrap input[type="email"] {
+  padding-right: 44px; /* espaço pro sino */
+}
+
+/* botão do sino */
+.notify-bell {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 8px;
+  border: 1px solid transparent;
+
+  background: transparent;
+  font-size: 16px;
+
+  cursor: pointer;
+  padding: 0;
+}
+
+/* vazio (cinza) */
+.notify-bell.notify-empty {
+  border-color: #d1d5db;
+  background: #f3f4f6;
+  opacity: 0.7;
+  cursor: default;
+}
+
+/* ligado (verde) */
+.notify-bell.notify-enabled {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.18);
+}
+
+/* desligado (vermelho) */
 .notify-bell.notify-disabled {
-  color: #ef4444; /* vermelho */
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.18);
 }

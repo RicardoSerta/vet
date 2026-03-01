@@ -529,6 +529,10 @@ document.addEventListener("DOMContentLoaded", function () {
   function applyState(bell, state) {
     bell.classList.remove("notify-empty", "notify-enabled", "notify-disabled");
     bell.classList.add("notify-" + state);
+
+    // ajuda MUITO porque o emoji muda:
+    if (state === "disabled") bell.textContent = "🔕";
+    else bell.textContent = "🔔";
   }
 
   function setupBell(inputId, hiddenId, bellId) {
