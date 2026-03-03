@@ -884,7 +884,7 @@ def management_create(request, category):
     FormClass = info['form']
 
     if request.method == 'POST':
-        form = FormClass(request.POST)
+        form = FormClass(request.POST, request.FILES)
         if form.is_valid():
             obj = form.save()
 
@@ -941,6 +941,8 @@ def management_create(request, category):
         'category_label': info['label'],
         'category_singular': info['singular'],
         'form': form,
+        'is_edit': False,
+        'obj': None,
     })
     
 @login_required

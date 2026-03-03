@@ -128,6 +128,7 @@ class Tutor(BaseContact):
     phone = models.CharField(max_length=20, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     surname = models.CharField("Sobrenome", max_length=255, blank=True)
+    photo = models.ImageField(upload_to="management_photos/tutores/", blank=True, null=True)
 
     @property
     def display_name(self):
@@ -151,6 +152,7 @@ class Clinic(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     user = models.OneToOneField(User, null=True, blank=True, on_delete=models.SET_NULL)
+    photo = models.ImageField(upload_to="management_photos/clinicas/", blank=True, null=True)
 
     @property
     def display_name(self):
@@ -173,6 +175,7 @@ class Veterinarian(models.Model):
     user = models.OneToOneField(User, null=True, blank=True, on_delete=models.SET_NULL)
     
     surname = models.CharField("Sobrenome", max_length=255, blank=True)
+    photo = models.ImageField(upload_to="management_photos/veterinarios/", blank=True, null=True)
 
     @property
     def display_name(self):
@@ -194,6 +197,7 @@ class Pet(models.Model):
     breed = models.CharField("Raça", max_length=255, blank=True)
     tutor = models.ForeignKey(Tutor, on_delete=models.CASCADE, related_name="pets")
     created_at = models.DateTimeField("Data de cadastro", auto_now_add=True)
+    photo = models.ImageField(upload_to="management_photos/pets/", blank=True, null=True)
 
     class Meta:
         ordering = ['name']

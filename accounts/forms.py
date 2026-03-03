@@ -301,12 +301,16 @@ class TutorForm(forms.ModelForm):
 
     class Meta:
         model = Tutor
-        fields = ["name", "surname", "phone", "email"]
+        fields = ["name", "surname", "phone", "email", "photo"]
         widgets = {
             "name": forms.TextInput(attrs={"placeholder": "Nome do tutor"}),
             "surname": forms.TextInput(attrs={"placeholder": "Sobrenome do tutor"}),
             "email": forms.EmailInput(attrs={"placeholder": "exemplo@email.com"}),
             "phone": forms.TextInput(attrs={"placeholder": "(XX) XXXX-XXXX"}),
+            "photo": forms.ClearableFileInput(attrs={
+                "accept": "image/*",
+                "class": "mgmt-photo-input",
+            }),
         }
         
     def __init__(self, *args, **kwargs):
@@ -342,11 +346,15 @@ class ClinicForm(forms.ModelForm):
 
     class Meta:
         model = Clinic
-        fields = ["name", "phone", "email"]
+        fields = ["name", "phone", "email", "photo"]
         widgets = {
             "name": forms.TextInput(attrs={"placeholder": "Nome da clínica"}),
             "email": forms.EmailInput(attrs={"placeholder": "exemplo@email.com"}),
             "phone": forms.TextInput(attrs={"placeholder": "(XX) XXXX-XXXX"}),
+            "photo": forms.ClearableFileInput(attrs={
+                "accept": "image/*",
+                "class": "mgmt-photo-input",
+            }),
         }
 
     def save(self, commit=True):
@@ -427,12 +435,16 @@ class VeterinarianForm(forms.ModelForm):
 
     class Meta:
         model = Veterinarian
-        fields = ["name", "surname", "phone", "email"]
+        fields = ["name", "surname", "phone", "email", "photo"]
         widgets = {
             "name": forms.TextInput(attrs={"placeholder": "Nome do Veterinário"}),
             "surname": forms.TextInput(attrs={"placeholder": "Sobrenome do veterinário"}),
             "email": forms.EmailInput(attrs={"placeholder": "exemplo@email.com"}),
             "phone": forms.TextInput(attrs={"placeholder": "(XX) XXXX-XXXX"}),
+            "photo": forms.ClearableFileInput(attrs={
+                "accept": "image/*",
+                "class": "mgmt-photo-input",
+            }),
         }
 
     def save(self, commit=True):
@@ -510,7 +522,7 @@ class VeterinarianForm(forms.ModelForm):
 class PetForm(forms.ModelForm):
     class Meta:
         model = Pet
-        fields = ['name', 'breed', 'tutor']
+        fields = ["name", "breed", "tutor", "photo"]
         
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

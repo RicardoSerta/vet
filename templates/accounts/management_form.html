@@ -1,135 +1,190 @@
 {% extends 'base_app.html' %}
+{% load static %}
 
-{% block title %}Novo {{ category_singular }} - LumaVet{% endblock %}
-{% block page_title %}Novo {{ category_singular }}{% endblock %}
+{% block title %}
+  {% if is_edit %}Editar {{ category_singular }} - LumaVet{% else %}Novo {{ category_singular }} - LumaVet{% endif %}
+{% endblock %}
+{% block page_title %}
+  {% if is_edit %}Editar {{ category_singular }}{% else %}Novo {{ category_singular }}{% endif %}
+{% endblock %}
 
 {% block main_content %}
 <div class="card">
-    <h2 class="card-title">Cadastrar {{ category_singular }}</h2>
+  <h2 class="card-title">
+    {% if is_edit %}Editar {{ category_singular }}{% else %}Cadastrar {{ category_singular }}{% endif %}
+  </h2>
 
-    <form method="post" class="exam-upload-form">
-        {% csrf_token %}
+  <form method="post" enctype="multipart/form-data" class="exam-upload-form">
+    {% csrf_token %}
 
-        {# Renderiza hidden fields (notify_email / notify_phone etc) sem aparecer #}
-        {% for hidden in form.hidden_fields %}
-            {{ hidden }}
-        {% endfor %}
+    {# hidden fields (notify_email / notify_phone etc) #}
+    {% for hidden in form.hidden_fields %}
+      {{ hidden }}
+    {% endfor %}
 
+    <div class="mgmt-form-grid">
+      {# LADO ESQUERDO: FOTO (não aplicar ao admin por enquanto) #}
+      {% if category != 'admin' %}
+      <div class="mgmt-photo-card">
+        <div class="mgmt-photo-title">Foto</div>
+
+        <div class="mgmt-photo-preview-wrap">
+          <img
+            id="mgmt-photo-preview"
+            class="mgmt-photo-preview"
+            src="{% if obj and obj.photo %}{{ obj.photo.url }}{% else %}{% static 'accounts/img/avatar-placeholder.png' %}{% endif %}"
+            alt="Foto"
+          >
+        </div>
+
+        <div class="mgmt-photo-hint">Envie uma imagem quadrada, de preferência.</div>
+
+        <div class="mgmt-photo-actions">
+          <label class="btn-secondary mgmt-photo-btn" for="id_photo">Escolher imagem</label>
+
+          {# se o form tiver photo, renderiza ele (vai vir com id=id_photo) #}
+          {% if form.photo %}
+            {{ form.photo }}
+          {% else %}
+            <input type="file" name="photo" id="id_photo" accept="image/*" class="mgmt-photo-input">
+          {% endif %}
+
+          <button type="button" class="btn-secondary mgmt-photo-clear" id="mgmt-photo-clear">Remover</button>
+        </div>
+
+        {% if form.photo.errors %}
+          <div class="field-error">{{ form.photo.errors.0 }}</div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      {# LADO DIREITO: CAMPOS #}
+      <div class="mgmt-fields">
         {% for field in form.visible_fields %}
+          {# não renderiza photo do lado direito #}
+          {% if field.name != 'photo' %}
             <div class="profile-form-row">
-                <div class="profile-form-group" style="grid-column: 1 / -1;">
-                    {% if category == 'pets' and field.name == 'tutor' %}
-                        <label for="{{ field.id_for_label }}">{{ field.label }}:</label>
-                        <input type="text" id="tutor-search"
-                               placeholder="Digite para filtrar tutores..."
-                               style="margin-bottom: 6px;">
-                        {{ field }}
+              <div class="profile-form-group" style="grid-column: 1 / -1;">
+                {% if category == 'pets' and field.name == 'tutor' %}
+                  <label for="{{ field.id_for_label }}">{{ field.label }}:</label>
+                  <input type="text" id="tutor-search"
+                         placeholder="Digite para filtrar tutores..."
+                         style="margin-bottom: 6px;">
+                  {{ field }}
 
-                    {% elif field.name == 'phone' %}
-                        <label for="{{ field.id_for_label }}">{{ field.label }}:</label>
+                {% elif field.name == 'phone' %}
+                  <label for="{{ field.id_for_label }}">{{ field.label }}:</label>
+                  <div class="notify-input-wrap">
+                    {{ field }}
+                    <button type="button"
+                            class="notify-bell notify-empty"
+                            id="bell-phone"
+                            title="Notificar via WhatsApp">🔔</button>
+                  </div>
 
-                        <div class="notify-input-wrap">
-                            {{ field }}
-                            <button type="button"
-                                    class="notify-bell notify-empty"
-                                    id="bell-phone"
-                                    title="Notificar via WhatsApp">🔔</button>
-                        </div>
+                {% elif field.name == 'email' %}
+                  <label for="{{ field.id_for_label }}">{{ field.label }}:</label>
+                  <div class="notify-input-wrap">
+                    {{ field }}
+                    <button type="button"
+                            class="notify-bell notify-empty"
+                            id="bell-email"
+                            title="Notificar via e-mail">🔔</button>
+                  </div>
 
-                    {% elif field.name == 'email' %}
-                        <label for="{{ field.id_for_label }}">{{ field.label }}:</label>
+                {% else %}
+                  <label for="{{ field.id_for_label }}">{{ field.label }}:</label>
+                  {{ field }}
+                {% endif %}
 
-                        <div class="notify-input-wrap">
-                            {{ field }}
-                            <button type="button"
-                                    class="notify-bell notify-empty"
-                                    id="bell-email"
-                                    title="Notificar via e-mail">🔔</button>
-                        </div>
-
-                    {% else %}
-                        <label for="{{ field.id_for_label }}">{{ field.label }}:</label>
-                        {{ field }}
-                    {% endif %}
-
-                    {% if field.errors %}
-                        <div class="field-error">{{ field.errors.0 }}</div>
-                    {% endif %}
-
-                    {% if field.help_text %}
-                      <div class="field-hint">{{ field.help_text }}</div>
-                    {% endif %}
-                </div>
+                {% if field.errors %}
+                  <div class="field-error">{{ field.errors.0 }}</div>
+                {% endif %}
+                {% if field.help_text %}
+                  <div class="field-hint">{{ field.help_text }}</div>
+                {% endif %}
+              </div>
             </div>
+          {% endif %}
         {% endfor %}
 
         <button type="submit" class="btn-primary">Salvar</button>
         <a href="{% url 'gestao_category' category %}" style="margin-left: 10px; font-size: 13px;">Cancelar</a>
-    </form>
+      </div>
+    </div>
+  </form>
 </div>
 
 {# ===== Filtro de Tutor (pets) ===== #}
 {% if category == 'pets' %}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const searchInput = document.getElementById('tutor-search');
-    const select = document.getElementById('id_tutor');
+  const searchInput = document.getElementById('tutor-search');
+  const select = document.getElementById('id_tutor');
+  if (!searchInput || !select) return;
 
-    if (!searchInput || !select) return;
-
-    searchInput.addEventListener('input', function () {
-        const term = this.value.toLowerCase();
-
-        for (let i = 0; i < select.options.length; i++) {
-            const option = select.options[i];
-
-            // Mantém a opção vazia (---------) sempre visível
-            if (option.value === "") {
-                option.hidden = false;
-                continue;
-            }
-
-            const text = option.text.toLowerCase();
-            option.hidden = term && !text.includes(term);
-        }
-    });
+  searchInput.addEventListener('input', function () {
+    const term = this.value.toLowerCase();
+    for (let i = 0; i < select.options.length; i++) {
+      const option = select.options[i];
+      if (option.value === "") { option.hidden = false; continue; }
+      const text = option.text.toLowerCase();
+      option.hidden = term && !text.includes(term);
+    }
+  });
 });
 </script>
 {% endif %}
 
+{# ===== Preview / Remover foto ===== #}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const input = document.getElementById("id_photo");
+  const img = document.getElementById("mgmt-photo-preview");
+  const clearBtn = document.getElementById("mgmt-photo-clear");
+  if (!input || !img) return;
+
+  const placeholder = img.getAttribute("src");
+
+  input.addEventListener("change", function () {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    img.src = url;
+  });
+
+  if (clearBtn) {
+    clearBtn.addEventListener("click", function () {
+      input.value = "";
+      img.src = placeholder;
+    });
+  }
+});
+</script>
+
 {# ===== Máscara do telefone (mantém) ===== #}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const phoneInput = document.getElementById('id_phone');
-    if (!phoneInput) return;
+  const phoneInput = document.getElementById('id_phone');
+  if (!phoneInput) return;
 
-    phoneInput.addEventListener('input', function () {
-        let digits = phoneInput.value.replace(/\D/g, '');
+  phoneInput.addEventListener('input', function () {
+    let digits = phoneInput.value.replace(/\D/g, '');
+    if (digits.length > 11) digits = digits.slice(0, 11);
 
-        if (digits.length > 11) digits = digits.slice(0, 11);
+    if (!digits) { phoneInput.value = ''; return; }
 
-        if (!digits) {
-            phoneInput.value = '';
-            return;
-        }
+    let result = '(' + digits.slice(0, 2);
+    if (digits.length <= 2) { phoneInput.value = result; return; }
 
-        let result = '(' + digits.slice(0, 2);
-        if (digits.length <= 2) {
-            phoneInput.value = result;
-            return;
-        }
+    result += ') ';
+    let rest = digits.slice(2);
 
-        result += ') ';
-        let rest = digits.slice(2);
+    if (rest.length <= 4) result += rest;
+    else result += rest.slice(0, rest.length - 4) + '-' + rest.slice(-4);
 
-        if (rest.length <= 4) {
-            result += rest;
-        } else {
-            result += rest.slice(0, rest.length - 4) + '-' + rest.slice(-4);
-        }
-
-        phoneInput.value = result;
-    });
+    phoneInput.value = result;
+  });
 });
 </script>
 
@@ -180,7 +235,6 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    // whatsapp válido
     bell.dataset.eligible = "1";
     bell.title = "Notificar via WhatsApp";
     if (!bell.dataset.userToggled) hidden.value = "1";
@@ -199,7 +253,6 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    // validação nativa do input type=email (ou pattern)
     const ok = input.checkValidity();
     if (!ok) {
       hidden.value = "0";
@@ -222,10 +275,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const bell = document.getElementById(bellId);
     if (!input || !hidden || !bell) return;
 
-    // tooltip sempre funciona; clique só quando elegível
     bell.addEventListener("click", function () {
       if (bell.dataset.eligible !== "1") return;
-
       bell.dataset.userToggled = "1";
       hidden.value = (hidden.value === "1") ? "0" : "1";
       syncFn(input, hidden, bell);
@@ -239,21 +290,19 @@ document.addEventListener("DOMContentLoaded", function () {
   setupBell("id_email", "id_notify_email", "bell-email", syncEmail);
 });
 </script>
+
+{# ===== Mensagens custom HTML5 (igual você já tem) ===== #}
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   const form = document.querySelector("form.exam-upload-form");
   const email = document.getElementById("id_email");
   const phone = document.getElementById("id_phone");
 
-  // 1) Só marcar campos de vermelho depois de tentar salvar
   if (form) {
-    // quando tiver qualquer invalid, adiciona classe
     form.addEventListener("invalid", () => form.classList.add("was-validated"), true);
-    // quando conseguir enviar (válido), também marca
     form.addEventListener("submit", () => form.classList.add("was-validated"));
   }
 
-  // 2) Mensagem custom de e-mail
   if (email) {
     email.addEventListener("invalid", function () {
       if ((email.value || "").trim()) email.setCustomValidity("E-mail inválido.");
@@ -262,7 +311,6 @@ document.addEventListener("DOMContentLoaded", function () {
     email.addEventListener("input", () => email.setCustomValidity(""));
   }
 
-  // 3) Mensagem custom de telefone (pattern)
   if (phone) {
     phone.addEventListener("invalid", function () {
       if ((phone.value || "").trim()) phone.setCustomValidity("Telefone inválido.");
