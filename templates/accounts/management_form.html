@@ -37,20 +37,19 @@
           >
         </div>
 
-        <div class="mgmt-photo-hint">Envie uma imagem quadrada, de preferência.</div>
-
         <div class="mgmt-photo-actions">
-          <label class="btn-secondary mgmt-photo-btn" for="id_photo">Escolher imagem</label>
+          <label class="btn-file mgmt-photo-btn" for="id_photo">Escolher imagem</label>
 
-          {# se o form tiver photo, renderiza ele (vai vir com id=id_photo) #}
           {% if form.photo %}
             {{ form.photo }}
           {% else %}
             <input type="file" name="photo" id="id_photo" accept="image/*" class="mgmt-photo-input">
           {% endif %}
 
-          <button type="button" class="btn-secondary mgmt-photo-clear" id="mgmt-photo-clear">Remover</button>
+          <button type="button" class="btn-file mgmt-photo-clear" id="mgmt-photo-clear">Remover</button>
         </div>
+
+        <div class="mgmt-photo-hint">Envie uma imagem quadrada, de preferência.</div>
 
         {% if form.photo.errors %}
           <div class="field-error">{{ form.photo.errors.0 }}</div>

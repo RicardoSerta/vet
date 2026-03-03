@@ -1061,3 +1061,58 @@ body.app-body {
     grid-template-columns: 1fr;
   }
 }
+
+/* ===== Gestão: coluna da foto menor e mais proporcional ===== */
+.mgmt-form-grid{
+  grid-template-columns: 320px 1fr; /* esquerda fixa e menor */
+  align-items: start;
+}
+
+/* preview não precisa ser gigantesco */
+.mgmt-photo-preview-wrap{
+  width: 100%;
+  height: 220px;      /* controla a altura da foto */
+  aspect-ratio: auto; /* desliga quadrado gigante */
+}
+
+/* mantém o corte bonito */
+.mgmt-photo-preview{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* botões alinhados */
+.mgmt-photo-actions{
+  margin-top: 12px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* usa o estilo do site, só ajusta tamanho */
+.mgmt-photo-btn,
+.mgmt-photo-clear{
+  padding: 8px 12px;
+}
+
+/* o texto de ajuda fica abaixo dos botões */
+.mgmt-photo-hint{
+  margin-top: 8px;
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+/* responsivo: em telas menores vira uma coluna */
+@media (max-width: 920px){
+  .mgmt-form-grid{
+    grid-template-columns: 1fr;
+  }
+  .mgmt-photo-preview-wrap{
+    height: 200px;
+  }
+}
+
+.mgmt-photo-clear{
+  background: #ef4444;
+}
