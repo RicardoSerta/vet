@@ -49,15 +49,15 @@
                             </a>
                         </th>
                         <th>
-                            <a href="?order=email&direction={% if order == 'email' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
-                                E-mail
-                                {% if order == 'email' %}{% if direction == 'asc' %}▲{% else %}▼{% endif %}{% endif %}
-                            </a>
-                        </th>
-                        <th>
                             <a href="?order=telefone&direction={% if order == 'telefone' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
                                 Telefone
                                 {% if order == 'telefone' %}{% if direction == 'asc' %}▲{% else %}▼{% endif %}{% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            <a href="?order=email&direction={% if order == 'email' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
+                                E-mail
+                                {% if order == 'email' %}{% if direction == 'asc' %}▲{% else %}▼{% endif %}{% endif %}
                             </a>
                         </th>
                         <th>
@@ -113,41 +113,44 @@
                         <th style="width: 110px; text-align:center;">Ações</th>
                     </tr>
 
-                {# ===== OUTRAS ABAS (5 colunas) ===== #}
-                {% else %}
+                {# ===== Tutores/Clínicas/Veterinários (6 colunas com Conta?) ===== #}
+                {% elif category == 'tutores' or category == 'clinicas' or category == 'veterinarios' %}
                     <tr>
                         <th>
                             <a href="?order=nome&direction={% if order == 'nome' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
                                 Nome
-                                {% if order == 'nome' %}
-                                    {% if direction == 'asc' %}▲{% else %}▼{% endif %}
-                                {% endif %}
-                            </a>
-                        </th>
-                        <th>
-                            <a href="?order=email&direction={% if order == 'email' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
-                                E-mail
-                                {% if order == 'email' %}
-                                    {% if direction == 'asc' %}▲{% else %}▼{% endif %}
-                                {% endif %}
+                                {% if order == 'nome' %}{% if direction == 'asc' %}▲{% else %}▼{% endif %}{% endif %}
                             </a>
                         </th>
                         <th>
                             <a href="?order=telefone&direction={% if order == 'telefone' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
                                 Telefone
-                                {% if order == 'telefone' %}
-                                    {% if direction == 'asc' %}▲{% else %}▼{% endif %}
-                                {% endif %}
+                                {% if order == 'telefone' %}{% if direction == 'asc' %}▲{% else %}▼{% endif %}{% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            <a href="?order=email&direction={% if order == 'email' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
+                                E-mail
+                                {% if order == 'email' %}{% if direction == 'asc' %}▲{% else %}▼{% endif %}{% endif %}
                             </a>
                         </th>
                         <th>
                             <a href="?order=data&direction={% if order == 'data' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
                                 Data de cadastro
-                                {% if order == 'data' %}
-                                    {% if direction == 'asc' %}▲{% else %}▼{% endif %}
-                                {% endif %}
+                                {% if order == 'data' %}{% if direction == 'asc' %}▲{% else %}▼{% endif %}{% endif %}
                             </a>
                         </th>
+                        <th style="text-align:center;">Conta?</th>
+                        <th style="width: 110px; text-align:center;">Ações</th>
+                    </tr>
+
+                {# ===== fallback (5 colunas) ===== #}
+                {% else %}
+                    <tr>
+                        <th>Nome</th>
+                        <th>Telefone</th>
+                        <th>E-mail</th>
+                        <th>Data de cadastro</th>
                         <th style="width: 110px; text-align:center;">Ações</th>
                     </tr>
                 {% endif %}
@@ -162,19 +165,17 @@
                         {% if category == 'admin' %}
                             <tr>
                                 <td>{{ item.name }}</td>
-                                <td>{{ item.email }}</td>
                                 <td>{{ item.phone }}</td>
+                                <td>{{ item.email }}</td>
                                 <td>{{ item.created_at|date:"d/m/Y" }}</td>
                                 <td>{{ item.role_label }}</td>
                                 <td style="text-align:center; white-space:nowrap;">
-                                    {# lápis sem função por enquanto #}
                                     <span title="Editar"
                                           class="btn-icon btn-icon-blue"
                                           style="display:inline-flex; align-items:center; justify-content:center; opacity:0.85;">
                                         ✏️
                                     </span>
 
-                                    {# lixeira só para Auxiliar #}
                                     {% if item.can_delete %}
                                         <a href="{% url 'gestao_admin_delete' item.id %}"
                                            title="Excluir"
@@ -212,12 +213,41 @@
                                 </td>
                             </tr>
 
-                        {# ===== OUTRAS ABAS ===== #}
+                        {# ===== Tutores/Clínicas/Veterinários ===== #}
+                        {% elif category == 'tutores' or category == 'clinicas' or category == 'veterinarios' %}
+                            <tr>
+                                <td>{{ item.display_name }}</td>
+                                <td>{{ item.phone }}</td>
+                                <td>{{ item.email }}</td>
+                                <td>{{ item.created_at|date:"d/m/Y" }}</td>
+                                <td style="text-align:center;">
+                                    {% if item.has_account %}✅{% else %}❌{% endif %}
+                                </td>
+                                <td style="text-align:center; white-space:nowrap;">
+                                    <a href="{% url 'gestao_edit' category item.id %}" title="Editar"
+                                       class="btn-icon btn-icon-blue"
+                                       style="display:inline-flex; align-items:center; justify-content:center;">
+                                        ✏️
+                                    </a>
+
+                                    <form method="post" action="{% url 'gestao_delete' category item.id %}"
+                                          style="display:inline;"
+                                          onsubmit="return confirm('Tem certeza que deseja excluir {{ item.name|escapejs }}?');">
+                                        {% csrf_token %}
+                                        <button type="submit" title="Excluir" class="btn-icon btn-icon-red"
+                                                style="border:0; cursor:pointer; margin-left:6px;">
+                                            🗑️
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+
+                        {# ===== fallback ===== #}
                         {% else %}
                             <tr>
                                 <td>{{ item.display_name }}</td>
-                                <td>{{ item.email }}</td>
                                 <td>{{ item.phone }}</td>
+                                <td>{{ item.email }}</td>
                                 <td>{{ item.created_at|date:"d/m/Y" }}</td>
                                 <td style="text-align:center; white-space:nowrap;">
                                     <a href="{% url 'gestao_edit' category item.id %}" title="Editar"
@@ -242,7 +272,7 @@
                     {% endfor %}
                 {% else %}
                     <tr>
-                        <td colspan="{% if category == 'admin' %}6{% else %}5{% endif %}" style="text-align:center;">
+                        <td colspan="{% if category == 'admin' or category == 'tutores' or category == 'clinicas' or category == 'veterinarios' %}6{% else %}5{% endif %}" style="text-align:center;">
                             {{ empty_message }}
                         </td>
                     </tr>

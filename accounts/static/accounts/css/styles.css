@@ -69,10 +69,11 @@ input[type="password"] {
 }
 
 input[type="text"]:focus,
-input[type="password"]:focus {
+input[type="password"]:focus,
+input[type="email"]:focus {
     outline: none;
     border-color: #00a676;
-    box-shadow: 0 0 0 1px rgba(0, 166, 118, 0.15);
+    box-shadow: 0 0 0 3px rgba(0, 166, 118, 0.15);
 }
 
 /* Linha de baixo do formulário (checkbox à esquerda, botão à direita) */
@@ -978,7 +979,9 @@ body.app-body {
   background: rgba(239, 68, 68, 0.18);
 }
 
-.exam-upload-form input:invalid {
+.exam-upload-form.was-validated input:invalid,
+.exam-upload-form.was-validated select:invalid,
+.exam-upload-form.was-validated textarea:invalid {
   border-color: #ef4444 !important;
 }
 

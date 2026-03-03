@@ -301,7 +301,7 @@ class TutorForm(forms.ModelForm):
 
     class Meta:
         model = Tutor
-        fields = ["name", "surname", "email", "phone"]
+        fields = ["name", "surname", "phone", "email"]
         widgets = {
             "name": forms.TextInput(attrs={"placeholder": "Nome do tutor"}),
             "surname": forms.TextInput(attrs={"placeholder": "Sobrenome do tutor"}),
@@ -342,7 +342,7 @@ class ClinicForm(forms.ModelForm):
 
     class Meta:
         model = Clinic
-        fields = ["name", "email", "phone"]
+        fields = ["name", "phone", "email"]
         widgets = {
             "name": forms.TextInput(attrs={"placeholder": "Nome da clínica"}),
             "email": forms.EmailInput(attrs={"placeholder": "exemplo@email.com"}),
@@ -427,7 +427,7 @@ class VeterinarianForm(forms.ModelForm):
 
     class Meta:
         model = Veterinarian
-        fields = ["name", "surname", "email", "phone"]
+        fields = ["name", "surname", "phone", "email"]
         widgets = {
             "name": forms.TextInput(attrs={"placeholder": "Nome do Veterinário"}),
             "surname": forms.TextInput(attrs={"placeholder": "Sobrenome do veterinário"}),
@@ -638,11 +638,6 @@ class AdminAuxForm(forms.Form):
         required=False,
         widget=forms.TextInput(attrs={"placeholder": "Sobrenome do auxiliar"}),
     )
-    email = forms.EmailField(
-        label="EMAIL",
-        required=False,
-        widget=forms.EmailInput(attrs={"placeholder": "exemplo@email.com"}),
-    )
     phone = forms.CharField(
         label="PHONE",
         required=False,
@@ -652,6 +647,11 @@ class AdminAuxForm(forms.Form):
             "pattern": r'^\(\d{2}\)\s?(\d{4}-\d{4}|9\d{4}-\d{4})$',
             "title": "Use (XX) XXXX-XXXX ou (XX) 9XXXX-XXXX",
         }),
+    )
+    email = forms.EmailField(
+        label="EMAIL",
+        required=False,
+        widget=forms.EmailInput(attrs={"placeholder": "exemplo@email.com"}),
     )
     
     notify_phone = forms.CharField(required=False, initial="1", widget=forms.HiddenInput())

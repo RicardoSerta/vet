@@ -817,6 +817,37 @@ def management_view(request, category='tutores'):
         items = items.order_by(field_name)
     else:
         items = items.order_by('-created_at')
+        
+    # ===== Possui Conta? (Tutores / Clínicas / Veterinários) =====
+    if category in ("tutores", "clinicas", "veterinarios"):
+        items_list = list(items)
+
+        if category == "tutores":
+            # Tutor não tem FK pra user, então usamos o email do tutor
+            emails = [((t.email or "").strip().lower()) for t in items_list if (t.email or "").strip()]
+            email_to_has = {}
+
+            if emails:
+                profiles = Profile.objects.select_related("user").filter(
+                    role="TUTOR",
+                    user__email__in=emails,
+                )
+                for p in profiles:
+                    em = (p.user.email or "").strip().lower()
+                    if em:
+                        email_to_has[em] = p.user.has_usable_password()
+
+            for t in items_list:
+                em = (t.email or "").strip().lower()
+                t.has_account = bool(em and email_to_has.get(em, False))
+
+        else:
+            # Clínica/Vet tem obj.user
+            for obj in items_list:
+                u = getattr(obj, "user", None)
+                obj.has_account = bool(u and u.has_usable_password())
+
+        items = items_list
 
     categories_nav = [
         {'slug': key, 'label': value['label']}
@@ -1034,6 +1065,16 @@ def management_delete(request, category, pk):
 
     # Se for clínica/vet, pode ter user associado
     linked_user = getattr(obj, "user", None)
+    
+    # Se for tutor, não tem FK de user -> procurar pelo email (role TUTOR)
+    tutor_users_qs = None
+    if category == "tutores":
+        email = (getattr(obj, "email", "") or "").strip()
+        if email:
+            tutor_users_qs = User.objects.filter(
+                email__iexact=email,
+                profile__role="TUTOR"
+            )
 
     try:
         obj.delete()
@@ -1046,16 +1087,26 @@ def management_delete(request, category, pk):
 
     # Se tinha login, apaga o usuário (perde acesso)
     if linked_user:
-        # evita apagar exames por acidente (caso seu FK esteja como CASCADE)
-        try:
-            Exam.objects.filter(assigned_user=linked_user).update(assigned_user=None)
-        except Exception:
-            pass
+        if category in ("clinicas", "veterinarios"):
+            try:
+                Exam.objects.filter(assigned_user=linked_user).update(assigned_user=None)
+            except Exception:
+                pass
 
         try:
             linked_user.delete()
         except Exception:
             pass
+    
+    # Se for tutor, não tem FK de user -> procurar pelo email (role TUTOR)
+    tutor_users_qs = None
+    if category == "tutores":
+        email = (getattr(obj, "email", "") or "").strip()
+        if email:
+            tutor_users_qs = User.objects.filter(
+                email__iexact=email,
+                profile__role="TUTOR"
+            )
 
     messages.success(request, f'"{name}" foi excluído com sucesso.')
     return redirect('gestao_category', category=category)
