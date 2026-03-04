@@ -224,21 +224,55 @@
                                     {% if item.has_account %}✅{% else %}❌{% endif %}
                                 </td>
                                 <td style="text-align:center; white-space:nowrap;">
-                                    <a href="{% url 'gestao_edit' category item.id %}" title="Editar"
-                                       class="btn-icon btn-icon-blue"
-                                       style="display:inline-flex; align-items:center; justify-content:center;">
-                                        ✏️
-                                    </a>
+                                  <a href="{% url 'gestao_edit' category item.id %}" title="Editar"
+                                     class="btn-icon btn-icon-blue"
+                                     style="display:inline-flex; align-items:center; justify-content:center;">
+                                      ✏️
+                                  </a>
 
-                                    <form method="post" action="{% url 'gestao_delete' category item.id %}"
+                                  {% if item.has_account %}
+                                    <form method="post"
+                                          action="{% url 'gestao_remove_access' category item.id %}"
                                           style="display:inline;"
-                                          onsubmit="return confirm('Tem certeza que deseja excluir {{ item.name|escapejs }}?');">
-                                        {% csrf_token %}
-                                        <button type="submit" title="Excluir" class="btn-icon btn-icon-red"
-                                                style="border:0; cursor:pointer; margin-left:6px;">
-                                            🗑️
-                                        </button>
+                                          onsubmit="return lvConfirmRemoveAccess(this);">
+                                      {% csrf_token %}
+                                      <button type="submit"
+                                              title="Remover acesso"
+                                              class="btn-icon btn-icon-amber"
+                                              style="border:0; cursor:pointer; margin-left:6px;"
+                                              data-name="{{ item.display_name|default:item.name|escapejs }}"
+                                              data-email="{{ item.email|default_if_none:''|escapejs }}"
+                                              data-phone="{{ item.phone|default_if_none:''|escapejs }}">
+                                        🚫
+                                      </button>
                                     </form>
+                                  {% else %}
+                                    <form method="post"
+                                          action="{% url 'gestao_resend_alerts' category item.id %}"
+                                          style="display:inline;"
+                                          onsubmit="return lvConfirmResendAlerts(this);">
+                                      {% csrf_token %}
+                                      <button type="submit"
+                                              title="Reenviar alertas"
+                                              class="btn-icon btn-icon-gray"
+                                              style="border:0; cursor:pointer; margin-left:6px;"
+                                              data-name="{{ item.display_name|default:item.name|escapejs }}"
+                                              data-email="{{ item.email|default_if_none:''|escapejs }}"
+                                              data-phone="{{ item.phone|default_if_none:''|escapejs }}">
+                                        ✉️
+                                      </button>
+                                    </form>
+                                  {% endif %}
+
+                                  <form method="post" action="{% url 'gestao_delete' category item.id %}"
+                                        style="display:inline;"
+                                        onsubmit="return confirm('Tem certeza que deseja excluir {{ item.name|escapejs }}?');">
+                                    {% csrf_token %}
+                                    <button type="submit" title="Excluir" class="btn-icon btn-icon-red"
+                                            style="border:0; cursor:pointer; margin-left:6px;">
+                                      🗑️
+                                    </button>
+                                  </form>
                                 </td>
                             </tr>
 
@@ -281,4 +315,47 @@
         </table>
     </div>
 </div>
+<script>
+function isWhatsAppPhone(phone) {
+  phone = (phone || "").trim();
+  return /^\(\d{2}\)\s?9\d{4}-\d{4}$/.test(phone);
+}
+
+function lvConfirmResendAlerts(formEl) {
+  const btn = formEl.querySelector("button");
+  const name = (btn.dataset.name || "");
+  const email = (btn.dataset.email || "").trim();
+  const phone = (btn.dataset.phone || "").trim();
+
+  const waOk = isWhatsAppPhone(phone);
+
+  if (!email) {
+    let msg = `Não é possível reenviar alertas para "${name}" porque não há e-mail cadastrado.`;
+    if (waOk) msg += `\n\nObservação: o número parece WhatsApp, mas o envio por WhatsApp ainda não está habilitado.`;
+    alert(msg);
+    return false;
+  }
+
+  let msg = `Reenviar alertas de cadastro para "${name}"?\n\n`;
+  msg += `E-mail: ${email || "-"}\n`;
+  msg += `WhatsApp: ${waOk ? phone : (phone ? "Número não é WhatsApp" : "-")}\n\n`;
+  msg += `No momento, o sistema reenviará o alerta apenas por e-mail.`;
+
+  return confirm(msg);
+}
+
+function lvConfirmRemoveAccess(formEl) {
+  const btn = formEl.querySelector("button");
+  const name = (btn.dataset.name || "");
+  const email = (btn.dataset.email || "").trim();
+  const phone = (btn.dataset.phone || "").trim();
+
+  let msg = `Tem certeza que deseja remover o acesso de "${name}"?\n\n`;
+  msg += `E-mail: ${email || "-"}\n`;
+  msg += `Telefone: ${phone || "-"}\n\n`;
+  msg += `Isso apagará o usuário de login e ele não conseguirá mais acessar o site.`;
+
+  return confirm(msg);
+}
+</script>
 {% endblock %}

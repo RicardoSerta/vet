@@ -17,6 +17,8 @@ from django.db.models.deletion import ProtectedError
 from django.db import transaction
 from django.http import FileResponse, Http404, HttpResponseForbidden
 from django.core.mail import send_mail
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError as DjangoValidationError
 from .authz import admin_required, is_admin_user, is_superadmin_user, superadmin_required
 import os
 import mimetypes
@@ -1064,6 +1066,196 @@ def management_edit(request, category, pk):
         "is_edit": True,
         "obj": obj,
     })
+
+@login_required
+@admin_required
+def management_resend_alerts(request, category, pk):
+    """
+    Reenvia o e-mail de ativação (apenas e-mail por enquanto).
+    WhatsApp ainda não é enviado (mesmo se o número for válido).
+    """
+    if request.method != "POST":
+        return redirect("gestao_category", category=category)
+
+    if category not in ("tutores", "clinicas", "veterinarios"):
+        messages.error(request, "Categoria inválida para reenviar alertas.")
+        return redirect("gestao_category", category=category)
+
+    # ===== pega objeto + dados =====
+    if category == "tutores":
+        obj = get_object_or_404(Tutor, pk=pk)
+        name = getattr(obj, "display_name", None) or getattr(obj, "name", "Tutor")
+        email = (obj.email or "").strip()
+        phone = (obj.phone or "").strip()
+
+        # se já existe conta ativa, não reenviar
+        if email:
+            p = Profile.objects.select_related("user").filter(
+                role="TUTOR",
+                user__email__iexact=email,
+            ).first()
+            if p and p.user and p.user.has_usable_password():
+                messages.info(request, f'"{name}" já possui conta ativa. Use "Remover acesso" se quiser.')
+                return redirect("gestao_category", category=category)
+
+        if not email:
+            messages.error(request, f'Não é possível reenviar: "{name}" não possui e-mail cadastrado.')
+            return redirect("gestao_category", category=category)
+
+        # valida e-mail antigo (caso existam dados velhos no banco)
+        try:
+            validate_email(email)
+        except DjangoValidationError:
+            messages.error(request, f'E-mail inválido em "{name}". Corrija o e-mail antes de reenviar.')
+            return redirect("gestao_category", category=category)
+
+        u, created_now, needs_activation = ensure_pending_user_for_provider(
+            name=name,
+            email=email,
+            phone=phone,
+            role="TUTOR",
+        )
+        if not u:
+            messages.error(request, "Não foi possível preparar o usuário para ativação.")
+            return redirect("gestao_category", category=category)
+
+        activation_link = build_activation_link(request, u) if needs_activation else request.build_absolute_uri(reverse("login"))
+
+        subject = "LumaVet — Ative seu acesso"
+        body = (
+            f"Olá {name}!\n\n"
+            f"Você tem um cadastro no LumaVet.\n\n"
+            f"E-mail cadastrado: {email}\n"
+            f"Telefone cadastrado: {phone or '-'}\n\n"
+            f"Para definir sua senha e acessar, use este link:\n{activation_link}\n\n"
+            f"Se você não reconhece esta mensagem, pode ignorar."
+        )
+        try:
+            send_simple_email(email, subject, body)
+            messages.success(request, f'Alertas reenviados para "{name}" (via e-mail).')
+        except Exception as e:
+            messages.error(request, f"Falha ao reenviar e-mail: {e}")
+
+        return redirect("gestao_category", category=category)
+
+    # ===== clinicas / veterinarios =====
+    Model = Clinic if category == "clinicas" else Veterinarian
+    obj = get_object_or_404(Model, pk=pk)
+    name = getattr(obj, "display_name", None) or getattr(obj, "name", "Usuário")
+    email = (obj.email or "").strip()
+    phone = (obj.phone or "").strip()
+
+    # se já tem conta ativa, não reenviar
+    if obj.user and obj.user.has_usable_password():
+        messages.info(request, f'"{name}" já possui conta ativa. Use "Remover acesso" se quiser.')
+        return redirect("gestao_category", category=category)
+
+    if not email:
+        messages.error(request, f'Não é possível reenviar: "{name}" não possui e-mail cadastrado.')
+        return redirect("gestao_category", category=category)
+
+    try:
+        validate_email(email)
+    except DjangoValidationError:
+        messages.error(request, f'E-mail inválido em "{name}". Corrija o e-mail antes de reenviar.')
+        return redirect("gestao_category", category=category)
+
+    # garante user pendente e vincula no objeto
+    u = obj.user
+    if u is None:
+        u, created_now, needs_activation = ensure_pending_user_for_provider(
+            name=name,
+            email=email,
+            phone=phone,
+            role="BASIC",
+        )
+        if not u:
+            messages.error(request, "Não foi possível preparar o usuário para ativação.")
+            return redirect("gestao_category", category=category)
+
+        obj.user = u
+        obj.save(update_fields=["user"])
+    else:
+        needs_activation = not u.has_usable_password()
+
+    activation_link = build_activation_link(request, u) if needs_activation else request.build_absolute_uri(reverse("login"))
+
+    subject = "LumaVet — Ative seu acesso"
+    body = (
+        f"Olá {name}!\n\n"
+        f"Você tem um cadastro no LumaVet.\n\n"
+        f"E-mail cadastrado: {email}\n"
+        f"Telefone cadastrado: {phone or '-'}\n\n"
+        f"Para definir sua senha e acessar, use este link:\n{activation_link}\n\n"
+        f"Se você não reconhece esta mensagem, pode ignorar."
+    )
+
+    try:
+        send_simple_email(email, subject, body)
+        messages.success(request, f'Alertas reenviados para "{name}" (via e-mail).')
+    except Exception as e:
+        messages.error(request, f"Falha ao reenviar e-mail: {e}")
+
+    return redirect("gestao_category", category=category)
+
+@login_required
+@admin_required
+def management_remove_access(request, category, pk):
+    """
+    Remove o login (User) mas mantém o item na tabela (Tutor/Clínica/Vet).
+    """
+    if request.method != "POST":
+        return redirect("gestao_category", category=category)
+
+    if category not in ("tutores", "clinicas", "veterinarios"):
+        messages.error(request, "Categoria inválida para remover acesso.")
+        return redirect("gestao_category", category=category)
+
+    if category == "tutores":
+        obj = get_object_or_404(Tutor, pk=pk)
+        name = getattr(obj, "display_name", None) or getattr(obj, "name", "Tutor")
+        email = (obj.email or "").strip()
+
+        if not email:
+            messages.error(request, f'"{name}" não tem e-mail cadastrado, então não há conta para remover.')
+            return redirect("gestao_category", category=category)
+
+        qs = User.objects.filter(email__iexact=email, profile__role="TUTOR")
+        if not qs.exists():
+            messages.info(request, f'"{name}" não possui conta ativa.')
+            return redirect("gestao_category", category=category)
+
+        count = qs.count()
+        qs.delete()
+        messages.success(request, f'Acesso removido de "{name}" ({count} usuário(s) apagado(s)).')
+        return redirect("gestao_category", category=category)
+
+    # clinicas / veterinarios
+    Model = Clinic if category == "clinicas" else Veterinarian
+    obj = get_object_or_404(Model, pk=pk)
+    name = getattr(obj, "display_name", None) or getattr(obj, "name", "Usuário")
+
+    u = getattr(obj, "user", None)
+    if not u:
+        messages.info(request, f'"{name}" não possui conta ativa.')
+        return redirect("gestao_category", category=category)
+
+    # desassocia do objeto e tira dos exames
+    obj.user = None
+    obj.save(update_fields=["user"])
+    try:
+        Exam.objects.filter(assigned_user=u).update(assigned_user=None)
+    except Exception:
+        pass
+
+    try:
+        u.delete()
+    except Exception as e:
+        messages.error(request, f"Não foi possível apagar o usuário: {e}")
+        return redirect("gestao_category", category=category)
+
+    messages.success(request, f'Acesso removido de "{name}".')
+    return redirect("gestao_category", category=category)
     
 @login_required
 @admin_required
