@@ -1135,3 +1135,33 @@ body.app-body {
   object-position: center; /* centraliza o recorte */
   display: block;
 }
+
+/* ===== Gestão: preview da foto em CÍRCULO (maior) ===== */
+.mgmt-photo-title{
+  margin-bottom: 6px;
+}
+
+.mgmt-photo-preview-wrap{
+  width: 240px;          /* era 180px */
+  height: 240px;         /* era 180px */
+  margin: 6px auto 0;    /* sobe um pouco em relação ao título */
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid #d1d5db;
+  background: #f3f4f6;
+  position: relative;
+}
+
+.mgmt-photo-preview-wrap.dragover{
+  border-color: #00a676;
+  box-shadow: 0 0 0 3px rgba(0, 166, 118, 0.15);
+}
+
+.mgmt-photo-preview{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  cursor: pointer; /* permite clicar no círculo para escolher arquivo */
+}

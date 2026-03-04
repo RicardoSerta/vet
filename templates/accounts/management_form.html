@@ -31,7 +31,7 @@
       <div class="mgmt-photo-card">
         <div class="mgmt-photo-title">Foto</div>
 
-        <div class="mgmt-photo-preview-wrap">
+        <div id="photoDropZone" class="mgmt-photo-preview-wrap" title="Arraste e solte uma imagem aqui (PNG/JPG/JPEG)">
           <img
             id="mgmt-photo-preview"
             class="mgmt-photo-preview"
@@ -140,22 +140,44 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 {% endif %}
 
-{# ===== Preview / Remover foto ===== #}
+{# ===== Preview / Remover foto + Drag&Drop ===== #}
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   const input = document.getElementById("id_photo");
   const img = document.getElementById("mgmt-photo-preview");
   const clearBtn = document.getElementById("mgmt-photo-clear");
   const removeHidden = document.getElementById("id_remove_photo");
+  const dropZone = document.getElementById("photoDropZone");
 
   if (!input || !img) return;
 
   const placeholder = img.dataset.placeholder || img.getAttribute("src");
   let currentObjectUrl = null;
 
+  const ALLOWED_EXTS = [".png", ".jpg", ".jpeg"];
+  function allowedFile(file) {
+    const name = (file && file.name ? file.name.toLowerCase() : "");
+    return ALLOWED_EXTS.some(ext => name.endsWith(ext));
+  }
+
   function setPreview(url) {
     img.src = url;
   }
+
+  function setFileToInput(file) {
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    input.files = dt.files;
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  // clicar no círculo abre o seletor
+  img.addEventListener("click", () => input.click());
+  dropZone && dropZone.addEventListener("click", (e) => {
+    // evita click duplo quando clica no img
+    if (e.target === img) return;
+    input.click();
+  });
 
   input.addEventListener("change", function () {
     const file = input.files && input.files[0];
@@ -164,13 +186,18 @@ document.addEventListener("DOMContentLoaded", function () {
     if (removeHidden) removeHidden.value = "0";
 
     if (!file) {
-      // sem arquivo novo: volta para a original (se existir) ou placeholder
       const original = img.dataset.original || placeholder;
       setPreview(original);
       return;
     }
 
-    // preview local
+    if (!allowedFile(file)) {
+      alert("Formato inválido. Envie uma imagem PNG, JPG ou JPEG.");
+      input.value = "";
+      setPreview(placeholder);
+      return;
+    }
+
     if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
     currentObjectUrl = URL.createObjectURL(file);
     setPreview(currentObjectUrl);
@@ -178,13 +205,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
   if (clearBtn) {
     clearBtn.addEventListener("click", function () {
-      // marca para apagar no backend
       if (removeHidden) removeHidden.value = "1";
-
-      // limpa arquivo selecionado
       input.value = "";
 
-      // preview vira placeholder (não volta pra foto antiga)
       if (currentObjectUrl) {
         URL.revokeObjectURL(currentObjectUrl);
         currentObjectUrl = null;
@@ -192,6 +215,45 @@ document.addEventListener("DOMContentLoaded", function () {
       setPreview(placeholder);
     });
   }
+
+  // ----- Drag & Drop (igual ao exam_upload) -----
+  function bindDropZone(zone, onFiles) {
+    if (!zone) return;
+
+    ["dragenter", "dragover"].forEach(evt => {
+      zone.addEventListener(evt, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        zone.classList.add("dragover");
+      });
+    });
+
+    ["dragleave", "drop"].forEach(evt => {
+      zone.addEventListener(evt, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        zone.classList.remove("dragover");
+      });
+    });
+
+    zone.addEventListener("drop", (e) => {
+      const files = Array.from(e.dataTransfer?.files || []);
+      if (files.length) onFiles(files);
+    });
+  }
+
+  bindDropZone(dropZone, (files) => {
+    const f = files[0];
+    if (!f) return;
+
+    if (!allowedFile(f)) {
+      alert("Formato inválido. Envie uma imagem PNG, JPG ou JPEG.");
+      return;
+    }
+
+    if (removeHidden) removeHidden.value = "0";
+    setFileToInput(f);
+  });
 });
 </script>
 
