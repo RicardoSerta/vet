@@ -887,6 +887,16 @@ def management_create(request, category):
         form = FormClass(request.POST, request.FILES)
         if form.is_valid():
             obj = form.save()
+            
+            remove_photo = (request.POST.get("remove_photo") == "1")
+            if remove_photo:
+                try:
+                    if getattr(obj, "photo", None):
+                        obj.photo.delete(save=False)
+                except Exception:
+                    pass
+                obj.photo = None
+                obj.save(update_fields=["photo"])
 
             notify_email = (form.cleaned_data.get("notify_email") or "1") != "0"
             notify_phone = (form.cleaned_data.get("notify_phone") or "1") != "0"
@@ -989,6 +999,17 @@ def management_edit(request, category, pk):
         form = info['form'](request.POST, request.FILES, instance=obj)
         if form.is_valid():
             obj = form.save()
+            
+            remove_photo = (request.POST.get("remove_photo") == "1")
+            if remove_photo:
+                try:
+                    if getattr(obj, "photo", None):
+                        obj.photo.delete(save=False)
+                except Exception:
+                    pass
+                obj.photo = None
+                obj.save(update_fields=["photo"])
+            
             new_email = (obj.email or "").strip()
             new_phone = (obj.phone or "").strip()
 

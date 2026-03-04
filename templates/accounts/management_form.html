@@ -22,6 +22,9 @@
       {{ hidden }}
     {% endfor %}
 
+    {# controle para apagar foto no backend #}
+    <input type="hidden" name="remove_photo" id="id_remove_photo" value="0">
+
     <div class="mgmt-form-grid">
       {# LADO ESQUERDO: FOTO (não aplicar ao admin por enquanto) #}
       {% if category != 'admin' %}
@@ -33,6 +36,8 @@
             id="mgmt-photo-preview"
             class="mgmt-photo-preview"
             src="{% if obj and obj.photo %}{{ obj.photo.url }}{% else %}{% static 'accounts/img/avatar-placeholder.png' %}{% endif %}"
+            data-original="{% if obj and obj.photo %}{{ obj.photo.url }}{% else %}{% static 'accounts/img/avatar-placeholder.png' %}{% endif %}"
+            data-placeholder="{% static 'accounts/img/avatar-placeholder.png' %}"
             alt="Foto"
           >
         </div>
@@ -43,7 +48,7 @@
           {% if form.photo %}
             {{ form.photo }}
           {% else %}
-            <input type="file" name="photo" id="id_photo" accept="image/*" class="mgmt-photo-input">
+            <input type="file" name="photo" id="id_photo" accept=".png,.jpg,.jpeg" class="mgmt-photo-input">
           {% endif %}
 
           <button type="button" class="btn-file mgmt-photo-clear" id="mgmt-photo-clear">Remover</button>
@@ -141,21 +146,50 @@ document.addEventListener("DOMContentLoaded", function () {
   const input = document.getElementById("id_photo");
   const img = document.getElementById("mgmt-photo-preview");
   const clearBtn = document.getElementById("mgmt-photo-clear");
+  const removeHidden = document.getElementById("id_remove_photo");
+
   if (!input || !img) return;
 
-  const placeholder = img.getAttribute("src");
+  const placeholder = img.dataset.placeholder || img.getAttribute("src");
+  let currentObjectUrl = null;
+
+  function setPreview(url) {
+    img.src = url;
+  }
 
   input.addEventListener("change", function () {
     const file = input.files && input.files[0];
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    img.src = url;
+
+    // se selecionou algo, estamos "substituindo", então não remove
+    if (removeHidden) removeHidden.value = "0";
+
+    if (!file) {
+      // sem arquivo novo: volta para a original (se existir) ou placeholder
+      const original = img.dataset.original || placeholder;
+      setPreview(original);
+      return;
+    }
+
+    // preview local
+    if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
+    currentObjectUrl = URL.createObjectURL(file);
+    setPreview(currentObjectUrl);
   });
 
   if (clearBtn) {
     clearBtn.addEventListener("click", function () {
+      // marca para apagar no backend
+      if (removeHidden) removeHidden.value = "1";
+
+      // limpa arquivo selecionado
       input.value = "";
-      img.src = placeholder;
+
+      // preview vira placeholder (não volta pra foto antiga)
+      if (currentObjectUrl) {
+        URL.revokeObjectURL(currentObjectUrl);
+        currentObjectUrl = null;
+      }
+      setPreview(placeholder);
     });
   }
 });
@@ -290,7 +324,7 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 </script>
 
-{# ===== Mensagens custom HTML5 (igual você já tem) ===== #}
+{# ===== Mensagens custom HTML5 ===== #}
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   const form = document.querySelector("form.exam-upload-form");

@@ -15,6 +15,7 @@ PHONE_ANY_RE = re.compile(r'^\(\d{2}\)\s?(\d{4}-\d{4}|9\d{4}-\d{4})$')  # aceita
 PHONE_WA_RE  = re.compile(r'^\(\d{2}\)\s?9\d{4}-\d{4}$')               # só whatsapp (celular)
 
 ALLOWED_EXTRA_EXTENSIONS = {".pdf", ".avi", ".png", ".jpg", ".jpeg"}
+ALLOWED_PHOTO_EXTENSIONS = {".png", ".jpg", ".jpeg"}
 MAX_EXTRA_FILES = 5
 
 class MultipleFileInput(forms.FileInput):
@@ -35,6 +36,16 @@ class MultipleFileField(forms.FileField):
         for f in data:
             cleaned_files.append(super().clean(f, initial))
         return cleaned_files
+        
+def validate_photo_file(photo):
+    if not photo:
+        return photo
+
+    ext = Path(photo.name).suffix.lower()
+    if ext not in ALLOWED_PHOTO_EXTENSIONS:
+        raise forms.ValidationError("Formato inválido. Envie uma imagem PNG, JPG ou JPEG.")
+
+    return photo
 
 def parse_exam_filename(filename: str):
     """
@@ -307,8 +318,8 @@ class TutorForm(forms.ModelForm):
             "surname": forms.TextInput(attrs={"placeholder": "Sobrenome do tutor"}),
             "email": forms.EmailInput(attrs={"placeholder": "exemplo@email.com"}),
             "phone": forms.TextInput(attrs={"placeholder": "(XX) XXXX-XXXX"}),
-            "photo": forms.ClearableFileInput(attrs={
-                "accept": "image/*",
+            "photo": forms.FileInput(attrs={
+                "accept": ".png,.jpg,.jpeg",
                 "class": "mgmt-photo-input",
             }),
         }
@@ -326,6 +337,11 @@ class TutorForm(forms.ModelForm):
             'title': 'Use (XX) XXXX-XXXX ou (XX) 9XXXX-XXXX',
         })
         
+        if "photo" in self.fields:
+            self.fields["photo"].error_messages["invalid_image"] = (
+                "Imagem inválida. Envie uma imagem PNG, JPG ou JPEG."
+            )
+        
     def clean_phone(self):
         phone = (self.cleaned_data.get("phone") or "").strip()
         if phone and not PHONE_ANY_RE.match(phone):
@@ -339,6 +355,10 @@ class TutorForm(forms.ModelForm):
             from django.core.validators import validate_email
             validate_email(email)
         return email
+        
+    def clean_photo(self):
+        photo = self.cleaned_data.get("photo")
+        return validate_photo_file(photo)
 
 class ClinicForm(forms.ModelForm):
     notify_phone = forms.CharField(required=False, initial="1", widget=forms.HiddenInput())
@@ -351,8 +371,8 @@ class ClinicForm(forms.ModelForm):
             "name": forms.TextInput(attrs={"placeholder": "Nome da clínica"}),
             "email": forms.EmailInput(attrs={"placeholder": "exemplo@email.com"}),
             "phone": forms.TextInput(attrs={"placeholder": "(XX) XXXX-XXXX"}),
-            "photo": forms.ClearableFileInput(attrs={
-                "accept": "image/*",
+            "photo": forms.FileInput(attrs={
+                "accept": ".png,.jpg,.jpeg",
                 "class": "mgmt-photo-input",
             }),
         }
@@ -414,6 +434,11 @@ class ClinicForm(forms.ModelForm):
             'title': 'Use (XX) XXXX-XXXX ou (XX) 9XXXX-XXXX',
         })
         
+        if "photo" in self.fields:
+            self.fields["photo"].error_messages["invalid_image"] = (
+                "Imagem inválida. Envie uma imagem PNG, JPG ou JPEG."
+            )
+        
     def clean_phone(self):
         phone = (self.cleaned_data.get("phone") or "").strip()
         if phone and not PHONE_ANY_RE.match(phone):
@@ -427,7 +452,10 @@ class ClinicForm(forms.ModelForm):
             from django.core.validators import validate_email
             validate_email(email)
         return email
-
+        
+    def clean_photo(self):
+        photo = self.cleaned_data.get("photo")
+        return validate_photo_file(photo)
 
 class VeterinarianForm(forms.ModelForm):
     notify_phone = forms.CharField(required=False, initial="1", widget=forms.HiddenInput())
@@ -441,8 +469,8 @@ class VeterinarianForm(forms.ModelForm):
             "surname": forms.TextInput(attrs={"placeholder": "Sobrenome do veterinário"}),
             "email": forms.EmailInput(attrs={"placeholder": "exemplo@email.com"}),
             "phone": forms.TextInput(attrs={"placeholder": "(XX) XXXX-XXXX"}),
-            "photo": forms.ClearableFileInput(attrs={
-                "accept": "image/*",
+            "photo": forms.FileInput(attrs={
+                "accept": ".png,.jpg,.jpeg",
                 "class": "mgmt-photo-input",
             }),
         }
@@ -505,6 +533,11 @@ class VeterinarianForm(forms.ModelForm):
             'title': 'Use (XX) XXXX-XXXX ou (XX) 9XXXX-XXXX',
         })
         
+        if "photo" in self.fields:
+            self.fields["photo"].error_messages["invalid_image"] = (
+                "Imagem inválida. Envie uma imagem PNG, JPG ou JPEG."
+            )
+        
     def clean_phone(self):
         phone = (self.cleaned_data.get("phone") or "").strip()
         if phone and not PHONE_ANY_RE.match(phone):
@@ -518,23 +551,42 @@ class VeterinarianForm(forms.ModelForm):
             from django.core.validators import validate_email
             validate_email(email)
         return email
+        
+    def clean_photo(self):
+        photo = self.cleaned_data.get("photo")
+        return validate_photo_file(photo)
 
 class PetForm(forms.ModelForm):
     class Meta:
         model = Pet
         fields = ["name", "breed", "tutor", "photo"]
+        widgets = {
+            "photo": forms.FileInput(attrs={
+                "accept": ".png,.jpg,.jpeg",
+                "class": "mgmt-photo-input",
+            }),
+        }
         
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.fields['name'].widget.attrs.update({'placeholder': 'Nome do pet'})
         self.fields['breed'].widget.attrs.update({'placeholder': 'Raça do pet'})
+        
+        if "photo" in self.fields:
+            self.fields["photo"].error_messages["invalid_image"] = (
+                "Imagem inválida. Envie uma imagem PNG, JPG ou JPEG."
+            )
 
     def clean_breed(self):
         breed = self.cleaned_data.get('breed', '').strip()
         if not breed:
             return 'SRD'
         return breed
+        
+    def clean_photo(self):
+        photo = self.cleaned_data.get("photo")
+        return validate_photo_file(photo)
 
 def _to_login_base(name: str) -> str:
     name = (name or "").strip().lower()
