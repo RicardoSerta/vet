@@ -170,11 +170,12 @@
                                 <td>{{ item.created_at|date:"d/m/Y" }}</td>
                                 <td>{{ item.role_label }}</td>
                                 <td style="text-align:center; white-space:nowrap;">
-                                    <span title="Editar"
-                                          class="btn-icon btn-icon-blue"
-                                          style="display:inline-flex; align-items:center; justify-content:center; opacity:0.85;">
-                                        ✏️
-                                    </span>
+                                    <a href="{% url 'gestao_admin_edit' item.id %}"
+                                       title="Editar"
+                                       class="btn-icon btn-icon-blue"
+                                       style="display:inline-flex; align-items:center; justify-content:center;">
+                                      ✏️
+                                    </a>
 
                                     {% if item.can_delete %}
                                         <a href="{% url 'gestao_admin_delete' item.id %}"

@@ -7,12 +7,14 @@ from datetime import date
 from datetime import datetime
 from pathlib import Path
 from django.core.exceptions import ValidationError
+from django.core.validators import RegexValidator
 from django import forms
 
 from .models import Tutor, Clinic, Veterinarian, Pet, Profile, ExamTypeAlias
 
 PHONE_ANY_RE = re.compile(r'^\(\d{2}\)\s?(\d{4}-\d{4}|9\d{4}-\d{4})$')  # aceita fixo ou celular 9xxxx
 PHONE_WA_RE  = re.compile(r'^\(\d{2}\)\s?9\d{4}-\d{4}$')               # só whatsapp (celular)
+PHONE_RE = r'^\(\d{2}\)\s?(\d{4}-\d{4}|9\d{4}-\d{4})$'
 
 ALLOWED_EXTRA_EXTENSIONS = {".pdf", ".avi", ".png", ".jpg", ".jpeg"}
 ALLOWED_PHOTO_EXTENSIONS = {".png", ".jpg", ".jpeg"}
@@ -691,35 +693,37 @@ class ExamTypeAliasForm(forms.ModelForm):
         return name
         
 class AdminAuxForm(forms.Form):
-    first_name = forms.CharField(
-        label="NAME",
-        max_length=150,
-        widget=forms.TextInput(attrs={"placeholder": "Nome do auxiliar"}),
-    )
-    last_name = forms.CharField(
-        label="SOBRENOME",
-        max_length=150,
+    photo = forms.ImageField(
+        label="Foto",
         required=False,
-        widget=forms.TextInput(attrs={"placeholder": "Sobrenome do auxiliar"}),
-    )
-    phone = forms.CharField(
-        label="PHONE",
-        required=False,
-        max_length=20,
-        widget=forms.TextInput(attrs={
-            "placeholder": "(XX) XXXX-XXXX",
-            "pattern": r'^\(\d{2}\)\s?(\d{4}-\d{4}|9\d{4}-\d{4})$',
-            "title": "Use (XX) XXXX-XXXX ou (XX) 9XXXX-XXXX",
+        widget=forms.FileInput(attrs={
+            "accept": "image/png,image/jpeg",
+            "class": "mgmt-photo-input",
         }),
+        error_messages={
+            "invalid_image": "Arquivo inválido. Envie uma imagem PNG ou JPG/JPEG.",
+        },
     )
-    email = forms.EmailField(
-        label="EMAIL",
+
+    first_name = forms.CharField(label="Nome", max_length=150, required=True)
+    last_name  = forms.CharField(label="Sobrenome", max_length=150, required=False)
+
+    phone = forms.CharField(
+        label="Telefone",
         required=False,
+        validators=[RegexValidator(PHONE_RE, message="Telefone inválido.")],
+        widget=forms.TextInput(attrs={"placeholder": "(XX) XXXX-XXXX"}),
+    )
+
+    email = forms.EmailField(
+        label="E-mail",
+        required=False,
+        error_messages={"invalid": "E-mail inválido."},
         widget=forms.EmailInput(attrs={"placeholder": "exemplo@email.com"}),
     )
-    
-    notify_phone = forms.CharField(required=False, initial="1", widget=forms.HiddenInput())
-    notify_email = forms.CharField(required=False, initial="1", widget=forms.HiddenInput())
+
+    notify_phone = forms.CharField(required=False, widget=forms.HiddenInput(), initial="0")
+    notify_email = forms.CharField(required=False, widget=forms.HiddenInput(), initial="0")
 
     def clean_phone(self):
         phone = (self.cleaned_data.get("phone") or "").strip()

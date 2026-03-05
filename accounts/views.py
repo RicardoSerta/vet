@@ -1332,61 +1332,99 @@ def admin_user_create(request):
     profile, _ = Profile.objects.get_or_create(user=request.user)
 
     if request.method == "POST":
-        form = AdminAuxForm(request.POST)
+        form = AdminAuxForm(request.POST, request.FILES)
         if form.is_valid():
-            first_name = form.cleaned_data["first_name"].strip()
-            last_name = (form.cleaned_data.get("last_name") or "").strip()
-            email = (form.cleaned_data.get("email") or "").strip()
-            phone = (form.cleaned_data.get("phone") or "").strip()
+            cd = form.cleaned_data
+            first = (cd.get("first_name") or "").strip()
+            last  = (cd.get("last_name") or "").strip()
+            email = (cd.get("email") or "").strip()
+            phone = (cd.get("phone") or "").strip()
+            photo = cd.get("photo")
 
-            # username único (baseado no email ou nome)
-            base = (email.split("@")[0] if email else slugify(first_name)) or "aux"
-            username = base
-            i = 2
-            while User.objects.filter(username=username).exists():
-                username = f"{base}{i}"
-                i += 1
+            base = _to_login_base(email.split("@")[0] if email else first)
+            username = _make_unique_username(base)
 
-            user = User.objects.create(
-                username=username,
-                first_name=first_name,
-                last_name=last_name,
-                email=email,
-            )
-            
-            user.set_unusable_password()
-            user.save()
-            
-            notify_email = (form.cleaned_data.get("notify_email") or "1") != "0"
-            if notify_email and email:
-                activation_link = build_activation_link(request, user)
-                subject = "LumaVet — Seu acesso foi criado"
-                body = (
-                    f"Olá {first_name}!\n\n"
-                    f"Você agora tem um cadastro no LumaVet.\n\n"
-                    f"E-mail cadastrado: {email}\n"
-                    f"Telefone cadastrado: {phone or '-'}\n\n"
-                    f"Para definir sua senha e acessar, use este link:\n{activation_link}\n\n"
-                )
-                send_simple_email(email, subject, body)
+            u = User(username=username, first_name=first, last_name=last, email=email)
+            u.set_unusable_password()
+            u.save()
 
-            p, _ = Profile.objects.get_or_create(user=user)
+            p, _ = Profile.objects.get_or_create(user=u)
             p.role = "ADMIN_AUX"
             p.whatsapp = phone
+            if photo:
+                p.photo = photo
             p.save()
 
-            messages.success(request, f'Auxiliar "{first_name}" criado com sucesso.')
+            messages.success(request, "Auxiliar cadastrado com sucesso.")
             return redirect("gestao_category", category="admin")
     else:
         form = AdminAuxForm()
 
     return render(request, "accounts/management_form.html", {
         "profile": profile,
-        "category": "admin",
-        "category_label": "Admin",
-        "category_singular": "Auxiliar",
         "form": form,
-        "title": "Cadastrar Auxiliar",
+        "category": "admin",
+        "category_singular": "Auxiliar",
+        "is_edit": False,
+        "obj": None,  # sem foto prévia no create
+    })
+    
+@login_required
+@superadmin_required
+def admin_user_edit(request, user_id):
+    profile, _ = Profile.objects.get_or_create(user=request.user)
+
+    target_user = get_object_or_404(User, pk=user_id)
+    target_profile, _ = Profile.objects.get_or_create(user=target_user)
+
+    if target_profile.role not in ("ADMIN", "ADMIN_AUX"):
+        return HttpResponseForbidden("Acesso negado.")
+
+    singular = "Administrador" if target_profile.role == "ADMIN" else "Auxiliar"
+
+    if request.method == "POST":
+        form = AdminAuxForm(request.POST, request.FILES)
+        if form.is_valid():
+            cd = form.cleaned_data
+
+            target_user.first_name = (cd.get("first_name") or "").strip()
+            target_user.last_name  = (cd.get("last_name") or "").strip()
+            target_user.email      = (cd.get("email") or "").strip()
+            target_user.save()
+
+            target_profile.whatsapp = (cd.get("phone") or "").strip()
+
+            # remover foto (vem do hidden remove_photo do template)
+            if (request.POST.get("remove_photo") or "0") == "1":
+                if target_profile.photo:
+                    target_profile.photo.delete(save=False)
+                target_profile.photo = None
+
+            # trocar foto (se enviou uma nova)
+            if cd.get("photo"):
+                target_profile.photo = cd["photo"]
+
+            target_profile.save()
+
+            messages.success(request, f"{singular} atualizado com sucesso.")
+            return redirect("gestao_category", category="admin")
+    else:
+        form = AdminAuxForm(initial={
+            "first_name": target_user.first_name,
+            "last_name": target_user.last_name,
+            "email": target_user.email,
+            "phone": target_profile.whatsapp,
+            "notify_phone": "0",
+            "notify_email": "0",
+        })
+
+    return render(request, "accounts/management_form.html", {
+        "profile": profile,
+        "form": form,
+        "category": "admin",
+        "category_singular": singular,
+        "is_edit": True,
+        "obj": target_profile,  # aqui a preview mostra a foto atual
     })
     
 @login_required

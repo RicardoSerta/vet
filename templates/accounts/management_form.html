@@ -27,7 +27,6 @@
 
     <div class="mgmt-form-grid">
       {# LADO ESQUERDO: FOTO (não aplicar ao admin por enquanto) #}
-      {% if category != 'admin' %}
       <div class="mgmt-photo-card">
         <div class="mgmt-photo-title">Foto</div>
 
@@ -60,7 +59,6 @@
           <div class="field-error">{{ form.photo.errors.0 }}</div>
         {% endif %}
       </div>
-      {% endif %}
 
       {# LADO DIREITO: CAMPOS #}
       <div class="mgmt-fields">
