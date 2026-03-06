@@ -62,7 +62,7 @@
                         </th>
                         <th>
                             <a href="?order=data&direction={% if order == 'data' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
-                                Data de cadastro
+                                Data de Cadastro
                                 {% if order == 'data' %}{% if direction == 'asc' %}▲{% else %}▼{% endif %}{% endif %}
                             </a>
                         </th>
@@ -104,7 +104,7 @@
                         </th>
                         <th>
                             <a href="?order=data&direction={% if order == 'data' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
-                                Data de cadastro
+                                Data de Cadastro
                                 {% if order == 'data' %}
                                     {% if direction == 'asc' %}▲{% else %}▼{% endif %}
                                 {% endif %}
@@ -136,7 +136,7 @@
                         </th>
                         <th>
                             <a href="?order=data&direction={% if order == 'data' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
-                                Data de cadastro
+                                Data de Cadastro
                                 {% if order == 'data' %}{% if direction == 'asc' %}▲{% else %}▼{% endif %}{% endif %}
                             </a>
                         </th>
@@ -150,7 +150,7 @@
                         <th>Nome</th>
                         <th>Telefone</th>
                         <th>E-mail</th>
-                        <th>Data de cadastro</th>
+                        <th>Data de Cadastro</th>
                         <th style="width: 110px; text-align:center;">Ações</th>
                     </tr>
                 {% endif %}
@@ -170,21 +170,36 @@
                                 <td>{{ item.created_at|date:"d/m/Y" }}</td>
                                 <td>{{ item.role_label }}</td>
                                 <td style="text-align:center; white-space:nowrap;">
-                                    <a href="{% url 'gestao_admin_edit' item.id %}"
-                                       title="Editar"
-                                       class="btn-icon btn-icon-blue"
-                                       style="display:inline-flex; align-items:center; justify-content:center;">
-                                      ✏️
-                                    </a>
+                                  <a href="{% url 'gestao_admin_edit' item.id %}"
+                                     title="Editar"
+                                     class="btn-icon btn-icon-blue"
+                                     style="display:inline-flex; align-items:center; justify-content:center;">
+                                    ✏️
+                                  </a>
 
-                                    {% if item.can_delete %}
-                                        <a href="{% url 'gestao_admin_delete' item.id %}"
-                                           title="Excluir"
-                                           class="btn-icon btn-icon-red"
-                                           style="display:inline-flex; align-items:center; justify-content:center; margin-left:6px;">
-                                            🗑️
-                                        </a>
-                                    {% endif %}
+                                  {% if item.can_resend %}
+                                    <form method="post"
+                                          action="{% url 'gestao_resend_alerts' 'admin' item.id %}"
+                                          style="display:inline;"
+                                          onsubmit="return confirm('Reenviar alertas de cadastro para {{ item.name|escapejs }}?\n\nE-mail: {{ item.email|default_if_none:''|escapejs }}\nTelefone: {{ item.phone|default_if_none:''|escapejs }}');">
+                                      {% csrf_token %}
+                                      <button type="submit"
+                                              title="Reenviar alertas"
+                                              class="btn-icon btn-icon-gray"
+                                              style="border:0; cursor:pointer; margin-left:6px;">
+                                        🔔
+                                      </button>
+                                    </form>
+                                  {% endif %}
+
+                                  {% if item.can_delete %}
+                                    <a href="{% url 'gestao_admin_delete' item.id %}"
+                                       title="Excluir"
+                                       class="btn-icon btn-icon-red"
+                                       style="display:inline-flex; align-items:center; justify-content:center; margin-left:6px;">
+                                      🗑️
+                                    </a>
+                                  {% endif %}
                                 </td>
                             </tr>
 
@@ -225,51 +240,51 @@
                                     {% if item.has_account %}✅{% else %}❌{% endif %}
                                 </td>
                                 <td style="text-align:center; white-space:nowrap;">
-                                  <a href="{% url 'gestao_edit' category item.id %}" title="Editar"
+                                  <a href="{% url 'gestao_edit' category item.id %}"
+                                     title="Editar"
                                      class="btn-icon btn-icon-blue"
                                      style="display:inline-flex; align-items:center; justify-content:center;">
-                                      ✏️
+                                    ✏️
                                   </a>
 
                                   {% if item.has_account %}
+                                    {# REMOVER ACESSO (agora cinza, não laranja) #}
                                     <form method="post"
                                           action="{% url 'gestao_remove_access' category item.id %}"
                                           style="display:inline;"
-                                          onsubmit="return lvConfirmRemoveAccess(this);">
+                                          onsubmit="return confirm('Tem certeza que deseja remover o acesso de {{ item.display_name|escapejs }}?\n\nIsso apagará o login do usuário, mas manterá o cadastro na tabela.');">
                                       {% csrf_token %}
                                       <button type="submit"
                                               title="Remover acesso"
-                                              class="btn-icon btn-icon-amber"
-                                              style="border:0; cursor:pointer; margin-left:6px;"
-                                              data-name="{{ item.display_name|default:item.name|escapejs }}"
-                                              data-email="{{ item.email|default_if_none:''|escapejs }}"
-                                              data-phone="{{ item.phone|default_if_none:''|escapejs }}">
+                                              class="btn-icon btn-icon-gray"
+                                              style="border:0; cursor:pointer; margin-left:6px;">
                                         🚫
                                       </button>
                                     </form>
                                   {% else %}
+                                    {# REENVIAR ALERTAS (agora com sino 🔔) #}
                                     <form method="post"
                                           action="{% url 'gestao_resend_alerts' category item.id %}"
                                           style="display:inline;"
-                                          onsubmit="return lvConfirmResendAlerts(this);">
+                                          onsubmit="return confirm('Reenviar alertas de cadastro para {{ item.display_name|escapejs }}?\n\nE-mail: {{ item.email|default_if_none:''|escapejs }}\nTelefone: {{ item.phone|default_if_none:''|escapejs }}');">
                                       {% csrf_token %}
                                       <button type="submit"
                                               title="Reenviar alertas"
                                               class="btn-icon btn-icon-gray"
-                                              style="border:0; cursor:pointer; margin-left:6px;"
-                                              data-name="{{ item.display_name|default:item.name|escapejs }}"
-                                              data-email="{{ item.email|default_if_none:''|escapejs }}"
-                                              data-phone="{{ item.phone|default_if_none:''|escapejs }}">
-                                        ✉️
+                                              style="border:0; cursor:pointer; margin-left:6px;">
+                                        🔔
                                       </button>
                                     </form>
                                   {% endif %}
 
-                                  <form method="post" action="{% url 'gestao_delete' category item.id %}"
+                                  <form method="post"
+                                        action="{% url 'gestao_delete' category item.id %}"
                                         style="display:inline;"
-                                        onsubmit="return confirm('Tem certeza que deseja excluir {{ item.name|escapejs }}?');">
+                                        onsubmit="return confirm('Tem certeza que deseja excluir {{ item.display_name|escapejs }}?');">
                                     {% csrf_token %}
-                                    <button type="submit" title="Excluir" class="btn-icon btn-icon-red"
+                                    <button type="submit"
+                                            title="Excluir"
+                                            class="btn-icon btn-icon-red"
                                             style="border:0; cursor:pointer; margin-left:6px;">
                                       🗑️
                                     </button>

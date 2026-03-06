@@ -763,6 +763,7 @@ def management_view(request, category='tutores'):
         items = []
         for p in qs:
             role_label = 'Administrador' if p.role == 'ADMIN' else 'Auxiliar'
+            has_account = p.user.has_usable_password()
             items.append({
                 'id': p.user_id,
                 'name': (p.user.first_name or p.user.username),
@@ -770,6 +771,8 @@ def management_view(request, category='tutores'):
                 'phone': (p.whatsapp or ''),
                 'created_at': p.user.date_joined,
                 'role_label': role_label,
+                'has_account': has_account,
+                'can_resend': (p.role == 'ADMIN_AUX') and (not has_account) and (not p.user.is_superuser),
                 'can_delete': (p.role == 'ADMIN_AUX') and (not p.user.is_superuser),
             })
 
@@ -1076,6 +1079,64 @@ def management_resend_alerts(request, category, pk):
     """
     if request.method != "POST":
         return redirect("gestao_category", category=category)
+    
+    if category == "admin":
+        if not is_superadmin_user(request.user):
+            messages.error(request, "Você não tem permissão para isso.")
+            return redirect("gestao")
+
+        p = Profile.objects.select_related("user").filter(user_id=pk, role="ADMIN_AUX").first()
+        if not p:
+            messages.error(request, "Auxiliar não encontrado.")
+            return redirect("gestao_category", category="admin")
+
+        name = (p.user.first_name or p.user.username)
+        email = (p.user.email or "").strip()
+        phone = (p.whatsapp or "").strip()
+
+        if p.user.has_usable_password():
+            messages.info(request, f'"{name}" já possui conta ativa.')
+            return redirect("gestao_category", category="admin")
+
+        if not email:
+            messages.error(request, f'Não é possível reenviar: "{name}" não possui e-mail cadastrado.')
+            return redirect("gestao_category", category="admin")
+
+        try:
+            validate_email(email)
+        except DjangoValidationError:
+            messages.error(request, f'E-mail inválido em "{name}". Corrija antes de reenviar.')
+            return redirect("gestao_category", category="admin")
+
+        u, created_now, needs_activation = ensure_pending_user_for_provider(
+            name=name,
+            email=email,
+            phone=phone,
+            role="ADMIN_AUX",
+        )
+        if not u:
+            messages.error(request, "Não foi possível preparar o usuário para ativação.")
+            return redirect("gestao_category", category="admin")
+
+        activation_link = build_activation_link(request, u) if needs_activation else request.build_absolute_uri(reverse("login"))
+
+        subject = "LumaVet — Ative seu acesso"
+        body = (
+            f"Olá {name}!\n\n"
+            f"Você tem um cadastro no LumaVet.\n\n"
+            f"E-mail cadastrado: {email}\n"
+            f"Telefone cadastrado: {phone or '-'}\n\n"
+            f"Para definir sua senha e acessar, use este link:\n{activation_link}\n\n"
+            f"Se você não reconhece esta mensagem, pode ignorar."
+        )
+
+        try:
+            send_simple_email(email, subject, body)
+            messages.success(request, f'Alertas reenviados para "{name}" (via e-mail).')
+        except Exception as e:
+            messages.error(request, f"Falha ao reenviar e-mail: {e}")
+
+        return redirect("gestao_category", category="admin")
 
     if category not in ("tutores", "clinicas", "veterinarios"):
         messages.error(request, "Categoria inválida para reenviar alertas.")
