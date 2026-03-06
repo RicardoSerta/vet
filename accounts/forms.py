@@ -730,4 +730,19 @@ class AdminAuxForm(forms.Form):
         if phone and not PHONE_ANY_RE.match(phone):
             raise forms.ValidationError("Use o formato (XX) XXXX-XXXX ou (XX) 9XXXX-XXXX.")
         return phone
+        
+    def clean(self):
+        cleaned = super().clean()
+        email = (cleaned.get("email") or "").strip()
+        phone = (cleaned.get("phone") or "").strip()
+
+        phone_is_whatsapp = bool(re.match(r'^\(\d{2}\)\s?9\d{4}-\d{4}$', phone))
+
+        # precisa de pelo menos um meio real de envio
+        if not email and not phone_is_whatsapp:
+            raise forms.ValidationError(
+                "Preencha com pelo menos um e-mail válido ou um telefone no formato (XX) 9XXXX-XXXX."
+            )
+
+        return cleaned
 

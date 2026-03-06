@@ -39,7 +39,7 @@
             <thead>
                 {% with qparam=search_query|default_if_none:'' %}
 
-                {# ===== ABA ADMIN (6 colunas) ===== #}
+                {# ===== ABA ADMIN (7 colunas) ===== #}
                 {% if category == 'admin' %}
                     <tr>
                         <th>
@@ -72,7 +72,13 @@
                                 {% if order == 'funcao' %}{% if direction == 'asc' %}▲{% else %}▼{% endif %}{% endif %}
                             </a>
                         </th>
-                        <th style="width: 110px; text-align:center;">Ações</th>
+                        <th style="text-align:center;">
+                            <a href="?order=conta&direction={% if order == 'conta' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
+                                Conta?
+                                {% if order == 'conta' %}{% if direction == 'asc' %}▲{% else %}▼{% endif %}{% endif %}
+                            </a>
+                        </th>
+                        <th style="width: 150px; text-align:center;">Ações</th>
                     </tr>
 
                 {# ===== ABA PETS (5 colunas) ===== #}
@@ -140,7 +146,12 @@
                                 {% if order == 'data' %}{% if direction == 'asc' %}▲{% else %}▼{% endif %}{% endif %}
                             </a>
                         </th>
-                        <th style="text-align:center;">Conta?</th>
+                        <th style="text-align:center;">
+                            <a href="?order=conta&direction={% if order == 'conta' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
+                                Conta?
+                                {% if order == 'conta' %}{% if direction == 'asc' %}▲{% else %}▼{% endif %}{% endif %}
+                            </a>
+                        </th>
                         <th style="width: 110px; text-align:center;">Ações</th>
                     </tr>
 
@@ -169,37 +180,46 @@
                                 <td>{{ item.email }}</td>
                                 <td>{{ item.created_at|date:"d/m/Y" }}</td>
                                 <td>{{ item.role_label }}</td>
+                                <td style="text-align:center;">
+                                    {% if item.has_account %}✅{% else %}❌{% endif %}
+                                </td>
                                 <td style="text-align:center; white-space:nowrap;">
-                                  <a href="{% url 'gestao_admin_edit' item.id %}"
-                                     title="Editar"
-                                     class="btn-icon btn-icon-blue"
-                                     style="display:inline-flex; align-items:center; justify-content:center;">
-                                    ✏️
-                                  </a>
-
-                                  {% if item.can_resend %}
-                                    <form method="post"
-                                          action="{% url 'gestao_resend_alerts' 'admin' item.id %}"
-                                          style="display:inline;"
-                                          onsubmit="return confirm('Reenviar alertas de cadastro para {{ item.name|escapejs }}?\n\nE-mail: {{ item.email|default_if_none:''|escapejs }}\nTelefone: {{ item.phone|default_if_none:''|escapejs }}');">
-                                      {% csrf_token %}
-                                      <button type="submit"
-                                              title="Reenviar alertas"
-                                              class="btn-icon btn-icon-gray"
-                                              style="border:0; cursor:pointer; margin-left:6px;">
-                                        🔔
-                                      </button>
-                                    </form>
-                                  {% endif %}
-
-                                  {% if item.can_delete %}
-                                    <a href="{% url 'gestao_admin_delete' item.id %}"
-                                       title="Excluir"
-                                       class="btn-icon btn-icon-red"
-                                       style="display:inline-flex; align-items:center; justify-content:center; margin-left:6px;">
-                                      🗑️
+                                    <a href="{% url 'gestao_admin_edit' item.id %}"
+                                       title="Editar"
+                                       class="btn-icon btn-icon-blue"
+                                       style="display:inline-flex; align-items:center; justify-content:center;">
+                                        ✏️
                                     </a>
-                                  {% endif %}
+
+                                    {% if item.can_resend %}
+                                        <form method="post"
+                                              action="{% url 'gestao_admin_resend_alerts' item.id %}"
+                                              style="display:inline;"
+                                              onsubmit="return confirm('Reenviar alertas de cadastro para {{ item.name|escapejs }}?\n\nE-mail: {{ item.email|default_if_none:''|escapejs }}\nTelefone: {{ item.phone|default_if_none:''|escapejs }}');">
+                                            {% csrf_token %}
+                                            <button type="submit"
+                                                    title="Reenviar alertas"
+                                                    class="btn-icon btn-icon-gray"
+                                                    style="border:0; cursor:pointer; margin-left:6px;">
+                                                🔔
+                                            </button>
+                                        </form>
+                                    {% endif %}
+
+                                    {% if item.can_delete %}
+                                        <form method="post"
+                                              action="{% url 'gestao_admin_delete' item.id %}"
+                                              style="display:inline;"
+                                              onsubmit="return confirm('Tem certeza que deseja excluir {{ item.name|escapejs }}?');">
+                                            {% csrf_token %}
+                                            <button type="submit"
+                                                    title="Excluir"
+                                                    class="btn-icon btn-icon-red"
+                                                    style="border:0; cursor:pointer; margin-left:6px;">
+                                                🗑️
+                                            </button>
+                                        </form>
+                                    {% endif %}
                                 </td>
                             </tr>
 
@@ -322,7 +342,7 @@
                     {% endfor %}
                 {% else %}
                     <tr>
-                        <td colspan="{% if category == 'admin' or category == 'tutores' or category == 'clinicas' or category == 'veterinarios' %}6{% else %}5{% endif %}" style="text-align:center;">
+                        <td colspan="{% if category == 'admin' %}7{% elif category == 'tutores' or category == 'clinicas' or category == 'veterinarios' %}6{% else %}5{% endif %}" style="text-align:center;">
                             {{ empty_message }}
                         </td>
                     </tr>

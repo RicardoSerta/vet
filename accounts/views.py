@@ -726,30 +726,38 @@ def management_view(request, category='tutores'):
     if category not in MANAGEMENT_CATEGORIES:
         category = 'tutores'
         
+    categories_nav = [
+        {'slug': key, 'label': value['label']}
+        for key, value in MANAGEMENT_CATEGORIES.items()
+        if (key != 'admin' or is_superadmin)
+    ]
+        
     if category == 'admin':
         if not is_superadmin:
             messages.error(request, "Você não tem permissão para acessar essa aba.")
             return redirect('gestao')
 
-        qs = Profile.objects.select_related('user').filter(role__in=['ADMIN', 'ADMIN_AUX'])
+        qs = User.objects.filter(
+            Q(is_superuser=True) | Q(profile__role__in=['ADMIN', 'ADMIN_AUX'])
+        ).distinct()
 
         search_query = request.GET.get('q', '').strip()
         if search_query:
             qs = qs.filter(
-                Q(user__first_name__icontains=search_query) |
-                Q(user__username__icontains=search_query) |
-                Q(user__email__icontains=search_query) |
-                Q(whatsapp__icontains=search_query)
+                Q(first_name__icontains=search_query) |
+                Q(username__icontains=search_query) |
+                Q(email__icontains=search_query) |
+                Q(profile__whatsapp__icontains=search_query)
             )
 
         order = request.GET.get('order', '')
         direction = request.GET.get('direction', 'asc')
         order_map = {
-            'nome': 'user__first_name',
-            'email': 'user__email',
-            'telefone': 'whatsapp',
-            'data': 'user__date_joined',
-            'funcao': 'role',
+            'nome': 'first_name',
+            'telefone': 'profile__whatsapp',
+            'email': 'email',
+            'data': 'date_joined',
+            'funcao': 'profile__role',
         }
 
         if order in order_map:
@@ -758,29 +766,61 @@ def management_view(request, category='tutores'):
                 field_name = '-' + field_name
             qs = qs.order_by(field_name)
         else:
-            qs = qs.order_by('-user__date_joined')
+            qs = qs.order_by('-date_joined')
 
         items = []
-        for p in qs:
-            role_label = 'Administrador' if p.role == 'ADMIN' else 'Auxiliar'
-            has_account = p.user.has_usable_password()
+        for u in qs:
+            profile, _ = Profile.objects.get_or_create(
+                user=u,
+                defaults={'role': 'ADMIN' if u.is_superuser else 'ADMIN_AUX'}
+            )
+
+            # garante consistência: superuser aparece como ADMIN
+            if u.is_superuser and profile.role != 'ADMIN':
+                profile.role = 'ADMIN'
+                profile.save(update_fields=['role'])
+
+            role_label = 'Administrador' if (u.is_superuser or profile.role == 'ADMIN') else 'Auxiliar'
+
+            # Regra da coluna "Conta?"
+            # Auxiliar sem senha = ❌
+            # Admin e superuser = ✅
+            has_account = True if role_label == 'Administrador' else u.has_usable_password()
+
+            # botão de reenviar alertas:
+            # só para auxiliar, sem conta, e com algum meio de contato útil
+            can_resend = (
+                profile.role == 'ADMIN_AUX'
+                and not u.has_usable_password()
+                and (
+                    bool((u.email or '').strip()) or
+                    is_whatsapp_phone(profile.whatsapp or '')
+                )
+            )
+
             items.append({
-                'id': p.user_id,
-                'name': (p.user.first_name or p.user.username),
-                'email': (p.user.email or ''),
-                'phone': (p.whatsapp or ''),
-                'created_at': p.user.date_joined,
+                'id': u.id,
+                'name': (u.first_name or u.username),
+                'email': (u.email or ''),
+                'phone': (profile.whatsapp or ''),
+                'created_at': u.date_joined,
                 'role_label': role_label,
                 'has_account': has_account,
-                'can_resend': (p.role == 'ADMIN_AUX') and (not has_account) and (not p.user.is_superuser),
-                'can_delete': (p.role == 'ADMIN_AUX') and (not p.user.is_superuser),
+                'can_resend': can_resend,
+                'can_delete': (profile.role == 'ADMIN_AUX') and (not u.is_superuser),
             })
+            
+            if order == 'conta':
+                items.sort(
+                    key=lambda x: (x['has_account'], (x['name'] or '').lower()),
+                    reverse=(direction == 'desc')
+                )
 
-        categories_nav = [
-            {'slug': key, 'label': value['label']}
-            for key, value in MANAGEMENT_CATEGORIES.items()
-            if (key != 'admin' or is_superadmin)
-        ]
+                categories_nav = [
+                    {'slug': key, 'label': value['label']}
+                    for key, value in MANAGEMENT_CATEGORIES.items()
+                    if (key != 'admin' or is_superadmin)
+                ]
 
         return render(request, 'accounts/management.html', {
             'profile': profile,
@@ -804,7 +844,6 @@ def management_view(request, category='tutores'):
     # BUSCA
     search_query = request.GET.get('q', '').strip()
     if search_query:
-        from django.db.models import Q
         q_obj = Q()
         for field in info.get('search_fields', []):
             q_obj |= Q(**{f"{field}__icontains": search_query})
@@ -853,6 +892,12 @@ def management_view(request, category='tutores'):
                 obj.has_account = bool(u and u.has_usable_password())
 
         items = items_list
+        
+        if category in ("tutores", "clinicas", "veterinarios") and order == "conta":
+            items.sort(
+                key=lambda x: (x.has_account, (getattr(x, "display_name", "") or "").lower()),
+                reverse=(direction == "desc")
+            )
 
     categories_nav = [
         {'slug': key, 'label': value['label']}
@@ -1491,7 +1536,8 @@ def admin_user_edit(request, user_id):
 @login_required
 @superadmin_required
 def admin_user_delete(request, user_id: int):
-    profile, _ = Profile.objects.get_or_create(user=request.user)
+    if request.method != 'POST':
+        return redirect('gestao_category', category='admin')
 
     target_user = get_object_or_404(User, pk=user_id)
     target_profile, _ = Profile.objects.get_or_create(user=target_user)
@@ -1504,22 +1550,75 @@ def admin_user_delete(request, user_id: int):
         messages.error(request, "Este usuário não é um Administrador Auxiliar.")
         return redirect('gestao_category', category='admin')
 
-    if request.method == 'POST':
-        # segurança extra (caso esteja vinculado a algo por acidente)
-        Clinic.objects.filter(user=target_user).update(user=None)
-        Veterinarian.objects.filter(user=target_user).update(user=None)
-        Exam.objects.filter(assigned_user=target_user).update(assigned_user=None)
+    Clinic.objects.filter(user=target_user).update(user=None)
+    Veterinarian.objects.filter(user=target_user).update(user=None)
+    Exam.objects.filter(assigned_user=target_user).update(assigned_user=None)
 
-        name = target_user.first_name or target_user.username
-        target_user.delete()
-        messages.success(request, f'"{name}" foi excluído com sucesso.')
+    name = target_user.first_name or target_user.username
+    target_user.delete()
+    messages.success(request, f'"{name}" foi excluído com sucesso.')
+    return redirect('gestao_category', category='admin')
+    
+@login_required
+@superadmin_required
+def admin_user_resend_alerts(request, user_id):
+    if request.method != "POST":
         return redirect('gestao_category', category='admin')
 
-    return render(request, 'accounts/admin_confirm_delete.html', {
-        'profile': profile,
-        'target_user': target_user,
-        'target_profile': target_profile,
-    })
+    target_user = get_object_or_404(User, pk=user_id)
+    target_profile, _ = Profile.objects.get_or_create(user=target_user)
+
+    if target_profile.role != 'ADMIN_AUX':
+        messages.error(request, "Só é possível reenviar alertas para auxiliares.")
+        return redirect('gestao_category', category='admin')
+
+    if target_user.has_usable_password():
+        messages.info(request, "Este auxiliar já possui conta ativa.")
+        return redirect('gestao_category', category='admin')
+
+    email = (target_user.email or '').strip()
+    phone = (target_profile.whatsapp or '').strip()
+    name = (target_user.first_name or target_user.username)
+
+    # por enquanto: envio real só por e-mail
+    if not email:
+        if is_whatsapp_phone(phone):
+            messages.info(
+                request,
+                "Este auxiliar só possui telefone WhatsApp. O reenvio por WhatsApp ainda não está habilitado."
+            )
+        else:
+            messages.error(
+                request,
+                "Não é possível reenviar alertas porque o auxiliar não possui e-mail cadastrado."
+            )
+        return redirect('gestao_category', category='admin')
+
+    try:
+        validate_email(email)
+    except DjangoValidationError:
+        messages.error(request, "O e-mail cadastrado deste auxiliar é inválido.")
+        return redirect('gestao_category', category='admin')
+
+    activation_link = build_activation_link(request, target_user)
+
+    subject = "LumaVet — Ative seu acesso"
+    body = (
+        f"Olá {name}!\n\n"
+        f"Você tem um cadastro no LumaVet.\n\n"
+        f"E-mail cadastrado: {email}\n"
+        f"Telefone cadastrado: {phone or '-'}\n\n"
+        f"Para definir sua senha e acessar, use este link:\n{activation_link}\n\n"
+        f"Se você não reconhece esta mensagem, pode ignorar."
+    )
+
+    try:
+        send_simple_email(email, subject, body)
+        messages.success(request, f'Alertas reenviados para "{name}" (via e-mail).')
+    except Exception as e:
+        messages.error(request, f"Falha ao reenviar e-mail: {e}")
+
+    return redirect('gestao_category', category='admin')
     
 def activate_account(request, uidb64, token):
     User = get_user_model()
