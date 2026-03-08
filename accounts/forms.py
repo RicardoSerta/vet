@@ -39,6 +39,15 @@ class MultipleFileField(forms.FileField):
             cleaned_files.append(super().clean(f, initial))
         return cleaned_files
         
+def normalize_name_words(value: str) -> str:
+    value = re.sub(r"\s+", " ", (value or "").strip())
+    if not value:
+        return value
+    return " ".join(word[:1].upper() + word[1:].lower() for word in value.split(" "))
+    
+def normalize_email_value(value: str) -> str:
+    return (value or "").strip().lower()
+        
 def validate_photo_file(photo):
     if not photo:
         return photo
@@ -343,6 +352,12 @@ class TutorForm(forms.ModelForm):
             self.fields["photo"].error_messages["invalid_image"] = (
                 "Imagem inválida. Envie uma imagem PNG, JPG ou JPEG."
             )
+            
+    def clean_name(self):
+        return normalize_name_words(self.cleaned_data.get("name"))
+        
+    def clean_surname(self):
+        return normalize_name_words(self.cleaned_data.get("surname"))
         
     def clean_phone(self):
         phone = (self.cleaned_data.get("phone") or "").strip()
@@ -351,8 +366,7 @@ class TutorForm(forms.ModelForm):
         return phone
 
     def clean_email(self):
-        email = (self.cleaned_data.get("email") or "").strip()
-        # o campo do model pode não validar; então forçamos aqui:
+        email = normalize_email_value(self.cleaned_data.get("email"))
         if email:
             from django.core.validators import validate_email
             validate_email(email)
@@ -440,6 +454,9 @@ class ClinicForm(forms.ModelForm):
             self.fields["photo"].error_messages["invalid_image"] = (
                 "Imagem inválida. Envie uma imagem PNG, JPG ou JPEG."
             )
+            
+    def clean_name(self):
+        return normalize_name_words(self.cleaned_data.get("name"))
         
     def clean_phone(self):
         phone = (self.cleaned_data.get("phone") or "").strip()
@@ -448,8 +465,7 @@ class ClinicForm(forms.ModelForm):
         return phone
 
     def clean_email(self):
-        email = (self.cleaned_data.get("email") or "").strip()
-        # o campo do model pode não validar; então forçamos aqui:
+        email = normalize_email_value(self.cleaned_data.get("email"))
         if email:
             from django.core.validators import validate_email
             validate_email(email)
@@ -539,6 +555,12 @@ class VeterinarianForm(forms.ModelForm):
             self.fields["photo"].error_messages["invalid_image"] = (
                 "Imagem inválida. Envie uma imagem PNG, JPG ou JPEG."
             )
+            
+    def clean_name(self):
+        return normalize_name_words(self.cleaned_data.get("name"))
+        
+    def clean_surname(self):
+        return normalize_name_words(self.cleaned_data.get("surname"))
         
     def clean_phone(self):
         phone = (self.cleaned_data.get("phone") or "").strip()
@@ -547,8 +569,7 @@ class VeterinarianForm(forms.ModelForm):
         return phone
 
     def clean_email(self):
-        email = (self.cleaned_data.get("email") or "").strip()
-        # o campo do model pode não validar; então forçamos aqui:
+        email = normalize_email_value(self.cleaned_data.get("email"))
         if email:
             from django.core.validators import validate_email
             validate_email(email)
@@ -579,6 +600,9 @@ class PetForm(forms.ModelForm):
             self.fields["photo"].error_messages["invalid_image"] = (
                 "Imagem inválida. Envie uma imagem PNG, JPG ou JPEG."
             )
+            
+    def clean_name(self):
+        return normalize_name_words(self.cleaned_data.get("name"))
 
     def clean_breed(self):
         breed = self.cleaned_data.get('breed', '').strip()
@@ -724,12 +748,25 @@ class AdminAuxForm(forms.Form):
 
     notify_phone = forms.CharField(required=False, widget=forms.HiddenInput(), initial="0")
     notify_email = forms.CharField(required=False, widget=forms.HiddenInput(), initial="0")
+    
+    def clean_first_name(self):
+        return normalize_name_words(self.cleaned_data.get("first_name"))
+        
+    def clean_last_name(self):
+        return normalize_name_words(self.cleaned_data.get("last_name"))
 
     def clean_phone(self):
         phone = (self.cleaned_data.get("phone") or "").strip()
         if phone and not PHONE_ANY_RE.match(phone):
             raise forms.ValidationError("Use o formato (XX) XXXX-XXXX ou (XX) 9XXXX-XXXX.")
         return phone
+        
+    def clean_email(self):
+        email = normalize_email_value(self.cleaned_data.get("email"))
+        if email:
+            from django.core.validators import validate_email
+            validate_email(email)
+        return email
         
     def clean(self):
         cleaned = super().clean()

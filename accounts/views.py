@@ -808,6 +808,7 @@ def management_view(request, category='tutores'):
                 'has_account': has_account,
                 'can_resend': can_resend,
                 'can_delete': (profile.role == 'ADMIN_AUX') and (not u.is_superuser),
+                'can_edit': (profile.role == 'ADMIN_AUX') and (not u.is_superuser),
             })
             
             if order == 'conta':
@@ -1482,6 +1483,10 @@ def admin_user_edit(request, user_id):
 
     target_user = get_object_or_404(User, pk=user_id)
     target_profile, _ = Profile.objects.get_or_create(user=target_user)
+    
+    if target_user.is_superuser or target_profile.role == 'ADMIN':
+        messages.error(request, "Não é permitido editar um Administrador por aqui.")
+        return redirect('gestao_category', category='admin')
 
     if target_profile.role not in ("ADMIN", "ADMIN_AUX"):
         return HttpResponseForbidden("Acesso negado.")
