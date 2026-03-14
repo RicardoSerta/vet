@@ -164,6 +164,14 @@ EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "True").lower() in ("true", "1",
 
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "no-reply@localhost")
 
+# WhatsApp Cloud API
+WHATSAPP_ENABLED = os.environ.get("WHATSAPP_ENABLED", "False").lower() in ("true", "1", "yes")
+WHATSAPP_PHONE_NUMBER_ID = os.environ.get("WHATSAPP_PHONE_NUMBER_ID", "").strip()
+WHATSAPP_TOKEN = os.environ.get("WHATSAPP_TOKEN", "").strip()
+WHATSAPP_TEMPLATE_NAME = os.environ.get("WHATSAPP_TEMPLATE_NAME", "").strip()
+WHATSAPP_TEMPLATE_LANG = os.environ.get("WHATSAPP_TEMPLATE_LANG", "pt_BR").strip()
+WHATSAPP_API_VERSION = os.environ.get("WHATSAPP_API_VERSION", "v22.0").strip()
+
 X_FRAME_OPTIONS = "SAMEORIGIN"
 
 STORAGES = {

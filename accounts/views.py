@@ -10,6 +10,7 @@ from django.utils.text import slugify
 from django.utils import timezone
 from django.conf import settings
 from .notifications import send_exam_email
+from .whatsapp_client import send_exam_whatsapp
 from django.contrib import messages
 from django.db.models import Q
 from django.urls import reverse
@@ -556,6 +557,7 @@ def exam_upload(request):
             )
             
             sent_any = False
+            zap_sent_any = False
 
             # 1) Tutor (se preencheu e-mail)
             if tutor_email and notify_tutor_email:
@@ -570,6 +572,21 @@ def exam_upload(request):
                     sent_any = sent_any or ok
                 except Exception as e:
                     messages.error(request, f"Falha ao enviar e-mail para o tutor: {e}")
+                    
+            # 1b) Tutor por WhatsApp
+            notify_tutor_phone = (cd.get("notify_tutor_phone") or "1") != "0"
+            if tutor_phone and notify_tutor_phone and is_whatsapp_phone(tutor_phone):
+                try:
+                    ok = send_exam_whatsapp(
+                        request,
+                        exam=exam,
+                        to_phone=tutor_phone,
+                        recipient_label=exam.tutor_name,
+                        activation_link=tutor_activation_link,
+                    )
+                    zap_sent_any = zap_sent_any or ok
+                except Exception as e:
+                    messages.error(request, f"Falha ao enviar WhatsApp para o tutor: {e}")
 
             # 2) Clínica/Vet selecionado (se tiver e-mail cadastrado)
             provider_email = ""
@@ -581,6 +598,11 @@ def exam_upload(request):
                 provider_label = vet.name
             else:
                 provider_label = "Clínica/Veterinário"
+            provider_phone = ""
+            if selected.startswith("CLINIC:"):
+                provider_phone = (clinic.phone or "").strip()
+            elif selected.startswith("VET:"):
+                provider_phone = (vet.phone or "").strip()
 
             if provider_email:
                 try:
@@ -594,11 +616,28 @@ def exam_upload(request):
                     sent_any = sent_any or ok
                 except Exception as e:
                     messages.error(request, f"Falha ao enviar e-mail para a clínica/vet: {e}")
+                    
+            if provider_phone and is_whatsapp_phone(provider_phone):
+                try:
+                    ok = send_exam_whatsapp(
+                        request,
+                        exam=exam,
+                        to_phone=provider_phone,
+                        recipient_label=provider_label,
+                        activation_link=provider_activation_link,
+                    )
+                    zap_sent_any = zap_sent_any or ok
+                except Exception as e:
+                    messages.error(request, f"Falha ao enviar WhatsApp para a clínica/vet: {e}")
 
             # Se enviou pelo menos 1 e-mail, marca a coluna Alerta Email
             if sent_any:
                 exam.alerta_email = timezone.now()
                 exam.save(update_fields=["alerta_email"])
+                
+            if zap_sent_any:
+                exam.alerta_zap = timezone.now()
+                exam.save(update_fields=["alerta_zap"])
 
             messages.success(
                 request,
