@@ -60,25 +60,29 @@ def send_exam_whatsapp(request, *, exam, to_phone: str, recipient_label: str, ac
         f"{settings.WHATSAPP_PHONE_NUMBER_ID}/messages"
     )
 
+    template_payload = {
+        "name": settings.WHATSAPP_TEMPLATE_NAME,
+        "language": {"code": settings.WHATSAPP_TEMPLATE_LANG},
+    }
+
+    if settings.WHATSAPP_TEMPLATE_NAME != "hello_world":
+        template_payload["components"] = [
+            {
+                "type": "body",
+                "parameters": [
+                    {"type": "text", "text": recipient_label},
+                    {"type": "text", "text": exam.pet_name},
+                    {"type": "text", "text": exam.exam_type},
+                    {"type": "text", "text": target_link},
+                ],
+            }
+        ]
+
     payload = {
         "messaging_product": "whatsapp",
         "to": normalized_phone,
         "type": "template",
-        "template": {
-            "name": settings.WHATSAPP_TEMPLATE_NAME,
-            "language": {"code": settings.WHATSAPP_TEMPLATE_LANG},
-            "components": [
-                {
-                    "type": "body",
-                    "parameters": [
-                        {"type": "text", "text": recipient_label},
-                        {"type": "text", "text": exam.pet_name},
-                        {"type": "text", "text": exam.exam_type},
-                        {"type": "text", "text": target_link},
-                    ],
-                }
-            ],
-        },
+        "template": template_payload,
     }
 
     req = urllib.request.Request(
