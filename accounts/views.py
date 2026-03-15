@@ -215,9 +215,7 @@ def user_can_view_exam(user, exam) -> bool:
     profile, _ = Profile.objects.get_or_create(user=user)
 
     if profile.role == "TUTOR":
-        user_email = (user.email or "").strip().lower()
-        exam_email = (exam.tutor_email or "").strip().lower()
-        return bool(user_email) and (user_email == exam_email)
+        return _tutor_matches_exam(user, profile, exam)
 
     return user_is_provider_for_exam(user, exam)
     
@@ -249,6 +247,21 @@ PHONE_WA_RE = re.compile(r'^\(\d{2}\)\s?9\d{4}-\d{4}$')
 
 def is_whatsapp_phone(phone: str) -> bool:
     return bool(phone and PHONE_WA_RE.match(phone.strip()))
+    
+def _phone_digits(phone: str) -> str:
+    return re.sub(r"\D", "", phone or "")
+
+def _tutor_matches_exam(user, profile, exam) -> bool:
+    user_email = (user.email or "").strip().lower()
+    exam_email = (exam.tutor_email or "").strip().lower()
+
+    user_phone = _phone_digits(profile.whatsapp or "")
+    exam_phone = _phone_digits(exam.tutor_phone or "")
+
+    email_match = bool(user_email and exam_email and user_email == exam_email)
+    phone_match = bool(user_phone and exam_phone and user_phone == exam_phone)
+
+    return email_match or phone_match
 
 def send_simple_email(to_email: str, subject: str, body: str):
     send_mail(
@@ -292,6 +305,7 @@ def profile_view(request):
     profile, created = Profile.objects.get_or_create(user=request.user)
     
     old_email = request.user.email or ""
+    old_whatsapp = profile.whatsapp or ""
 
     if request.method == 'POST':
         name = request.POST.get('name') or ''
@@ -307,9 +321,14 @@ def profile_view(request):
         
         # Se for tutor e mudou o email, atualiza os exames antigos para manter acesso
         if profile.role == "TUTOR":
-            new_email = request.user.email or ""
-            if old_email.strip() and new_email.strip() and old_email.strip().lower() != new_email.strip().lower():
-                Exam.objects.filter(tutor_email__iexact=old_email.strip()).update(tutor_email=new_email.strip())
+            new_email = (request.user.email or "").strip()
+            new_whatsapp = (whatsapp or "").strip()
+
+            if old_email.strip() and new_email and old_email.strip().lower() != new_email.lower():
+                Exam.objects.filter(tutor_email__iexact=old_email.strip()).update(tutor_email=new_email)
+
+            if old_whatsapp.strip() and new_whatsapp and _phone_digits(old_whatsapp) != _phone_digits(new_whatsapp):
+                Exam.objects.filter(tutor_phone__iexact=old_whatsapp.strip()).update(tutor_phone=new_whatsapp)
 
         # Atualiza dados do Profile
         profile.whatsapp = whatsapp
@@ -349,11 +368,11 @@ def exams_list(request):
     profile, _ = Profile.objects.get_or_create(user=request.user)
 
     exams = Exam.objects.all()
+    tutor_filter_later = False
 
     if not is_admin_user(request.user):
         if profile.role == "TUTOR":
-            # Tutor vê exames onde o tutor_email do exame é o email do usuário
-            exams = exams.filter(tutor_email__iexact=(request.user.email or ""))
+            tutor_filter_later = True
         else:
             # Clínica/Vet (BASIC)
             exams = exams.filter(assigned_user=request.user)
@@ -388,6 +407,9 @@ def exams_list(request):
         if direction == 'desc':
             field_name = '-' + field_name
         exams = exams.order_by(field_name)
+        
+    if tutor_filter_later:
+        exams = [exam for exam in exams if _tutor_matches_exam(request.user, profile, exam)]
 
     context = {
         'profile': profile,
