@@ -9,8 +9,8 @@ from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.utils.text import slugify
 from django.utils import timezone
 from django.conf import settings
-from .notifications import send_exam_email
-from .whatsapp_client import send_exam_whatsapp
+from .notifications import send_exam_email, send_tutor_exam_email
+from .whatsapp_client import send_exam_whatsapp, send_tutor_exam_whatsapp
 from django.contrib import messages
 from django.db.models import Q
 from django.urls import reverse
@@ -525,12 +525,16 @@ def exam_upload(request):
             tutor_user = None
             tutor_email = (cd.get("tutor_email") or "").strip()
             tutor_phone = (cd.get("tutor_phone") or "").strip()
-            
+
             notify_tutor_email = (cd.get("notify_tutor_email") or "1") != "0"
             if not tutor_email:
                 notify_tutor_email = False
 
-            if tutor_email and notify_tutor_email:
+            notify_tutor_phone = (cd.get("notify_tutor_phone") or "1") != "0"
+            if not tutor_phone:
+                notify_tutor_phone = False
+
+            if (tutor_email or tutor_phone) and (notify_tutor_email or notify_tutor_phone):
                 tutor_user, created_now, needs_activation = ensure_pending_user_for_provider(
                     name=cd["parsed_tutor_name"],
                     email=tutor_email,
@@ -562,26 +566,23 @@ def exam_upload(request):
             # 1) Tutor (se preencheu e-mail)
             if tutor_email and notify_tutor_email:
                 try:
-                    ok = send_exam_email(
+                    ok = send_tutor_exam_email(
                         request,
                         exam=exam,
                         to_email=tutor_email,
-                        recipient_label=exam.tutor_name,
                         activation_link=tutor_activation_link,
                     )
                     sent_any = sent_any or ok
                 except Exception as e:
                     messages.error(request, f"Falha ao enviar e-mail para o tutor: {e}")
-                    
+
             # 1b) Tutor por WhatsApp
-            notify_tutor_phone = (cd.get("notify_tutor_phone") or "1") != "0"
             if tutor_phone and notify_tutor_phone and is_whatsapp_phone(tutor_phone):
                 try:
-                    ok = send_exam_whatsapp(
+                    ok = send_tutor_exam_whatsapp(
                         request,
                         exam=exam,
                         to_phone=tutor_phone,
-                        recipient_label=exam.tutor_name,
                         activation_link=tutor_activation_link,
                     )
                     zap_sent_any = zap_sent_any or ok
