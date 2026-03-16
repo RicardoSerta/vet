@@ -9,8 +9,8 @@ from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.utils.text import slugify
 from django.utils import timezone
 from django.conf import settings
-from .notifications import send_exam_email, send_tutor_exam_email
-from .whatsapp_client import send_exam_whatsapp, send_tutor_exam_whatsapp
+from .notifications import send_exam_email, send_tutor_exam_email, send_provider_exam_email
+from .whatsapp_client import send_exam_whatsapp, send_tutor_exam_whatsapp, send_provider_exam_whatsapp
 from django.contrib import messages
 from django.db.models import Q
 from django.urls import reverse
@@ -629,7 +629,7 @@ def exam_upload(request):
 
             if provider_email:
                 try:
-                    ok = send_exam_email(
+                    ok = send_provider_exam_email(
                         request,
                         exam=exam,
                         to_email=provider_email,
@@ -639,10 +639,10 @@ def exam_upload(request):
                     sent_any = sent_any or ok
                 except Exception as e:
                     messages.error(request, f"Falha ao enviar e-mail para a clínica/vet: {e}")
-                    
+
             if provider_phone and is_whatsapp_phone(provider_phone):
                 try:
-                    ok = send_exam_whatsapp(
+                    ok = send_provider_exam_whatsapp(
                         request,
                         exam=exam,
                         to_phone=provider_phone,
