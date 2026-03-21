@@ -1219,10 +1219,6 @@ def management_edit(request, category, pk):
 @login_required
 @admin_required
 def management_resend_alerts(request, category, pk):
-    """
-    Reenvia o e-mail de ativação (apenas e-mail por enquanto).
-    WhatsApp ainda não é enviado (mesmo se o número for válido).
-    """
     if request.method != "POST":
         return redirect("gestao_category", category=category)
     

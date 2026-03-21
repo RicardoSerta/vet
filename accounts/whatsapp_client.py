@@ -99,7 +99,7 @@ def _send_template_message(
 
     normalized_phone = normalize_br_phone(to_phone)
     if not normalized_phone:
-        return False
+        raise RuntimeError(f"Número de WhatsApp inválido ou incompleto: {to_phone}")
 
     if not template_name:
         raise RuntimeError("Template do WhatsApp não configurado.")
