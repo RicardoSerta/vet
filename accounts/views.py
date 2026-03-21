@@ -16,6 +16,7 @@ from .notifications import (
     send_portal_access_email,
 )
 from .whatsapp_client import (
+    normalize_br_phone
     send_exam_whatsapp,
     send_tutor_exam_whatsapp,
     send_provider_exam_whatsapp,
@@ -261,10 +262,8 @@ def user_is_provider_for_exam(user, exam) -> bool:
 
     return False
     
-PHONE_WA_RE = re.compile(r'^\(\d{2}\)\s?9\d{4}-\d{4}$')
-
 def is_whatsapp_phone(phone: str) -> bool:
-    return bool(phone and PHONE_WA_RE.match(phone.strip()))
+    return bool(normalize_br_phone(phone))
     
 def _phone_digits(phone: str) -> str:
     return re.sub(r"\D", "", phone or "")
