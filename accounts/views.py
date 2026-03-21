@@ -1042,14 +1042,10 @@ def management_create(request, category):
             if not is_whatsapp_phone(phone):
                 notify_phone = False
 
-            # enquanto o login por telefone não existe, o fluxo de acesso continua exigindo e-mail
-            if not email:
-                notify_phone = False
-
             u = None
             activation_link = None
 
-            if (notify_email or notify_phone) and email:
+            if notify_email or notify_phone:
                 role = "TUTOR" if category == "tutores" else "BASIC"
                 u, created_now, needs_activation = ensure_pending_user_for_provider(
                     name=name,
@@ -1241,15 +1237,16 @@ def management_resend_alerts(request, category, pk):
             messages.info(request, f'"{name}" já possui conta ativa.')
             return redirect("gestao_category", category="admin")
 
-        if not email:
-            messages.error(request, f'Não é possível reenviar: "{name}" não possui e-mail cadastrado.')
+        if not email and not is_whatsapp_phone(phone):
+            messages.error(request, f'Não é possível reenviar: "{name}" não possui e-mail nem WhatsApp válidos.')
             return redirect("gestao_category", category="admin")
-
-        try:
-            validate_email(email)
-        except DjangoValidationError:
-            messages.error(request, f'E-mail inválido em "{name}". Corrija antes de reenviar.')
-            return redirect("gestao_category", category="admin")
+            
+                if email:
+            try:
+                validate_email(email)
+            except DjangoValidationError:
+                messages.error(request, f'E-mail inválido em "{name}". Corrija o e-mail antes de reenviar.')
+                return redirect("gestao_category", category="admin")
 
         u, created_now, needs_activation = ensure_pending_user_for_provider(
             name=name,
@@ -1270,13 +1267,15 @@ def management_resend_alerts(request, category, pk):
         recipient_label = _notification_label(name, "admin")
 
         try:
-            send_portal_access_email(
-                request,
-                to_email=email,
-                recipient_label=recipient_label,
-                activation_link=activation_link,
-                resend=True,
-            )
+            if email:
+                send_portal_access_email(
+                    request,
+                    to_email=email,
+                    recipient_label=recipient_label,
+                    activation_link=activation_link,
+                    resend=True,
+                )
+
             if is_whatsapp_phone(phone):
                 ok = send_portal_access_whatsapp(
                     request,
@@ -1314,16 +1313,16 @@ def management_resend_alerts(request, category, pk):
                 messages.info(request, f'"{name}" já possui conta ativa. Use "Remover acesso" se quiser.')
                 return redirect("gestao_category", category=category)
 
-        if not email:
-            messages.error(request, f'Não é possível reenviar: "{name}" não possui e-mail cadastrado.')
+        if not email and not is_whatsapp_phone(phone):
+            messages.error(request, f'Não é possível reenviar: "{name}" não possui e-mail nem WhatsApp válidos.')
             return redirect("gestao_category", category=category)
 
-        # valida e-mail antigo (caso existam dados velhos no banco)
-        try:
-            validate_email(email)
-        except DjangoValidationError:
-            messages.error(request, f'E-mail inválido em "{name}". Corrija o e-mail antes de reenviar.')
-            return redirect("gestao_category", category=category)
+        if email:
+            try:
+                validate_email(email)
+            except DjangoValidationError:
+                messages.error(request, f'E-mail inválido em "{name}". Corrija o e-mail antes de reenviar.')
+                return redirect("gestao_category", category=category)
 
         u, created_now, needs_activation = ensure_pending_user_for_provider(
             name=name,
@@ -1344,13 +1343,15 @@ def management_resend_alerts(request, category, pk):
         recipient_label = _notification_label(name, category)
 
         try:
-            send_portal_access_email(
-                request,
-                to_email=email,
-                recipient_label=recipient_label,
-                activation_link=activation_link,
-                resend=True,
-            )
+            if email:
+                send_portal_access_email(
+                    request,
+                    to_email=email,
+                    recipient_label=recipient_label,
+                    activation_link=activation_link,
+                    resend=True,
+                )
+
             if is_whatsapp_phone(phone):
                 ok = send_portal_access_whatsapp(
                     request,
@@ -1379,15 +1380,16 @@ def management_resend_alerts(request, category, pk):
         messages.info(request, f'"{name}" já possui conta ativa. Use "Remover acesso" se quiser.')
         return redirect("gestao_category", category=category)
 
-    if not email:
-        messages.error(request, f'Não é possível reenviar: "{name}" não possui e-mail cadastrado.')
+    if not email and not is_whatsapp_phone(phone):
+        messages.error(request, f'Não é possível reenviar: "{name}" não possui e-mail nem WhatsApp válidos.')
         return redirect("gestao_category", category=category)
 
-    try:
-        validate_email(email)
-    except DjangoValidationError:
-        messages.error(request, f'E-mail inválido em "{name}". Corrija o e-mail antes de reenviar.')
-        return redirect("gestao_category", category=category)
+    if email:
+        try:
+            validate_email(email)
+        except DjangoValidationError:
+            messages.error(request, f'E-mail inválido em "{name}". Corrija o e-mail antes de reenviar.')
+            return redirect("gestao_category", category=category)
 
     # garante user pendente e vincula no objeto
     u = obj.user
@@ -1416,13 +1418,15 @@ def management_resend_alerts(request, category, pk):
     recipient_label = _notification_label(name, category)
 
     try:
-        send_portal_access_email(
-            request,
-            to_email=email,
-            recipient_label=recipient_label,
-            activation_link=activation_link,
-            resend=True,
-        )
+        if email:
+            send_portal_access_email(
+                request,
+                to_email=email,
+                recipient_label=recipient_label,
+                activation_link=activation_link,
+                resend=True,
+            )
+
         if is_whatsapp_phone(phone):
             ok = send_portal_access_whatsapp(
                 request,
@@ -1780,13 +1784,14 @@ def admin_user_resend_alerts(request, user_id):
     recipient_label = _notification_label(name, "admin")
 
     try:
-        send_portal_access_email(
-            request,
-            to_email=email,
-            recipient_label=recipient_label,
-            activation_link=activation_link,
-            resend=True,
-        )
+        if email:
+            send_portal_access_email(
+                request,
+                to_email=email,
+                recipient_label=recipient_label,
+                activation_link=activation_link,
+                resend=True,
+            )
 
         if is_whatsapp_phone(phone):
             ok = send_portal_access_whatsapp(
@@ -1796,6 +1801,7 @@ def admin_user_resend_alerts(request, user_id):
                 activation_link=activation_link,
                 resend=True,
             )
+                
             if not ok:
                 messages.warning(request, "O WhatsApp de reenvio não foi enviado.")
 
