@@ -35,11 +35,16 @@ def _first_name_only(name: str) -> str:
 def _url_suffix_from_absolute_url(url: str) -> str:
     """
     Converte:
-    https://lumavet.pet/ativar/abc/def/  -> /ativar/abc/def/
-    https://lumavet.pet/login/           -> /login/
+    https://lumavet.pet/ativar/abc/def/ -> ativar/abc/def/
+    https://lumavet.pet/login/          -> login/
+
+    Retorna o sufixo SEM barra inicial, porque a Meta anexa esse valor
+    ao prefixo configurado no botão do template.
     """
     parsed = urlsplit(url)
-    suffix = parsed.path or "/"
+
+    path = (parsed.path or "/").lstrip("/")
+    suffix = path
 
     if parsed.query:
         suffix += f"?{parsed.query}"
