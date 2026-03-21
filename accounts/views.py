@@ -14,6 +14,7 @@ from .notifications import (
     send_tutor_exam_email,
     send_provider_exam_email,
     send_portal_access_email,
+    send_contact_updated_email,
 )
 from .whatsapp_client import (
     normalize_br_phone,
@@ -21,6 +22,7 @@ from .whatsapp_client import (
     send_tutor_exam_whatsapp,
     send_provider_exam_whatsapp,
     send_portal_access_whatsapp,
+    send_contact_updated_whatsapp,
 )
 from django.contrib import messages
 from django.db.models import Q
@@ -359,6 +361,40 @@ def profile_view(request):
             request.user.save()
             # Mantém o usuário logado após trocar a senha
             update_session_auth_hash(request, request.user)
+            
+        email_changed = (old_email or "").strip().lower() != (email or "").strip().lower()
+        phone_changed = _phone_digits(old_whatsapp) != _phone_digits(whatsapp)
+        contacts_changed = email_changed or phone_changed
+
+        category_hint = "clinicas" if Clinic.objects.filter(user=request.user).exists() else None
+        recipient_label = _notification_label(name, category_hint)
+
+        if contacts_changed:
+            if email:
+                try:
+                    send_contact_updated_email(
+                        request,
+                        to_email=email,
+                        recipient_label=recipient_label,
+                        email_value=email,
+                        phone_value=whatsapp,
+                    )
+                except Exception as e:
+                    messages.error(request, f"Falha ao enviar e-mail de atualização: {e}")
+
+            if whatsapp and is_whatsapp_phone(whatsapp):
+                try:
+                    ok = send_contact_updated_whatsapp(
+                        request,
+                        to_phone=whatsapp,
+                        recipient_label=recipient_label,
+                        email_value=email,
+                        phone_value=whatsapp,
+                    )
+                    if not ok:
+                        messages.warning(request, "O WhatsApp de atualização não foi enviado.")
+                except Exception as e:
+                    messages.error(request, f"Falha ao enviar WhatsApp de atualização: {e}")
 
         messages.success(request, 'Dados atualizados com sucesso!')
         return redirect('meu_perfil')
@@ -1167,29 +1203,49 @@ def management_edit(request, category, pk):
             email_changed = (new_email.lower() != old_email.lower()) if (new_email and old_email) else (new_email != old_email)
             phone_changed = (new_phone != old_phone)
 
-            if notify_email and new_email and email_changed:
-                role = "TUTOR" if category == "tutores" else "BASIC"
-                u, created_now, needs_activation = ensure_pending_user_for_provider(
-                    name=getattr(obj, "display_name", None) or getattr(obj, "name", ""),
-                    email=new_email,
-                    phone=new_phone,
-                    role=role,
-                )
-                login_link = request.build_absolute_uri(reverse("login"))
+            if category in ("tutores", "clinicas", "veterinarios"):
+                contacts_changed = email_changed or phone_changed
+                name_value = getattr(obj, "display_name", None) or getattr(obj, "name", "")
+                recipient_label = _notification_label(name_value, category)
 
-                subject = "LumaVet — Seus dados foram atualizados"
-                body = (
-                    f"Olá!\n\n"
-                    f"Seus dados de contato foram atualizados no LumaVet.\n\n"
-                    f"Novo e-mail: {new_email or '-'}\n"
-                    f"Novo telefone: {new_phone or '-'}\n\n"
-                    f"Acesse o portal em:\n{login_link}\n\n"
-                    f"Se você não reconhece esta alteração, pode ignorar."
-                )
-                try:
-                    send_simple_email(new_email, subject, body)
-                except Exception as e:
-                    messages.error(request, f"Falha ao enviar e-mail de atualização: {e}")
+                if contacts_changed and (new_email or new_phone):
+                    role = "TUTOR" if category == "tutores" else "BASIC"
+                    u, created_now, needs_activation = ensure_pending_user_for_provider(
+                        name=name_value,
+                        email=new_email,
+                        phone=new_phone,
+                        role=role,
+                    )
+
+                    if category in ("clinicas", "veterinarios") and getattr(obj, "user", None) is None and u:
+                        obj.user = u
+                        obj.save(update_fields=["user"])
+
+                    if notify_email and new_email:
+                        try:
+                            send_contact_updated_email(
+                                request,
+                                to_email=new_email,
+                                recipient_label=recipient_label,
+                                email_value=new_email,
+                                phone_value=new_phone,
+                            )
+                        except Exception as e:
+                            messages.error(request, f"Falha ao enviar e-mail de atualização: {e}")
+
+                    if notify_phone and new_phone and is_whatsapp_phone(new_phone):
+                        try:
+                            ok = send_contact_updated_whatsapp(
+                                request,
+                                to_phone=new_phone,
+                                recipient_label=recipient_label,
+                                email_value=new_email,
+                                phone_value=new_phone,
+                            )
+                            if not ok:
+                                messages.warning(request, "O WhatsApp de atualização não foi enviado.")
+                        except Exception as e:
+                            messages.error(request, f"Falha ao enviar WhatsApp de atualização: {e}")
             updated_username = getattr(form, "updated_username", None)
 
             msg = f"{info['singular']} atualizado(a) com sucesso."
@@ -1659,6 +1715,9 @@ def admin_user_edit(request, user_id):
     target_user = get_object_or_404(User, pk=user_id)
     target_profile, _ = Profile.objects.get_or_create(user=target_user)
     
+    old_email = (target_user.email or "").strip()
+    old_phone = (target_profile.whatsapp or "").strip()
+    
     if target_user.is_superuser or target_profile.role == 'ADMIN':
         messages.error(request, "Não é permitido editar um Administrador por aqui.")
         return redirect('gestao_category', category='admin')
@@ -1691,6 +1750,45 @@ def admin_user_edit(request, user_id):
                 target_profile.photo = cd["photo"]
 
             target_profile.save()
+            
+            new_email = (target_user.email or "").strip()
+            new_phone = (target_profile.whatsapp or "").strip()
+
+            notify_email = (cd.get("notify_email") or "1") != "0"
+            notify_phone = (cd.get("notify_phone") or "1") != "0"
+
+            email_changed = (new_email.lower() != old_email.lower()) if (new_email and old_email) else (new_email != old_email)
+            phone_changed = _phone_digits(new_phone) != _phone_digits(old_phone)
+            contacts_changed = email_changed or phone_changed
+
+            recipient_label = _notification_label(target_user.first_name or target_user.username, "admin")
+
+            if contacts_changed:
+                if notify_email and new_email:
+                    try:
+                        send_contact_updated_email(
+                            request,
+                            to_email=new_email,
+                            recipient_label=recipient_label,
+                            email_value=new_email,
+                            phone_value=new_phone,
+                        )
+                    except Exception as e:
+                        messages.error(request, f"Falha ao enviar e-mail de atualização: {e}")
+
+                if notify_phone and new_phone and is_whatsapp_phone(new_phone):
+                    try:
+                        ok = send_contact_updated_whatsapp(
+                            request,
+                            to_phone=new_phone,
+                            recipient_label=recipient_label,
+                            email_value=new_email,
+                            phone_value=new_phone,
+                        )
+                        if not ok:
+                            messages.warning(request, "O WhatsApp de atualização não foi enviado.")
+                    except Exception as e:
+                        messages.error(request, f"Falha ao enviar WhatsApp de atualização: {e}")
 
             messages.success(request, f"{singular} atualizado com sucesso.")
             return redirect("gestao_category", category="admin")

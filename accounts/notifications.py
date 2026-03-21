@@ -320,3 +320,55 @@ def send_portal_access_email(
     msg.attach_alternative(html_body, "text/html")
     msg.send()
     return True
+    
+def send_contact_updated_email(
+    request,
+    *,
+    to_email: str,
+    recipient_label: str,
+    email_value: str,
+    phone_value: str,
+):
+    to_email = (to_email or "").strip()
+    if not to_email:
+        return False
+
+    login_link = request.build_absolute_uri(reverse("login"))
+    subject = "LumaVet — Dados atualizados"
+
+    text_body = "\n".join([
+        f"Olá, {recipient_label}!",
+        "",
+        "Seus dados de contato no portal LumaVet foram atualizados.",
+        "",
+        "Dados atualizados:",
+        f"E-mail: {email_value or '-'}",
+        f"Telefone: {phone_value or '-'}",
+        "",
+        "Para acessar o portal, clique no link abaixo:",
+        login_link,
+        "",
+        "Atenciosamente,",
+        "Equipe LumaVet",
+    ])
+
+    html_body = f"""
+    <p>Olá, {escape(recipient_label)}!</p>
+    <p>Seus dados de contato no portal LumaVet foram atualizados.</p>
+    <p><strong>Dados atualizados:</strong><br>
+    E-mail: {escape(email_value or '-')}<br>
+    Telefone: {escape(phone_value or '-')}</p>
+    <p>Para acessar o portal, clique no link abaixo:</p>
+    <p><a href="{escape(login_link, quote=True)}">{escape(login_link)}</a></p>
+    <p>Atenciosamente,<br>Equipe LumaVet</p>
+    """
+
+    msg = EmailMultiAlternatives(
+        subject=subject,
+        body=text_body,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[to_email],
+    )
+    msg.attach_alternative(html_body, "text/html")
+    msg.send()
+    return True

@@ -292,3 +292,29 @@ def send_exam_whatsapp(request, *, exam, to_phone: str, recipient_label: str, ac
         template_name=settings.WHATSAPP_TEMPLATE_NAME,
         body_parameters=body_parameters,
     )
+    
+def send_contact_updated_whatsapp(
+    request,
+    *,
+    to_phone: str,
+    recipient_label: str,
+    email_value: str,
+    phone_value: str,
+) -> bool:
+    if not settings.WHATSAPP_TEMPLATE_CONTACT_UPDATED:
+        raise RuntimeError("WHATSAPP_TEMPLATE_CONTACT_UPDATED não configurado.")
+
+    login_link = request.build_absolute_uri(reverse("login"))
+    target_suffix = _url_suffix_from_absolute_url(login_link)
+
+    return _send_template_message(
+        to_phone=to_phone,
+        template_name=settings.WHATSAPP_TEMPLATE_CONTACT_UPDATED,
+        body_parameters=[
+            recipient_label,
+            email_value or "-",
+            phone_value or "-",
+        ],
+        button_url_suffix=target_suffix,
+        button_index="0",
+    )
