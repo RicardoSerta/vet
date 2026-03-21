@@ -1080,13 +1080,15 @@ def management_create(request, category):
 
             if notify_phone and phone and activation_link:
                 try:
-                    send_portal_access_whatsapp(
+                    ok = send_portal_access_whatsapp(
                         request,
                         to_phone=phone,
                         recipient_label=recipient_label,
                         activation_link=activation_link,
                         resend=False,
                     )
+                    if not ok:
+                        messages.warning(request, "O WhatsApp de cadastro não foi enviado.")
                 except Exception as e:
                     messages.error(request, f"Falha ao enviar WhatsApp de cadastro: {e}")
 
@@ -1277,13 +1279,15 @@ def management_resend_alerts(request, category, pk):
                 resend=True,
             )
             if is_whatsapp_phone(phone):
-                send_portal_access_whatsapp(
+                ok = send_portal_access_whatsapp(
                     request,
                     to_phone=phone,
                     recipient_label=recipient_label,
                     activation_link=activation_link,
                     resend=True,
                 )
+                if not ok:
+                    messages.warning(request, "O WhatsApp de reenvio não foi enviado.")
             messages.success(request, f'Alertas reenviados para "{name}".')
         except Exception as e:
             messages.error(request, f"Falha ao reenviar alertas: {e}")
@@ -1349,13 +1353,15 @@ def management_resend_alerts(request, category, pk):
                 resend=True,
             )
             if is_whatsapp_phone(phone):
-                send_portal_access_whatsapp(
+                ok = send_portal_access_whatsapp(
                     request,
                     to_phone=phone,
                     recipient_label=recipient_label,
                     activation_link=activation_link,
                     resend=True,
                 )
+                if not ok:
+                    messages.warning(request, "O WhatsApp de reenvio não foi enviado.")
             messages.success(request, f'Alertas reenviados para "{name}".')
         except Exception as e:
             messages.error(request, f"Falha ao reenviar alertas: {e}")
@@ -1419,13 +1425,15 @@ def management_resend_alerts(request, category, pk):
             resend=True,
         )
         if is_whatsapp_phone(phone):
-            send_portal_access_whatsapp(
+            ok = send_portal_access_whatsapp(
                 request,
                 to_phone=phone,
                 recipient_label=recipient_label,
                 activation_link=activation_link,
                 resend=True,
             )
+            if not ok:
+                messages.warning(request, "O WhatsApp de reenvio não foi enviado.")
         messages.success(request, f'Alertas reenviados para "{name}".')
     except Exception as e:
         messages.error(request, f"Falha ao reenviar alertas: {e}")
@@ -1782,13 +1790,15 @@ def admin_user_resend_alerts(request, user_id):
         )
 
         if is_whatsapp_phone(phone):
-            send_portal_access_whatsapp(
+            ok = send_portal_access_whatsapp(
                 request,
                 to_phone=phone,
                 recipient_label=recipient_label,
                 activation_link=activation_link,
                 resend=True,
             )
+            if not ok:
+                messages.warning(request, "O WhatsApp de reenvio não foi enviado.")
 
         messages.success(request, f'Alertas reenviados para "{name}".')
     except Exception as e:
