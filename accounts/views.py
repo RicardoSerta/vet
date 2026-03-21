@@ -16,7 +16,7 @@ from .notifications import (
     send_portal_access_email,
 )
 from .whatsapp_client import (
-    normalize_br_phone
+    normalize_br_phone,
     send_exam_whatsapp,
     send_tutor_exam_whatsapp,
     send_provider_exam_whatsapp,
