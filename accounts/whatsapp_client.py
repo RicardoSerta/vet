@@ -225,6 +225,41 @@ def send_provider_exam_whatsapp(request, *, exam, to_phone: str, recipient_label
         button_url_suffix=target_suffix,
         button_index="0",
     )
+    
+def send_portal_access_whatsapp(
+    request,
+    *,
+    to_phone: str,
+    recipient_label: str,
+    activation_link: str,
+    resend: bool = False,
+) -> bool:
+    """
+    Casos 5 e 6:
+    - Cadastro criado no portal em primeiro acesso
+    - Reenvio de acesso em primeiro acesso
+    """
+    target_suffix = _url_suffix_from_absolute_url(activation_link)
+
+    template_name = (
+        settings.WHATSAPP_TEMPLATE_PORTAL_RESEND_FIRST_ACCESS
+        if resend
+        else settings.WHATSAPP_TEMPLATE_PORTAL_CREATE_FIRST_ACCESS
+    )
+
+    if resend and not settings.WHATSAPP_TEMPLATE_PORTAL_RESEND_FIRST_ACCESS:
+        raise RuntimeError("WHATSAPP_TEMPLATE_PORTAL_RESEND_FIRST_ACCESS não configurado.")
+
+    if not resend and not settings.WHATSAPP_TEMPLATE_PORTAL_CREATE_FIRST_ACCESS:
+        raise RuntimeError("WHATSAPP_TEMPLATE_PORTAL_CREATE_FIRST_ACCESS não configurado.")
+
+    return _send_template_message(
+        to_phone=to_phone,
+        template_name=template_name,
+        body_parameters=[recipient_label],
+        button_url_suffix=target_suffix,
+        button_index="0",
+    )
 
 
 def send_exam_whatsapp(request, *, exam, to_phone: str, recipient_label: str, activation_link: str | None = None) -> bool:

@@ -9,8 +9,18 @@ from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.utils.text import slugify
 from django.utils import timezone
 from django.conf import settings
-from .notifications import send_exam_email, send_tutor_exam_email, send_provider_exam_email
-from .whatsapp_client import send_exam_whatsapp, send_tutor_exam_whatsapp, send_provider_exam_whatsapp
+from .notifications import (
+    send_exam_email,
+    send_tutor_exam_email,
+    send_provider_exam_email,
+    send_portal_access_email,
+)
+from .whatsapp_client import (
+    send_exam_whatsapp,
+    send_tutor_exam_whatsapp,
+    send_provider_exam_whatsapp,
+    send_portal_access_whatsapp,
+)
 from django.contrib import messages
 from django.db.models import Q
 from django.urls import reverse
@@ -200,6 +210,14 @@ def ensure_pending_user_for_provider(name: str, email: str, phone: str, role: st
 
     needs_activation = not user.has_usable_password()
     return user, created_now, needs_activation
+    
+def _notification_label(name: str, category: str | None = None) -> str:
+    name = (name or "").strip()
+    if not name:
+        return "cliente"
+    if category == "clinicas":
+        return name
+    return name.split()[0]
     
 def translate_exam_type(exam_type_raw: str) -> str:
     key = (exam_type_raw or "").strip().lower()
@@ -1000,7 +1018,7 @@ def management_create(request, category):
         form = FormClass(request.POST, request.FILES)
         if form.is_valid():
             obj = form.save()
-            
+
             remove_photo = (request.POST.get("remove_photo") == "1")
             if remove_photo:
                 try:
@@ -1016,43 +1034,63 @@ def management_create(request, category):
 
             email = (getattr(obj, "email", "") or "").strip()
             phone = (getattr(obj, "phone", "") or "").strip()
+            name = getattr(obj, "display_name", None) or getattr(obj, "name", "")
+            recipient_label = _notification_label(name, category)
 
-            # elegibilidade
             if not email:
                 notify_email = False
-            if not is_whatsapp_phone(phone):
-                notify_phone = False  # por enquanto não envia WhatsApp
 
-            if notify_email:
-                # cria user pendente e monta link
+            if not is_whatsapp_phone(phone):
+                notify_phone = False
+
+            # enquanto o login por telefone não existe, o fluxo de acesso continua exigindo e-mail
+            if not email:
+                notify_phone = False
+
+            u = None
+            activation_link = None
+
+            if (notify_email or notify_phone) and email:
                 role = "TUTOR" if category == "tutores" else "BASIC"
                 u, created_now, needs_activation = ensure_pending_user_for_provider(
-                    name=getattr(obj, "display_name", None) or getattr(obj, "name", ""),
+                    name=name,
                     email=email,
                     phone=phone,
                     role=role,
                 )
 
-                activation_link = build_activation_link(request, u) if (u and needs_activation) else None
-                login_link = request.build_absolute_uri(reverse("login"))
+                if u and needs_activation:
+                    activation_link = build_activation_link(request, u)
 
-                subject = "LumaVet — Seu cadastro foi criado"
-                body = (
-                    f"Olá!\n\n"
-                    f"Você agora tem um cadastro no LumaVet.\n\n"
-                    f"E-mail cadastrado: {email or '-'}\n"
-                    f"Telefone cadastrado: {phone or '-'}\n\n"
-                    + (f"Para definir sua senha e acessar, use este link:\n{activation_link}\n\n" if activation_link else
-                       f"Acesse o portal em:\n{login_link}\n\n")
-                    + "Se você não reconhece esta mensagem, pode ignorar."
-                )
+                if category in ("clinicas", "veterinarios") and getattr(obj, "user", None) is None and u:
+                    obj.user = u
+                    obj.save(update_fields=["user"])
 
+            if notify_email and email and activation_link:
                 try:
-                    send_simple_email(email, subject, body)
+                    send_portal_access_email(
+                        request,
+                        to_email=email,
+                        recipient_label=recipient_label,
+                        activation_link=activation_link,
+                        resend=False,
+                    )
                 except Exception as e:
                     messages.error(request, f"Falha ao enviar e-mail de cadastro: {e}")
-            messages.success(request, f'{info["singular"]} cadastrado(a) com sucesso.')
 
+            if notify_phone and phone and activation_link:
+                try:
+                    send_portal_access_whatsapp(
+                        request,
+                        to_phone=phone,
+                        recipient_label=recipient_label,
+                        activation_link=activation_link,
+                        resend=False,
+                    )
+                except Exception as e:
+                    messages.error(request, f"Falha ao enviar WhatsApp de cadastro: {e}")
+
+            messages.success(request, f'{info["singular"]} cadastrado(a) com sucesso.')
             return redirect('gestao_category', category=category)
 
     else:
@@ -1226,23 +1264,33 @@ def management_resend_alerts(request, category, pk):
             messages.error(request, "Não foi possível preparar o usuário para ativação.")
             return redirect("gestao_category", category="admin")
 
-        activation_link = build_activation_link(request, u) if needs_activation else request.build_absolute_uri(reverse("login"))
+        activation_link = build_activation_link(request, u) if needs_activation else None
 
-        subject = "LumaVet — Ative seu acesso"
-        body = (
-            f"Olá {name}!\n\n"
-            f"Você tem um cadastro no LumaVet.\n\n"
-            f"E-mail cadastrado: {email}\n"
-            f"Telefone cadastrado: {phone or '-'}\n\n"
-            f"Para definir sua senha e acessar, use este link:\n{activation_link}\n\n"
-            f"Se você não reconhece esta mensagem, pode ignorar."
-        )
+        if not activation_link:
+            messages.info(request, f'"{name}" já possui conta ativa.')
+            return redirect("gestao_category", category="admin")
+
+        recipient_label = _notification_label(name, "admin")
 
         try:
-            send_simple_email(email, subject, body)
-            messages.success(request, f'Alertas reenviados para "{name}" (via e-mail).')
+            send_portal_access_email(
+                request,
+                to_email=email,
+                recipient_label=recipient_label,
+                activation_link=activation_link,
+                resend=True,
+            )
+            if is_whatsapp_phone(phone):
+                send_portal_access_whatsapp(
+                    request,
+                    to_phone=phone,
+                    recipient_label=recipient_label,
+                    activation_link=activation_link,
+                    resend=True,
+                )
+            messages.success(request, f'Alertas reenviados para "{name}".')
         except Exception as e:
-            messages.error(request, f"Falha ao reenviar e-mail: {e}")
+            messages.error(request, f"Falha ao reenviar alertas: {e}")
 
         return redirect("gestao_category", category="admin")
 
@@ -1288,22 +1336,33 @@ def management_resend_alerts(request, category, pk):
             messages.error(request, "Não foi possível preparar o usuário para ativação.")
             return redirect("gestao_category", category=category)
 
-        activation_link = build_activation_link(request, u) if needs_activation else request.build_absolute_uri(reverse("login"))
+        activation_link = build_activation_link(request, u) if needs_activation else None
 
-        subject = "LumaVet — Ative seu acesso"
-        body = (
-            f"Olá {name}!\n\n"
-            f"Você tem um cadastro no LumaVet.\n\n"
-            f"E-mail cadastrado: {email}\n"
-            f"Telefone cadastrado: {phone or '-'}\n\n"
-            f"Para definir sua senha e acessar, use este link:\n{activation_link}\n\n"
-            f"Se você não reconhece esta mensagem, pode ignorar."
-        )
+        if not activation_link:
+            messages.info(request, f'"{name}" já possui conta ativa.')
+            return redirect("gestao_category", category=category)
+
+        recipient_label = _notification_label(name, category)
+
         try:
-            send_simple_email(email, subject, body)
-            messages.success(request, f'Alertas reenviados para "{name}" (via e-mail).')
+            send_portal_access_email(
+                request,
+                to_email=email,
+                recipient_label=recipient_label,
+                activation_link=activation_link,
+                resend=True,
+            )
+            if is_whatsapp_phone(phone):
+                send_portal_access_whatsapp(
+                    request,
+                    to_phone=phone,
+                    recipient_label=recipient_label,
+                    activation_link=activation_link,
+                    resend=True,
+                )
+            messages.success(request, f'Alertas reenviados para "{name}".')
         except Exception as e:
-            messages.error(request, f"Falha ao reenviar e-mail: {e}")
+            messages.error(request, f"Falha ao reenviar alertas: {e}")
 
         return redirect("gestao_category", category=category)
 
@@ -1347,23 +1406,33 @@ def management_resend_alerts(request, category, pk):
     else:
         needs_activation = not u.has_usable_password()
 
-    activation_link = build_activation_link(request, u) if needs_activation else request.build_absolute_uri(reverse("login"))
+    activation_link = build_activation_link(request, u) if needs_activation else None
 
-    subject = "LumaVet — Ative seu acesso"
-    body = (
-        f"Olá {name}!\n\n"
-        f"Você tem um cadastro no LumaVet.\n\n"
-        f"E-mail cadastrado: {email}\n"
-        f"Telefone cadastrado: {phone or '-'}\n\n"
-        f"Para definir sua senha e acessar, use este link:\n{activation_link}\n\n"
-        f"Se você não reconhece esta mensagem, pode ignorar."
-    )
+    if not activation_link:
+        messages.info(request, f'"{name}" já possui conta ativa.')
+        return redirect("gestao_category", category=category)
+
+    recipient_label = _notification_label(name, category)
 
     try:
-        send_simple_email(email, subject, body)
-        messages.success(request, f'Alertas reenviados para "{name}" (via e-mail).')
+        send_portal_access_email(
+            request,
+            to_email=email,
+            recipient_label=recipient_label,
+            activation_link=activation_link,
+            resend=True,
+        )
+        if is_whatsapp_phone(phone):
+            send_portal_access_whatsapp(
+                request,
+                to_phone=phone,
+                recipient_label=recipient_label,
+                activation_link=activation_link,
+                resend=True,
+            )
+        messages.success(request, f'Alertas reenviados para "{name}".')
     except Exception as e:
-        messages.error(request, f"Falha ao reenviar e-mail: {e}")
+        messages.error(request, f"Falha ao reenviar alertas: {e}")
 
     return redirect("gestao_category", category=category)
 
@@ -1523,6 +1592,43 @@ def admin_user_create(request):
             if photo:
                 p.photo = photo
             p.save()
+            
+            notify_email = (cd.get("notify_email") or "1") != "0"
+            notify_phone = (cd.get("notify_phone") or "1") != "0"
+
+            if not email:
+                notify_email = False
+                notify_phone = False
+
+            if not is_whatsapp_phone(phone):
+                notify_phone = False
+
+            activation_link = build_activation_link(request, u)
+            recipient_label = _notification_label(first, "admin")
+
+            if notify_email:
+                try:
+                    send_portal_access_email(
+                        request,
+                        to_email=email,
+                        recipient_label=recipient_label,
+                        activation_link=activation_link,
+                        resend=False,
+                    )
+                except Exception as e:
+                    messages.error(request, f"Falha ao enviar e-mail de cadastro: {e}")
+
+            if notify_phone:
+                try:
+                    send_portal_access_whatsapp(
+                        request,
+                        to_phone=phone,
+                        recipient_label=recipient_label,
+                        activation_link=activation_link,
+                        resend=False,
+                    )
+                except Exception as e:
+                    messages.error(request, f"Falha ao enviar WhatsApp de cadastro: {e}")
 
             messages.success(request, "Auxiliar cadastrado com sucesso.")
             return redirect("gestao_category", category="admin")
@@ -1668,22 +1774,29 @@ def admin_user_resend_alerts(request, user_id):
         return redirect('gestao_category', category='admin')
 
     activation_link = build_activation_link(request, target_user)
-
-    subject = "LumaVet — Ative seu acesso"
-    body = (
-        f"Olá {name}!\n\n"
-        f"Você tem um cadastro no LumaVet.\n\n"
-        f"E-mail cadastrado: {email}\n"
-        f"Telefone cadastrado: {phone or '-'}\n\n"
-        f"Para definir sua senha e acessar, use este link:\n{activation_link}\n\n"
-        f"Se você não reconhece esta mensagem, pode ignorar."
-    )
+    recipient_label = _notification_label(name, "admin")
 
     try:
-        send_simple_email(email, subject, body)
-        messages.success(request, f'Alertas reenviados para "{name}" (via e-mail).')
+        send_portal_access_email(
+            request,
+            to_email=email,
+            recipient_label=recipient_label,
+            activation_link=activation_link,
+            resend=True,
+        )
+
+        if is_whatsapp_phone(phone):
+            send_portal_access_whatsapp(
+                request,
+                to_phone=phone,
+                recipient_label=recipient_label,
+                activation_link=activation_link,
+                resend=True,
+            )
+
+        messages.success(request, f'Alertas reenviados para "{name}".')
     except Exception as e:
-        messages.error(request, f"Falha ao reenviar e-mail: {e}")
+        messages.error(request, f"Falha ao reenviar alertas: {e}")
 
     return redirect('gestao_category', category='admin')
     

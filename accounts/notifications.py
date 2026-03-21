@@ -261,3 +261,62 @@ def send_provider_exam_email(request, *, exam, to_email: str, recipient_label: s
     msg.attach_alternative(html_body, "text/html")
     msg.send()
     return True
+    
+def send_portal_access_email(
+    request,
+    *,
+    to_email: str,
+    recipient_label: str,
+    activation_link: str,
+    resend: bool = False,
+):
+    """
+    Casos 5 e 6:
+    - Cadastro criado no portal em primeiro acesso
+    - Reenvio de acesso em primeiro acesso
+    """
+    to_email = (to_email or "").strip()
+    if not to_email:
+        return False
+
+    subject = "LumaVet — Acesso ao portal"
+
+    if resend:
+        intro = "Estamos reenviando seu link de primeiro acesso ao portal LumaVet."
+    else:
+        intro = "Foi criado um cadastro para você no portal LumaVet."
+
+    lines = [
+        f"Olá, {recipient_label}!",
+        "",
+        intro,
+        "",
+        "Este é o seu primeiro acesso ao sistema.",
+        "",
+        "Para criar sua senha e entrar no portal, clique no link abaixo:",
+        activation_link,
+        "",
+        "Atenciosamente,",
+        "Equipe LumaVet",
+    ]
+
+    text_body = "\n".join(lines)
+
+    html_body = f"""
+    <p>Olá, {escape(recipient_label)}!</p>
+    <p>{escape(intro)}</p>
+    <p>Este é o seu primeiro acesso ao sistema.</p>
+    <p>Para criar sua senha e entrar no portal, clique no link abaixo:</p>
+    <p><a href="{escape(activation_link, quote=True)}">{escape(activation_link)}</a></p>
+    <p>Atenciosamente,<br>Equipe LumaVet</p>
+    """
+
+    msg = EmailMultiAlternatives(
+        subject=subject,
+        body=text_body,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[to_email],
+    )
+    msg.attach_alternative(html_body, "text/html")
+    msg.send()
+    return True
