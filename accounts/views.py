@@ -1241,7 +1241,7 @@ def management_resend_alerts(request, category, pk):
             messages.error(request, f'Não é possível reenviar: "{name}" não possui e-mail nem WhatsApp válidos.')
             return redirect("gestao_category", category="admin")
             
-                if email:
+        if email:
             try:
                 validate_email(email)
             except DjangoValidationError:
