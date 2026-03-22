@@ -15,9 +15,9 @@
     <p><strong>Tutor:</strong> {{ exam.tutor_name }}</p>
     <p><strong>Retorno:</strong>
         {% if exam.retorno_previsto %}
-            {{ exam.retorno_previsto|date:"d/m/Y" }}
+          {{ exam.retorno_previsto|date:"d/m/Y" }}{% if exam.retorno_horario %} às {{ exam.retorno_horario|time:"H:i" }}{% endif %}
         {% else %}
-            –
+          -
         {% endif %}
     </p>
 

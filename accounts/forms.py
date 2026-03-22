@@ -167,6 +167,22 @@ class ExamUploadForm(forms.Form):
             }
         )
     )
+    
+    retorno_horario = forms.TimeField(
+        label='Horário do retorno',
+        required=False,
+        input_formats=['%H:%M'],
+        error_messages={
+            "invalid": "Informe um horário válido."
+        },
+        widget=forms.TimeInput(
+            format='%H:%M',
+            attrs={
+                'type': 'time',
+                'step': '60',
+            }
+        )
+    )
 
     observations = forms.CharField(
         label='Observações',
@@ -227,7 +243,6 @@ class ExamUploadForm(forms.Form):
             ('Veterinários', vet_choices),
         ]
 
-        # Retorno não pode ser anterior a hoje
         self.fields['retorno_previsto'].widget.attrs['min'] = date.today().isoformat()
         
     def clean_clinic_or_vet(self):
@@ -258,6 +273,16 @@ class ExamUploadForm(forms.Form):
 
     def clean(self):
         cleaned_data = super().clean()
+        
+        retorno_previsto = cleaned_data.get("retorno_previsto")
+        retorno_horario = cleaned_data.get("retorno_horario")
+
+        if retorno_horario and not retorno_previsto:
+            self.add_error("retorno_previsto", "Informe a data do retorno.")
+
+        if retorno_previsto and not retorno_horario:
+            self.add_error("retorno_horario", "Informe o horário do retorno.")
+        
         pdf = cleaned_data.get("pdf_file")
 
         if not pdf:

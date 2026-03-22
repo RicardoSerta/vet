@@ -35,7 +35,8 @@ class Exam(models.Model):
 
     alerta_email = models.DateTimeField("Alerta Email", blank=True, null=True)
     alerta_zap = models.DateTimeField("Alerta Zap", blank=True, null=True)
-    retorno_previsto = models.DateField("Retorno previsto", blank=True, null=True)
+    retorno_previsto = models.DateField("Retorno", blank=True, null=True)
+    retorno_horario = models.TimeField("Horário do retorno", blank=True, null=True)
     
     additional_clinic_or_vet = models.JSONField(
         "Clínicas/Vets adicionais",

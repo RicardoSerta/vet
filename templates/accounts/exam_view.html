@@ -74,7 +74,11 @@
         <div class="exam-view-item">
           <div class="exam-view-label">Retorno</div>
           <div class="exam-view-value">
-            {% if exam.retorno_previsto %}{{ exam.retorno_previsto|date:"d/m/Y" }}{% else %}–{% endif %}
+            {% if exam.retorno_previsto %}
+              {{ exam.retorno_previsto|date:"d/m/Y" }}{% if exam.retorno_horario %} às {{ exam.retorno_horario|time:"H:i" }}{% endif %}
+            {% else %}
+              -
+            {% endif %}
           </div>
         </div>
         <div class="exam-view-item">
