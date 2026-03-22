@@ -105,7 +105,7 @@
 
               <!-- COLUNA ESQUERDA -->
               <div class="optional-fields-column">
-                <div class="profile-form-group">
+                <div class="profile-form-group additional-cv-group">
                   <label for="{{ form.additional_clinic_or_vet.id_for_label }}">Adicionar Clínicas / Veterinários:</label>
 
                   <div class="file-picker">
@@ -149,14 +149,14 @@
                   {% endif %}
 
                   <div class="field-hint">
-                    Se preencher, informe data e horário juntos.
+                    Data e horário de retorno do exame.
                   </div>
                 </div>
               </div>
 
               <!-- COLUNA DIREITA -->
               <div class="optional-fields-column">
-                <div id="extraFilesDropZone" class="profile-form-group file-drop-zone">
+                <div id="extraFilesDropZone" class="profile-form-group file-drop-zone extra-files-group">
                   <label for="{{ form.extra_files.id_for_label }}">Arquivos Extras:</label>
 
                   <div class="file-picker">
@@ -691,6 +691,44 @@ document.addEventListener("DOMContentLoaded", function () {
     });
     email.addEventListener("input", () => email.setCustomValidity(""));
   }
+});
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const additionalGroup = document.querySelector(".additional-cv-group");
+  const extraGroup = document.querySelector(".extra-files-group");
+  const additionalBox = document.getElementById("additional-cv-box");
+
+  if (!additionalGroup || !extraGroup || !additionalBox) return;
+
+  function syncOptionalTopBlocks() {
+    additionalGroup.style.minHeight = "";
+
+    // Quando o seletor extra está aberto, deixa cada coluna seguir sozinha.
+    if (!additionalBox.classList.contains("cv-hidden")) {
+      return;
+    }
+
+    // Quando está fechado, iguala a altura do bloco da esquerda ao da direita
+    // para Retorno e Observações começarem alinhados.
+    additionalGroup.style.minHeight = extraGroup.offsetHeight + "px";
+  }
+
+  syncOptionalTopBlocks();
+  window.addEventListener("resize", syncOptionalTopBlocks);
+
+  const observer = new MutationObserver(syncOptionalTopBlocks);
+
+  observer.observe(additionalBox, {
+    attributes: true,
+    attributeFilter: ["class"],
+  });
+
+  observer.observe(extraGroup, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+  });
 });
 </script>
 {% endblock %}

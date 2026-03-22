@@ -3,8 +3,8 @@ import re
 import unicodedata
 from django.contrib.auth.models import User
 from .models import Profile
-from datetime import date
-from datetime import datetime
+from datetime import date, datetime, time as dt_time, timedelta
+from django.utils import timezone
 from pathlib import Path
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
@@ -273,16 +273,37 @@ class ExamUploadForm(forms.Form):
 
     def clean(self):
         cleaned_data = super().clean()
-        
+
         retorno_previsto = cleaned_data.get("retorno_previsto")
         retorno_horario = cleaned_data.get("retorno_horario")
 
-        if retorno_horario and not retorno_previsto:
-            self.add_error("retorno_previsto", "Informe a data do retorno.")
+        now = timezone.localtime()
+        today = now.date()
+        current_time = now.time().replace(second=0, microsecond=0)
+        meio_dia = dt_time(12, 0)
 
+        # Se preencheu data mas não preencheu horário:
+        # assume 12:00, exceto se a data for hoje e já tiver passado de 12:00.
         if retorno_previsto and not retorno_horario:
-            self.add_error("retorno_horario", "Informe o horário do retorno.")
-        
+            if retorno_previsto == today and current_time > meio_dia:
+                self.add_error(
+                    "retorno_horario",
+                    "Informe o horário de retorno"
+                )
+            else:
+                cleaned_data["retorno_horario"] = meio_dia
+                retorno_horario = meio_dia
+
+        # Se preencheu horário mas não preencheu data:
+        # assume a próxima vez que esse horário acontecerá.
+        elif retorno_horario and not retorno_previsto:
+            if retorno_horario > current_time:
+                cleaned_data["retorno_previsto"] = today
+            else:
+                cleaned_data["retorno_previsto"] = today + timedelta(days=1)
+
+            retorno_previsto = cleaned_data["retorno_previsto"]
+
         pdf = cleaned_data.get("pdf_file")
 
         if not pdf:

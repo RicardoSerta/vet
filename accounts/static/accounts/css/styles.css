@@ -310,7 +310,8 @@ body.app-body {
 .profile-form-group input[type="text"],
 .profile-form-group input[type="email"],
 .profile-form-group input[type="password"],
-.profile-form-group input[type="date"] {
+.profile-form-group input[type="date"],
+.profile-form-group input[type="time"] {
     width: 100%;
     padding: 8px 10px;
     border-radius: 3px;
@@ -613,6 +614,7 @@ body.app-body {
 .exam-upload-form input[type="text"],
 .exam-upload-form input[type="email"],
 .exam-upload-form input[type="date"],
+.exam-upload-form input[type="time"],
 .exam-upload-form textarea {
     width: 100%;
 }
@@ -971,25 +973,34 @@ body.app-body {
   box-shadow: 0 0 0 3px rgba(0, 166, 118, 0.15);
 }
 
+.return-datetime-wrap::after {
+  content: "";
+  flex: 1 1 auto;
+}
+
 .return-date-part,
 .return-time-part {
   display: flex;
   align-items: center;
   min-width: 0;
+  flex: 0 0 auto;
 }
 
 .return-date-part {
-  flex: 1 1 auto;
+  width: 220px;
 }
 
 .return-time-part {
-  flex: 0 0 130px;
+  width: 92px;
 }
 
 .return-divider {
   width: 1px;
   background: #e5e7eb;
   flex: 0 0 1px;
+  margin-left: 10px;
+  margin-right: 6px;
+  align-self: stretch;
 }
 
 .return-datetime-wrap input[type="date"],
@@ -999,8 +1010,20 @@ body.app-body {
   outline: none;
   width: 100%;
   height: 38px;
-  padding: 8px 10px;
   background: transparent;
+}
+
+.return-datetime-wrap input[type="date"] {
+  padding: 8px 6px 8px 10px;
+}
+
+.return-datetime-wrap input[type="time"] {
+  padding: 8px 8px 8px 6px;
+}
+
+.additional-cv-group,
+.extra-files-group {
+  min-width: 0;
 }
 
 @media (max-width: 920px) {
@@ -1008,8 +1031,12 @@ body.app-body {
     grid-template-columns: 1fr;
   }
 
+  .return-date-part {
+    width: 200px;
+  }
+
   .return-time-part {
-    flex-basis: 120px;
+    width: 88px;
   }
 }
 
