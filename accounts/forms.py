@@ -152,6 +152,21 @@ class ExamUploadForm(forms.Form):
             "placeholder": "exemplo@email.com",
         })
     )
+    
+    retorno_previsto = forms.DateField(
+        label='Retorno',
+        required=False,
+        input_formats=['%Y-%m-%d', '%d/%m/%Y'],
+        error_messages={
+            "invalid": "Informe uma data válida."
+        },
+        widget=forms.DateInput(
+            format='%Y-%m-%d',
+            attrs={
+                'type': 'date',
+            }
+        )
+    )
 
     observations = forms.CharField(
         label='Observações',

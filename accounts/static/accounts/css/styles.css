@@ -306,12 +306,14 @@ body.app-body {
 
 .profile-form-group input[type="text"],
 .profile-form-group input[type="email"],
-.profile-form-group input[type="password"] {
+.profile-form-group input[type="password"],
+.profile-form-group input[type="date"] {
     width: 100%;
     padding: 8px 10px;
     border-radius: 3px;
     border: 1px solid #d1d5db;
     font-size: 13px;
+    box-sizing: border-box;
 }
 
 .field-hint {
@@ -928,6 +930,14 @@ body.app-body {
 /* Alinhar a coluna de "Arquivos extras" com a coluna da esquerda */
 .profile-form-group.file-drop-zone{
   padding: 0;
+}
+
+.exam-return-row {
+  margin-top: 4px;
+}
+
+.exam-return-group {
+  grid-column: 2 / 3;
 }
 
 .notify-bell.notify-empty {

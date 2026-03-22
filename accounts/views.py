@@ -630,6 +630,7 @@ def exam_upload(request):
                 tutor_name=cd['parsed_tutor_name'],
                 tutor_phone=cd['tutor_phone'],
                 tutor_email=cd['tutor_email'],
+                retorno_previsto=cd.get('retorno_previsto'),
                 observations=cd['observations'],
                 pdf_file=cd['pdf_file'],
                 owner=request.user,

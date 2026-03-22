@@ -13,7 +13,7 @@
     <p><strong>Pet:</strong> {{ exam.pet_name }}</p>
     <p><strong>Raça:</strong> {{ exam.breed }}</p>
     <p><strong>Tutor:</strong> {{ exam.tutor_name }}</p>
-    <p><strong>Retorno previsto:</strong>
+    <p><strong>Retorno:</strong>
         {% if exam.retorno_previsto %}
             {{ exam.retorno_previsto|date:"d/m/Y" }}
         {% else %}

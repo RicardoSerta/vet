@@ -88,7 +88,7 @@
                     <th>Alerta Zap</th>
                     <th>
                         <a href="?order=retorno&direction={% if order == 'retorno' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
-                            Retorno Previsto
+                            Retorno
                             {% if order == 'retorno' %}
                                 {% if direction == 'asc' %}▲{% else %}▼{% endif %}
                             {% endif %}

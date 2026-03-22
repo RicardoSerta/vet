@@ -144,6 +144,21 @@
               </div>
 
             </div>
+            
+            <div class="profile-form-row exam-return-row">
+              <div class="profile-form-group exam-return-group">
+                <label for="{{ form.retorno_previsto.id_for_label }}">Retorno:</label>
+                {{ form.retorno_previsto }}
+
+                {% if form.retorno_previsto.errors %}
+                  <div class="field-error">{{ form.retorno_previsto.errors.0 }}</div>
+                {% endif %}
+
+                <div class="field-hint">
+                  Digite a data ou selecione no calendário.
+                </div>
+              </div>
+            </div>
 
             <!-- Observações -->
             <div class="profile-form-row">
