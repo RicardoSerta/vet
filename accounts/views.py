@@ -13,6 +13,7 @@ from .notifications import (
     send_exam_email,
     send_tutor_exam_email,
     send_provider_exam_email,
+    send_provider_bulk_exam_email,
     send_portal_access_email,
     send_contact_updated_email,
 )
@@ -21,6 +22,7 @@ from .whatsapp_client import (
     send_exam_whatsapp,
     send_tutor_exam_whatsapp,
     send_provider_exam_whatsapp,
+    send_provider_bulk_exam_whatsapp,
     send_portal_access_whatsapp,
     send_contact_updated_whatsapp,
 )
@@ -745,32 +747,84 @@ def exam_upload_multi(request):
 
             assigned_user = None
             clinic_or_vet_name = ""
+            provider_activation_link = None
+            provider_email = ""
+            provider_phone = ""
+            provider_label = "Clínica/Veterinário"
 
             if selected.startswith("CLINIC:"):
                 clinic_id = int(selected.split(":")[1])
                 clinic = Clinic.objects.get(id=clinic_id)
                 clinic_or_vet_name = clinic.name
-                assigned_user = clinic.user
+                provider_label = clinic.name
+                provider_email = (clinic.email or "").strip()
+                provider_phone = (clinic.phone or "").strip()
+
+                if clinic.user is None:
+                    u, created_now, needs_activation = ensure_pending_user_for_provider(
+                        name=clinic.name,
+                        email=clinic.email,
+                        phone=clinic.phone,
+                        role="BASIC",
+                    )
+                    if u:
+                        clinic.user = u
+                        clinic.save(update_fields=["user"])
+                        assigned_user = u
+
+                        if needs_activation:
+                            provider_activation_link = build_activation_link(request, u)
+                    else:
+                        assigned_user = None
+                else:
+                    assigned_user = clinic.user
+                    if not assigned_user.has_usable_password():
+                        provider_activation_link = build_activation_link(request, assigned_user)
+
             elif selected.startswith("VET:"):
                 vet_id = int(selected.split(":")[1])
                 vet = Veterinarian.objects.get(id=vet_id)
                 clinic_or_vet_name = vet.name
-                assigned_user = vet.user
+                provider_label = vet.name
+                provider_email = (vet.email or "").strip()
+                provider_phone = (vet.phone or "").strip()
 
-            # cria todos em transação (ou cria tudo, ou cria nada)
+                if vet.user is None:
+                    u, created_now, needs_activation = ensure_pending_user_for_provider(
+                        name=vet.name,
+                        email=vet.email,
+                        phone=vet.phone,
+                        role="BASIC",
+                    )
+                    if u:
+                        vet.user = u
+                        vet.save(update_fields=["user"])
+                        assigned_user = u
+
+                        if needs_activation:
+                            provider_activation_link = build_activation_link(request, u)
+                    else:
+                        assigned_user = None
+                else:
+                    assigned_user = vet.user
+                    if not assigned_user.has_usable_password():
+                        provider_activation_link = build_activation_link(request, assigned_user)
+
             created_count = 0
+            created_exam_ids = []
+            first_exam = None
+
             with transaction.atomic():
                 for f in pdf_files:
                     data = parse_exam_filename(f.name)
-                    
+
                     ensure_tutor_and_pet(
                         tutor_name=data["tutor_name"],
                         pet_name=data["pet_name"],
                         breed=data["breed"],
                     )
 
-                    
-                    Exam.objects.create(
+                    exam = Exam.objects.create(
                         date_realizacao=data["date_realizacao"],
                         clinic_or_vet=clinic_or_vet_name,
                         exam_type=translate_exam_type(data["exam_type"]),
@@ -780,12 +834,81 @@ def exam_upload_multi(request):
                         pdf_file=f,
                         owner=request.user,
                         assigned_user=assigned_user,
-                        # campos opcionais vazios no upload em massa:
                         tutor_phone="",
                         tutor_email="",
                         observations="",
                     )
+
+                    if first_exam is None:
+                        first_exam = exam
+
+                    created_exam_ids.append(exam.id)
                     created_count += 1
+
+            sent_any = False
+            zap_sent_any = False
+
+            # Se enviou só 1 exame no upload em massa, reutiliza o template normal
+            if created_count == 1 and first_exam is not None:
+                if provider_email:
+                    try:
+                        ok = send_provider_exam_email(
+                            request,
+                            exam=first_exam,
+                            to_email=provider_email,
+                            recipient_label=provider_label,
+                            activation_link=provider_activation_link,
+                        )
+                        sent_any = sent_any or ok
+                    except Exception as e:
+                        messages.error(request, f"Falha ao enviar e-mail para a clínica/vet: {e}")
+
+                if provider_phone and is_whatsapp_phone(provider_phone):
+                    try:
+                        ok = send_provider_exam_whatsapp(
+                            request,
+                            exam=first_exam,
+                            to_phone=provider_phone,
+                            recipient_label=provider_label,
+                            activation_link=provider_activation_link,
+                        )
+                        zap_sent_any = zap_sent_any or ok
+                    except Exception as e:
+                        messages.error(request, f"Falha ao enviar WhatsApp para a clínica/vet: {e}")
+
+            # Se enviou mais de 1 exame, usa os templates novos de massa
+            elif created_count > 1:
+                if provider_email:
+                    try:
+                        ok = send_provider_bulk_exam_email(
+                            request,
+                            recipient_label=provider_label,
+                            to_email=provider_email,
+                            exam_count=created_count,
+                            activation_link=provider_activation_link,
+                        )
+                        sent_any = sent_any or ok
+                    except Exception as e:
+                        messages.error(request, f"Falha ao enviar e-mail em massa para a clínica/vet: {e}")
+
+                if provider_phone and is_whatsapp_phone(provider_phone):
+                    try:
+                        ok = send_provider_bulk_exam_whatsapp(
+                            request,
+                            recipient_label=provider_label,
+                            to_phone=provider_phone,
+                            exam_count=created_count,
+                            activation_link=provider_activation_link,
+                        )
+                        zap_sent_any = zap_sent_any or ok
+                    except Exception as e:
+                        messages.error(request, f"Falha ao enviar WhatsApp em massa para a clínica/vet: {e}")
+
+            if sent_any:
+                Exam.objects.filter(id__in=created_exam_ids).update(alerta_email=timezone.now())
+
+            if zap_sent_any:
+                Exam.objects.filter(id__in=created_exam_ids).update(alerta_zap=timezone.now())
 
             messages.success(request, f"{created_count} exame(s) enviados com sucesso.")
             return redirect("exames")

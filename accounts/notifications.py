@@ -372,3 +372,79 @@ def send_contact_updated_email(
     msg.attach_alternative(html_body, "text/html")
     msg.send()
     return True
+    
+def send_provider_bulk_exam_email(
+    request,
+    *,
+    recipient_label: str,
+    to_email: str,
+    exam_count: int,
+    activation_link: str | None,
+):
+    to_email = (to_email or "").strip()
+    if not to_email:
+        return False
+
+    login_link = request.build_absolute_uri(reverse("login"))
+
+    is_first_access = bool(activation_link)
+    target_link = activation_link or login_link
+
+    subject = f"LumaVet — {exam_count} exames cadastrados no portal"
+
+    lines = [
+        f"Olá, {recipient_label}!",
+        "",
+        f"Foram cadastrados {exam_count} exames no LumaVet e eles já estão disponíveis para você.",
+        "",
+    ]
+
+    if is_first_access:
+        lines += [
+            "Este é o seu primeiro acesso ao portal.",
+            "",
+            "Para criar sua senha e visualizar os exames, clique no link abaixo:",
+        ]
+    else:
+        lines += [
+            "Para acessar o portal e visualizar os exames, clique no link abaixo:",
+        ]
+
+    lines += [
+        target_link,
+        "",
+        "Atenciosamente,",
+        "Equipe LumaVet",
+    ]
+
+    text_body = "\n".join(lines)
+
+    html_parts = [
+        f"<p>Olá, {escape(recipient_label)}!</p>",
+        f"<p>Foram cadastrados {exam_count} exames no LumaVet e eles já estão disponíveis para você.</p>",
+    ]
+
+    if is_first_access:
+        html_parts.append("<p>Este é o seu primeiro acesso ao portal.</p>")
+        html_parts.append("<p>Para criar sua senha e visualizar os exames, clique no link abaixo:</p>")
+    else:
+        html_parts.append("<p>Para acessar o portal e visualizar os exames, clique no link abaixo:</p>")
+
+    html_parts.append(
+        f'<p><a href="{escape(target_link, quote=True)}">{escape(target_link)}</a></p>'
+    )
+    html_parts.append("<p>Atenciosamente,<br>Equipe LumaVet</p>")
+
+    html_body = "\n".join(html_parts)
+
+    msg = EmailMultiAlternatives(
+        subject=subject,
+        body=text_body,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[to_email],
+    )
+    msg.attach_alternative(html_body, "text/html")
+    msg.send()
+    return True
+    
+

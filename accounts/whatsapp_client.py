@@ -318,3 +318,40 @@ def send_contact_updated_whatsapp(
         button_url_suffix=target_suffix,
         button_index="0",
     )
+    
+def send_provider_bulk_exam_whatsapp(
+    request,
+    *,
+    recipient_label: str,
+    to_phone: str,
+    exam_count: int,
+    activation_link: str | None = None,
+) -> bool:
+    login_link = request.build_absolute_uri(reverse("login"))
+
+    is_first_access = bool(activation_link)
+    target_link = activation_link or login_link
+    target_suffix = _url_suffix_from_absolute_url(target_link)
+
+    template_name = (
+        settings.WHATSAPP_TEMPLATE_PROVIDER_BULK_EXAM_FIRST_ACCESS
+        if is_first_access
+        else settings.WHATSAPP_TEMPLATE_PROVIDER_BULK_EXAM_EXISTING_ACCESS
+    )
+
+    if is_first_access and not settings.WHATSAPP_TEMPLATE_PROVIDER_BULK_EXAM_FIRST_ACCESS:
+        raise RuntimeError("WHATSAPP_TEMPLATE_PROVIDER_BULK_EXAM_FIRST_ACCESS não configurado.")
+
+    if not is_first_access and not settings.WHATSAPP_TEMPLATE_PROVIDER_BULK_EXAM_EXISTING_ACCESS:
+        raise RuntimeError("WHATSAPP_TEMPLATE_PROVIDER_BULK_EXAM_EXISTING_ACCESS não configurado.")
+
+    return _send_template_message(
+        to_phone=to_phone,
+        template_name=template_name,
+        body_parameters=[
+            recipient_label,
+            str(exam_count),
+        ],
+        button_url_suffix=target_suffix,
+        button_index="0",
+    )
