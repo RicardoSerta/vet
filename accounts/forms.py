@@ -226,6 +226,9 @@ class ExamUploadForm(forms.Form):
             ('Clínicas', clinic_choices),
             ('Veterinários', vet_choices),
         ]
+
+        # Retorno não pode ser anterior a hoje
+        self.fields['retorno_previsto'].widget.attrs['min'] = date.today().isoformat()
         
     def clean_clinic_or_vet(self):
         value = self.cleaned_data.get('clinic_or_vet')
@@ -246,6 +249,12 @@ class ExamUploadForm(forms.Form):
             if not re.match(pattern, phone):
                 raise forms.ValidationError("Use o formato (XX) XXXX-XXXX ou (XX) 9XXXX-XXXX.")
         return phone
+        
+    def clean_retorno_previsto(self):
+        retorno = self.cleaned_data.get("retorno_previsto")
+        if retorno and retorno < date.today():
+            raise forms.ValidationError("A data de retorno não pode ser anterior a hoje.")
+        return retorno
 
     def clean(self):
         cleaned_data = super().clean()

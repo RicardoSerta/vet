@@ -70,7 +70,9 @@ input[type="password"] {
 
 input[type="text"]:focus,
 input[type="password"]:focus,
-input[type="email"]:focus {
+input[type="email"]:focus,
+input[type="date"]:focus,
+textarea:focus {
     outline: none;
     border-color: #00a676;
     box-shadow: 0 0 0 3px rgba(0, 166, 118, 0.15);
@@ -932,12 +934,28 @@ body.app-body {
   padding: 0;
 }
 
-.exam-return-row {
+.exam-return-observations-row {
   margin-top: 4px;
+  align-items: start;
 }
 
 .exam-return-group {
-  grid-column: 2 / 3;
+  min-width: 0;
+}
+
+.exam-observations-group {
+  min-width: 0;
+}
+
+.exam-observations-group textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+@media (max-width: 920px) {
+  .exam-return-observations-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 .notify-bell.notify-empty {

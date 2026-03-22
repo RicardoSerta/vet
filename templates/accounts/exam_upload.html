@@ -145,7 +145,7 @@
 
             </div>
             
-            <div class="profile-form-row exam-return-row">
+            <div class="profile-form-row exam-return-observations-row">
               <div class="profile-form-group exam-return-group">
                 <label for="{{ form.retorno_previsto.id_for_label }}">Retorno:</label>
                 {{ form.retorno_previsto }}
@@ -158,11 +158,8 @@
                   Digite a data ou selecione no calendário.
                 </div>
               </div>
-            </div>
 
-            <!-- Observações -->
-            <div class="profile-form-row">
-              <div class="profile-form-group" style="grid-column: 1 / -1;">
+              <div class="profile-form-group exam-observations-group">
                 <label for="{{ form.observations.id_for_label }}">Observações:</label>
                 {{ form.observations }}
                 {% if form.observations.errors %}
