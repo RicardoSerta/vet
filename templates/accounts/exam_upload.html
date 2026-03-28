@@ -138,6 +138,28 @@
                     <div class="return-time-part">
                       {{ form.retorno_horario }}
                     </div>
+
+                    <div class="return-spacer" aria-hidden="true"></div>
+
+                    <div class="return-presets">
+                      <button
+                        type="button"
+                        class="return-presets-toggle"
+                        id="return-presets-toggle"
+                        aria-haspopup="true"
+                        aria-expanded="false"
+                        title="Selecionar retorno pré-definido"
+                      >▾</button>
+
+                      <div class="return-presets-menu return-presets-hidden" id="return-presets-menu">
+                        <button type="button" class="return-preset-option" data-preset="1w">Em 1 semana</button>
+                        <button type="button" class="return-preset-option" data-preset="2w">Em 2 semanas</button>
+                        <button type="button" class="return-preset-option" data-preset="1m">Em 1 mês</button>
+                        <button type="button" class="return-preset-option" data-preset="3m">Em 3 meses</button>
+                        <button type="button" class="return-preset-option" data-preset="6m">Em 6 meses</button>
+                        <button type="button" class="return-preset-option" data-preset="1y">Em 1 ano</button>
+                      </div>
+                    </div>
                   </div>
 
                   {% if form.retorno_previsto.errors %}
@@ -872,6 +894,131 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       return;
+    }
+  });
+});
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const dateInput = document.getElementById("id_retorno_previsto");
+  const timeInput = document.getElementById("id_retorno_horario");
+  const toggle = document.getElementById("return-presets-toggle");
+  const menu = document.getElementById("return-presets-menu");
+
+  if (!dateInput || !timeInput || !toggle || !menu) return;
+
+  function pad(n) {
+    return String(n).padStart(2, "0");
+  }
+
+  function formatDateLocal(date) {
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  }
+
+  function formatTimeLocal(date) {
+    return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  }
+
+  function addDays(base, days) {
+    const copy = new Date(base);
+    copy.setDate(copy.getDate() + days);
+    copy.setSeconds(0, 0);
+    return copy;
+  }
+
+  function addMonthsClamped(base, months) {
+    const year = base.getFullYear();
+    const month = base.getMonth() + months;
+    const hour = base.getHours();
+    const minute = base.getMinutes();
+
+    const targetYear = year + Math.floor(month / 12);
+    const targetMonth = ((month % 12) + 12) % 12;
+    const lastDay = new Date(targetYear, targetMonth + 1, 0).getDate();
+    const targetDay = Math.min(base.getDate(), lastDay);
+
+    return new Date(targetYear, targetMonth, targetDay, hour, minute, 0, 0);
+  }
+
+  function addYearsClamped(base, years) {
+    const targetYear = base.getFullYear() + years;
+    const targetMonth = base.getMonth();
+    const hour = base.getHours();
+    const minute = base.getMinutes();
+
+    const lastDay = new Date(targetYear, targetMonth + 1, 0).getDate();
+    const targetDay = Math.min(base.getDate(), lastDay);
+
+    return new Date(targetYear, targetMonth, targetDay, hour, minute, 0, 0);
+  }
+
+  function openMenu() {
+    menu.classList.remove("return-presets-hidden");
+    toggle.setAttribute("aria-expanded", "true");
+  }
+
+  function closeMenu() {
+    menu.classList.add("return-presets-hidden");
+    toggle.setAttribute("aria-expanded", "false");
+  }
+
+  function applyPreset(presetKey) {
+    const now = new Date();
+    let target = new Date(now);
+
+    if (presetKey === "1w") {
+      target = addDays(now, 7);
+    } else if (presetKey === "2w") {
+      target = addDays(now, 14);
+    } else if (presetKey === "1m") {
+      target = addMonthsClamped(now, 1);
+    } else if (presetKey === "3m") {
+      target = addMonthsClamped(now, 3);
+    } else if (presetKey === "6m") {
+      target = addMonthsClamped(now, 6);
+    } else if (presetKey === "1y") {
+      target = addYearsClamped(now, 1);
+    }
+
+    dateInput.value = formatDateLocal(target);
+    timeInput.value = formatTimeLocal(target);
+
+    dateInput.dispatchEvent(new Event("input", { bubbles: true }));
+    dateInput.dispatchEvent(new Event("change", { bubbles: true }));
+    timeInput.dispatchEvent(new Event("input", { bubbles: true }));
+    timeInput.dispatchEvent(new Event("change", { bubbles: true }));
+
+    closeMenu();
+  }
+
+  toggle.addEventListener("click", function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (menu.classList.contains("return-presets-hidden")) {
+      openMenu();
+    } else {
+      closeMenu();
+    }
+  });
+
+  menu.addEventListener("click", function (e) {
+    const option = e.target.closest(".return-preset-option");
+    if (!option) return;
+
+    e.preventDefault();
+    applyPreset(option.dataset.preset);
+  });
+
+  document.addEventListener("click", function (e) {
+    if (!menu.contains(e.target) && !toggle.contains(e.target)) {
+      closeMenu();
+    }
+  });
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") {
+      closeMenu();
     }
   });
 });
