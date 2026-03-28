@@ -126,7 +126,9 @@ class ExamUploadForm(forms.Form):
     clinic_or_vet = forms.ChoiceField(
         label='Clínica / Veterinário',
         choices=[],
-        widget=forms.Select()
+        widget=forms.Select(attrs={
+            "class": "clinic-vet-select",
+        })
     )
 
     tutor_phone = forms.CharField(
@@ -726,7 +728,9 @@ class MultiExamUploadForm(forms.Form):
     clinic_or_vet = forms.ChoiceField(
         label='Clínica / Veterinário',
         choices=[],
-        widget=forms.Select()
+        widget=forms.Select(attrs={
+            "class": "clinic-vet-select",
+        })
     )
 
     pdf_files = MultipleFileField(
