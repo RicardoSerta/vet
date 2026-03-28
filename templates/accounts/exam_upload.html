@@ -952,14 +952,41 @@ document.addEventListener("DOMContentLoaded", function () {
     return new Date(targetYear, targetMonth, targetDay, hour, minute, 0, 0);
   }
 
+  function closeMenu() {
+    menu.classList.add("return-presets-hidden");
+    menu.classList.remove("return-presets-open-up");
+    toggle.setAttribute("aria-expanded", "false");
+    menu.style.maxHeight = "";
+  }
+
+  function positionMenu() {
+    const gap = 6;
+    const viewportMargin = 12;
+
+    menu.classList.remove("return-presets-open-up");
+    menu.style.maxHeight = "";
+
+    const toggleRect = toggle.getBoundingClientRect();
+    const menuRect = menu.getBoundingClientRect();
+
+    const spaceBelow = window.innerHeight - toggleRect.bottom - viewportMargin;
+    const spaceAbove = toggleRect.top - viewportMargin;
+
+    const shouldOpenUp = spaceBelow < menuRect.height && spaceAbove > spaceBelow;
+
+    if (shouldOpenUp) {
+      menu.classList.add("return-presets-open-up");
+      menu.style.maxHeight = Math.max(120, spaceAbove - gap) + "px";
+    } else {
+      menu.classList.remove("return-presets-open-up");
+      menu.style.maxHeight = Math.max(120, spaceBelow - gap) + "px";
+    }
+  }
+
   function openMenu() {
     menu.classList.remove("return-presets-hidden");
     toggle.setAttribute("aria-expanded", "true");
-  }
-
-  function closeMenu() {
-    menu.classList.add("return-presets-hidden");
-    toggle.setAttribute("aria-expanded", "false");
+    positionMenu();
   }
 
   function applyPreset(presetKey) {
@@ -1021,6 +1048,18 @@ document.addEventListener("DOMContentLoaded", function () {
       closeMenu();
     }
   });
+
+  window.addEventListener("resize", function () {
+    if (!menu.classList.contains("return-presets-hidden")) {
+      positionMenu();
+    }
+  });
+
+  window.addEventListener("scroll", function () {
+    if (!menu.classList.contains("return-presets-hidden")) {
+      positionMenu();
+    }
+  }, true);
 });
 </script>
 {% endblock %}

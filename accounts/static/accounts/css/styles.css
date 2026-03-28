@@ -1372,3 +1372,93 @@ body.app-body {
   outline: none;
   background: #eef2f7;
 }
+
+/* ===== Retorno: refinamento final do botão e direção do menu ===== */
+
+.return-presets {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  flex: 0 0 auto;
+}
+
+.return-presets-toggle {
+  width: 34px;
+  min-width: 34px;
+  height: 38px;
+  border: none;
+  border-left: 1px solid #e5e7eb;
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+  padding: 0;
+  font-size: 0;      /* esconde o caractere ▾ */
+  color: transparent;
+}
+
+.return-presets-toggle:hover {
+  background: #f9fafb;
+}
+
+.return-presets-toggle:focus {
+  outline: none;
+  background: #f3f4f6;
+}
+
+.return-presets-toggle::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  margin-left: -4px;
+  margin-top: -2px;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 6px solid #6b7280;
+}
+
+.return-presets-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  min-width: 170px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+  padding: 6px 0;
+  z-index: 40;
+  overflow-y: auto;
+}
+
+.return-presets-menu.return-presets-open-up {
+  top: auto;
+  bottom: calc(100% + 6px);
+}
+
+.return-presets-hidden {
+  display: none;
+}
+
+.return-preset-option {
+  display: block;
+  width: 100%;
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: #374151;
+  cursor: pointer;
+}
+
+.return-preset-option:hover {
+  background: #f3f4f6;
+}
+
+.return-preset-option:focus {
+  outline: none;
+  background: #eef2f7;
+}
