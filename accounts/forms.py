@@ -283,12 +283,12 @@ class ExamUploadForm(forms.Form):
         meio_dia = dt_time(12, 0)
 
         # Se preencheu data mas não preencheu horário:
-        # assume 12:00, exceto se a data for hoje e já tiver passado de 12:00.
+        # assume 12:00, exceto se for hoje e já tiver passado de 12:00.
         if retorno_previsto and not retorno_horario:
-            if retorno_previsto == today and current_time > meio_dia:
+            if retorno_previsto == today and current_time >= meio_dia:
                 self.add_error(
                     "retorno_horario",
-                    "Informe o horário de retorno"
+                    "Como o retorno é para hoje, informe o horário."
                 )
             else:
                 cleaned_data["retorno_horario"] = meio_dia
@@ -303,6 +303,17 @@ class ExamUploadForm(forms.Form):
                 cleaned_data["retorno_previsto"] = today + timedelta(days=1)
 
             retorno_previsto = cleaned_data["retorno_previsto"]
+
+        # Se tiver data e horário, garante que o momento final esteja no futuro.
+        if retorno_previsto and retorno_horario:
+            retorno_dt = datetime.combine(retorno_previsto, retorno_horario)
+            now_naive = now.replace(tzinfo=None, second=0, microsecond=0)
+
+            if retorno_dt <= now_naive:
+                self.add_error(
+                    "retorno_horario",
+                    "Escolha uma data e horário futuros."
+                )
 
         pdf = cleaned_data.get("pdf_file")
 

@@ -16,7 +16,7 @@
         </div>
     {% endif %}
 
-    <form method="post" enctype="multipart/form-data" class="exam-upload-form">
+    <form method="post" enctype="multipart/form-data" class="exam-upload-form" novalidate>
         {% csrf_token %}
 
         <!-- PRIMEIRA LINHA: Clínica / Vet + Arquivo PDF -->
@@ -728,6 +728,104 @@ document.addEventListener("DOMContentLoaded", function () {
     childList: true,
     subtree: true,
     attributes: true,
+  });
+});
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const form = document.querySelector(".exam-upload-form");
+  const dateInput = document.getElementById("id_retorno_previsto");
+  const timeInput = document.getElementById("id_retorno_horario");
+
+  if (!form || !dateInput || !timeInput) return;
+
+  function pad(n) {
+    return String(n).padStart(2, "0");
+  }
+
+  function getTodayString() {
+    const now = new Date();
+    return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  }
+
+  function getNowMinutes() {
+    const now = new Date();
+    return now.getHours() * 60 + now.getMinutes();
+  }
+
+  function timeToMinutes(value) {
+    if (!value || !value.includes(":")) return null;
+    const [h, m] = value.split(":").map(Number);
+    return (h * 60) + m;
+  }
+
+  function validateRetorno(showMessage = false) {
+    const today = getTodayString();
+    const nowMinutes = getNowMinutes();
+    const noonMinutes = 12 * 60;
+
+    const dateValue = (dateInput.value || "").trim();
+    const timeValue = (timeInput.value || "").trim();
+
+    dateInput.setCustomValidity("");
+    timeInput.setCustomValidity("");
+
+    // 1) Data anterior a hoje
+    if (dateValue && dateValue < today) {
+      dateInput.setCustomValidity("A data de retorno não pode ser anterior a hoje.");
+    }
+
+    // 2) Data de hoje sem horário, depois de 12:00
+    else if (dateValue === today && !timeValue && nowMinutes >= noonMinutes) {
+      timeInput.setCustomValidity(
+        "Como o retorno é para hoje, informe o horário."
+      );
+    }
+
+    // 3) Data de hoje com horário já passado
+    else if (dateValue === today && timeValue) {
+      const selectedMinutes = timeToMinutes(timeValue);
+      if (selectedMinutes !== null && selectedMinutes <= nowMinutes) {
+        timeInput.setCustomValidity("Escolha uma data e horário futuros.");
+      }
+    }
+
+    if (showMessage) {
+      if (!dateInput.checkValidity()) {
+        dateInput.reportValidity();
+        return false;
+      }
+
+      if (!timeInput.checkValidity()) {
+        timeInput.reportValidity();
+        return false;
+      }
+    }
+
+    return dateInput.checkValidity() && timeInput.checkValidity();
+  }
+
+  // mantém min atualizado também no navegador
+  dateInput.min = getTodayString();
+
+  ["input", "change"].forEach(evt => {
+    dateInput.addEventListener(evt, function () {
+      validateRetorno(false);
+    });
+
+    timeInput.addEventListener(evt, function () {
+      validateRetorno(false);
+    });
+  });
+
+  form.addEventListener("submit", function (e) {
+    const retornoOk = validateRetorno(true);
+    const formOk = form.checkValidity();
+
+    if (!retornoOk || !formOk) {
+      e.preventDefault();
+      form.reportValidity();
+    }
   });
 });
 </script>
