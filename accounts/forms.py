@@ -158,7 +158,7 @@ class ExamUploadForm(forms.Form):
         required=False,
         input_formats=['%Y-%m-%d', '%d/%m/%Y'],
         error_messages={
-            "invalid": "Informe uma data válida."
+            "invalid": "Insira uma data válida."
         },
         widget=forms.DateInput(
             format='%Y-%m-%d',
@@ -242,8 +242,6 @@ class ExamUploadForm(forms.Form):
             ('Clínicas', clinic_choices),
             ('Veterinários', vet_choices),
         ]
-
-        self.fields['retorno_previsto'].widget.attrs['min'] = date.today().isoformat()
         
     def clean_clinic_or_vet(self):
         value = self.cleaned_data.get('clinic_or_vet')
@@ -268,7 +266,7 @@ class ExamUploadForm(forms.Form):
     def clean_retorno_previsto(self):
         retorno = self.cleaned_data.get("retorno_previsto")
         if retorno and retorno < date.today():
-            raise forms.ValidationError("A data de retorno não pode ser anterior a hoje.")
+            raise forms.ValidationError("Escolha uma data a partir de hoje.")
         return retorno
 
     def clean(self):

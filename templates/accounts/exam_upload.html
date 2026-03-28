@@ -147,6 +147,9 @@
                   {% if form.retorno_horario.errors %}
                     <div class="field-error">{{ form.retorno_horario.errors.0 }}</div>
                   {% endif %}
+                  
+                  <div class="field-error" id="retorno-date-client-error" style="display: none;"></div>
+                  <div class="field-error" id="retorno-time-client-error" style="display: none;"></div>
 
                   <div class="field-hint">
                     Data e horário de retorno do exame.
@@ -736,8 +739,10 @@ document.addEventListener("DOMContentLoaded", function () {
   const form = document.querySelector(".exam-upload-form");
   const dateInput = document.getElementById("id_retorno_previsto");
   const timeInput = document.getElementById("id_retorno_horario");
+  const dateError = document.getElementById("retorno-date-client-error");
+  const timeError = document.getElementById("retorno-time-client-error");
 
-  if (!form || !dateInput || !timeInput) return;
+  if (!form || !dateInput || !timeInput || !dateError || !timeError) return;
 
   function pad(n) {
     return String(n).padStart(2, "0");
@@ -756,10 +761,41 @@ document.addEventListener("DOMContentLoaded", function () {
   function timeToMinutes(value) {
     if (!value || !value.includes(":")) return null;
     const [h, m] = value.split(":").map(Number);
+    if (Number.isNaN(h) || Number.isNaN(m)) return null;
     return (h * 60) + m;
   }
 
-  function validateRetorno(showMessage = false) {
+  function isValidIsoDate(value) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+
+    const [y, m, d] = value.split("-").map(Number);
+    const dt = new Date(y, m - 1, d);
+
+    return (
+      dt.getFullYear() === y &&
+      dt.getMonth() === (m - 1) &&
+      dt.getDate() === d
+    );
+  }
+
+  function showError(target, message) {
+    target.textContent = message;
+    target.style.display = "block";
+  }
+
+  function clearError(target) {
+    target.textContent = "";
+    target.style.display = "none";
+  }
+
+  function clearRetornoErrors() {
+    clearError(dateError);
+    clearError(timeError);
+  }
+
+  function validateRetorno(showErrors = false) {
+    clearRetornoErrors();
+
     const today = getTodayString();
     const nowMinutes = getNowMinutes();
     const noonMinutes = 12 * 60;
@@ -767,67 +803,77 @@ document.addEventListener("DOMContentLoaded", function () {
     const dateValue = (dateInput.value || "").trim();
     const timeValue = (timeInput.value || "").trim();
 
-    dateInput.setCustomValidity("");
-    timeInput.setCustomValidity("");
+    // Se a data foi digitada mas está em formato inválido
+    if (dateValue && !isValidIsoDate(dateValue)) {
+      if (showErrors) {
+        showError(dateError, "Insira uma data válida.");
+      }
+      return false;
+    }
 
-    // 1) Data anterior a hoje
+    // Se a data é passada
     if (dateValue && dateValue < today) {
-      dateInput.setCustomValidity("A data de retorno não pode ser anterior a hoje.");
+      if (showErrors) {
+        showError(dateError, "Escolha uma data a partir de hoje.");
+      }
+      return false;
     }
 
-    // 2) Data de hoje sem horário, depois de 12:00
-    else if (dateValue === today && !timeValue && nowMinutes >= noonMinutes) {
-      timeInput.setCustomValidity(
-        "Como o retorno é para hoje, informe o horário."
-      );
+    // Se preencheu hoje sem horário e já passou de 12:00
+    if (dateValue === today && !timeValue && nowMinutes >= noonMinutes) {
+      if (showErrors) {
+        showError(timeError, "Como o retorno é para hoje, informe o horário.");
+      }
+      return false;
     }
 
-    // 3) Data de hoje com horário já passado
-    else if (dateValue === today && timeValue) {
+    // Se preencheu hoje com horário que já passou
+    if (dateValue === today && timeValue) {
       const selectedMinutes = timeToMinutes(timeValue);
       if (selectedMinutes !== null && selectedMinutes <= nowMinutes) {
-        timeInput.setCustomValidity("Escolha uma data e horário futuros.");
-      }
-    }
-
-    if (showMessage) {
-      if (!dateInput.checkValidity()) {
-        dateInput.reportValidity();
-        return false;
-      }
-
-      if (!timeInput.checkValidity()) {
-        timeInput.reportValidity();
+        if (showErrors) {
+          showError(timeError, "Escolha uma data e horário futuros.");
+        }
         return false;
       }
     }
 
-    return dateInput.checkValidity() && timeInput.checkValidity();
+    return true;
   }
 
-  // mantém min atualizado também no navegador
-  dateInput.min = getTodayString();
+  dateInput.addEventListener("input", function () {
+    clearRetornoErrors();
+  });
 
-  ["input", "change"].forEach(evt => {
-    dateInput.addEventListener(evt, function () {
-      validateRetorno(false);
-    });
+  dateInput.addEventListener("change", function () {
+    clearRetornoErrors();
+  });
 
-    timeInput.addEventListener(evt, function () {
-      validateRetorno(false);
-    });
+  timeInput.addEventListener("input", function () {
+    clearRetornoErrors();
+  });
+
+  timeInput.addEventListener("change", function () {
+    clearRetornoErrors();
   });
 
   form.addEventListener("submit", function (e) {
-    const retornoOk = validateRetorno(true);
-    const formOk = form.checkValidity();
+    clearRetornoErrors();
 
-    if (!retornoOk || !formOk) {
+    const retornoOk = validateRetorno(true);
+
+    if (!retornoOk) {
       e.preventDefault();
-      form.reportValidity();
+
+      if (dateError.style.display !== "none") {
+        dateInput.focus();
+      } else if (timeError.style.display !== "none") {
+        timeInput.focus();
+      }
+
+      return;
     }
   });
 });
 </script>
 {% endblock %}
-
