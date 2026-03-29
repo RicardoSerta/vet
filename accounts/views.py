@@ -269,6 +269,69 @@ def user_is_provider_for_exam(user, exam) -> bool:
 def is_whatsapp_phone(phone: str) -> bool:
     return bool(normalize_br_phone(phone))
     
+def get_provider_from_token(selected_value: str):
+    selected_value = (selected_value or "").strip()
+    if not selected_value:
+        return None
+
+    if selected_value.startswith("CLINIC:"):
+        clinic_id = int(selected_value.split(":", 1)[1])
+        clinic = Clinic.objects.get(id=clinic_id)
+        return {
+            "token": selected_value,
+            "kind": "clinic",
+            "obj": clinic,
+            "label": clinic.name,
+            "email": (clinic.email or "").strip(),
+            "phone": (clinic.phone or "").strip(),
+            "user": clinic.user,
+        }
+
+    if selected_value.startswith("VET:"):
+        vet_id = int(selected_value.split(":", 1)[1])
+        vet = Veterinarian.objects.get(id=vet_id)
+        return {
+            "token": selected_value,
+            "kind": "vet",
+            "obj": vet,
+            "label": vet.name,
+            "email": (vet.email or "").strip(),
+            "phone": (vet.phone or "").strip(),
+            "user": vet.user,
+        }
+
+    return None
+
+
+def prepare_provider_for_notification(request, selected_value: str, *, allow_create_user: bool):
+    provider = get_provider_from_token(selected_value)
+    if not provider:
+        return None
+
+    user = provider["user"]
+    activation_link = None
+
+    if user is None and allow_create_user:
+        u, created_now, needs_activation = ensure_pending_user_for_provider(
+            name=provider["label"],
+            email=provider["email"],
+            phone=provider["phone"],
+            role="BASIC",
+        )
+        if u:
+            provider["obj"].user = u
+            provider["obj"].save(update_fields=["user"])
+            user = u
+            if needs_activation:
+                activation_link = build_activation_link(request, u)
+
+    elif user and not user.has_usable_password() and allow_create_user:
+        activation_link = build_activation_link(request, user)
+
+    provider["user"] = user
+    provider["activation_link"] = activation_link
+    return provider
+    
 def _phone_digits(phone: str) -> str:
     return re.sub(r"\D", "", phone or "")
 
@@ -528,69 +591,36 @@ def exam_upload(request):
         if form.is_valid():
             cd = form.cleaned_data
             
-            selected = cd['clinic_or_vet']
-            assigned_user = None
-            links_to_show = []
-            provider_activation_link = None
+            selected = cd["clinic_or_vet"]
+            notify_provider = (cd.get("notify_provider") or "") == "1"
             tutor_activation_link = None
-            
-            if selected.startswith("CLINIC:"):
-                clinic_id = int(selected.split(":")[1])
-                clinic = Clinic.objects.get(id=clinic_id)
-                clinic_or_vet_name = clinic.name
 
-                # garante user pendente se tiver contato
-                if clinic.user is None:
-                    u, created_now, needs_activation = ensure_pending_user_for_provider(
-                        name=clinic.name,
-                        email=clinic.email,
-                        phone=clinic.phone,
-                        role="BASIC",
+            provider_tokens = [selected] + (cd.get("additional_clinic_or_vet") or [])
+            seen_tokens = set()
+            provider_tokens = [
+                token for token in provider_tokens
+                if token and not (token in seen_tokens or seen_tokens.add(token))
+            ]
+
+            main_provider = prepare_provider_for_notification(
+                request,
+                selected,
+                allow_create_user=notify_provider,
+            )
+
+            assigned_user = main_provider["user"] if main_provider else None
+            clinic_or_vet_name = main_provider["label"] if main_provider else ""
+
+            additional_providers = []
+            if notify_provider:
+                for token in provider_tokens[1:]:
+                    provider = prepare_provider_for_notification(
+                        request,
+                        token,
+                        allow_create_user=True,
                     )
-                    if u:
-                        clinic.user = u
-                        clinic.save(update_fields=["user"])
-                        assigned_user = u
-
-                        if needs_activation:
-                            provider_activation_link = build_activation_link(request, u)
-                    else:
-                        assigned_user = None
-                else:
-                    assigned_user = clinic.user
-                    # se já existe user mas ainda não ativou
-                    if not assigned_user.has_usable_password():
-                        provider_activation_link = build_activation_link(request, assigned_user)
-                        
-            elif selected.startswith("VET:"):
-                vet_id = int(selected.split(":")[1])
-                vet = Veterinarian.objects.get(id=vet_id)
-                clinic_or_vet_name = vet.name
-
-                if vet.user is None:
-                    u, created_now, needs_activation = ensure_pending_user_for_provider(
-                        name=vet.name,
-                        email=vet.email,
-                        phone=vet.phone,
-                        role="BASIC",
-                    )
-                    if u:
-                        vet.user = u
-                        vet.save(update_fields=["user"])
-                        assigned_user = u
-
-                        if needs_activation:
-                            provider_activation_link = build_activation_link(request, u)
-                    else:
-                        assigned_user = None
-                else:
-                    assigned_user = vet.user
-                    if not assigned_user.has_usable_password():
-                        provider_activation_link = build_activation_link(request, assigned_user)
-                
-            else:
-                clinic_or_vet_name = ""
-                assigned_user = None
+                    if provider:
+                        additional_providers.append(provider)
                 
             ensure_tutor_and_pet(
                 tutor_name=cd['parsed_tutor_name'],
@@ -640,10 +670,9 @@ def exam_upload(request):
                 additional_clinic_or_vet=cd.get("additional_clinic_or_vet") or [],
             )
             
-            sent_any = False
-            zap_sent_any = False
+            tutor_email_sent_any = False
+            tutor_zap_sent_any = False
 
-            # 1) Tutor (se preencheu e-mail)
             if tutor_email and notify_tutor_email:
                 try:
                     ok = send_tutor_exam_email(
@@ -652,7 +681,7 @@ def exam_upload(request):
                         to_email=tutor_email,
                         activation_link=tutor_activation_link,
                     )
-                    sent_any = sent_any or ok
+                    tutor_email_sent_any = tutor_email_sent_any or ok
                 except Exception as e:
                     messages.error(request, f"Falha ao enviar e-mail para o tutor: {e}")
 
@@ -665,58 +694,62 @@ def exam_upload(request):
                         to_phone=tutor_phone,
                         activation_link=tutor_activation_link,
                     )
-                    zap_sent_any = zap_sent_any or ok
+                    tutor_zap_sent_any = tutor_zap_sent_any or ok
                 except Exception as e:
                     messages.error(request, f"Falha ao enviar WhatsApp para o tutor: {e}")
 
-            # 2) Clínica/Vet selecionado (se tiver e-mail cadastrado)
-            provider_email = ""
-            if selected.startswith("CLINIC:"):
-                provider_email = (clinic.email or "").strip()
-                provider_label = clinic.name
-            elif selected.startswith("VET:"):
-                provider_email = (vet.email or "").strip()
-                provider_label = vet.name
-            else:
-                provider_label = "Clínica/Veterinário"
-            provider_phone = ""
-            if selected.startswith("CLINIC:"):
-                provider_phone = (clinic.phone or "").strip()
-            elif selected.startswith("VET:"):
-                provider_phone = (vet.phone or "").strip()
+            # 2) Clínica/Veterinário principal + adicionais (somente se o botão estiver ativado)
+            if notify_provider:
+                provider_targets = []
+                if main_provider:
+                    provider_targets.append(main_provider)
+                provider_targets.extend(additional_providers)
 
-            if provider_email:
-                try:
-                    ok = send_provider_exam_email(
-                        request,
-                        exam=exam,
-                        to_email=provider_email,
-                        recipient_label=provider_label,
-                        activation_link=provider_activation_link,
-                    )
-                    sent_any = sent_any or ok
-                except Exception as e:
-                    messages.error(request, f"Falha ao enviar e-mail para a clínica/vet: {e}")
+                seen_tokens = set()
+                deduped_targets = []
+                for provider in provider_targets:
+                    token = provider.get("token")
+                    if token in seen_tokens:
+                        continue
+                    seen_tokens.add(token)
+                    deduped_targets.append(provider)
 
-            if provider_phone and is_whatsapp_phone(provider_phone):
-                try:
-                    ok = send_provider_exam_whatsapp(
-                        request,
-                        exam=exam,
-                        to_phone=provider_phone,
-                        recipient_label=provider_label,
-                        activation_link=provider_activation_link,
-                    )
-                    zap_sent_any = zap_sent_any or ok
-                except Exception as e:
-                    messages.error(request, f"Falha ao enviar WhatsApp para a clínica/vet: {e}")
+                for provider in deduped_targets:
+                    provider_email = provider["email"]
+                    provider_phone = provider["phone"]
+                    provider_label = provider["label"]
+                    provider_activation_link = provider.get("activation_link")
 
-            # Se enviou pelo menos 1 e-mail, marca a coluna Alerta Email
-            if sent_any:
+                    if provider_email:
+                        try:
+                            send_provider_exam_email(
+                                request,
+                                exam=exam,
+                                to_email=provider_email,
+                                recipient_label=provider_label,
+                                activation_link=provider_activation_link,
+                            )
+                        except Exception as e:
+                            messages.error(request, f"Falha ao enviar e-mail para {provider_label}: {e}")
+
+                    if provider_phone and is_whatsapp_phone(provider_phone):
+                        try:
+                            send_provider_exam_whatsapp(
+                                request,
+                                exam=exam,
+                                to_phone=provider_phone,
+                                recipient_label=provider_label,
+                                activation_link=provider_activation_link,
+                            )
+                        except Exception as e:
+                            messages.error(request, f"Falha ao enviar WhatsApp para {provider_label}: {e}")
+
+            # Campos legado agora representam alerta do tutor
+            if tutor_email_sent_any:
                 exam.alerta_email = timezone.now()
                 exam.save(update_fields=["alerta_email"])
-                
-            if zap_sent_any:
+
+            if tutor_zap_sent_any:
                 exam.alerta_zap = timezone.now()
                 exam.save(update_fields=["alerta_zap"])
 
@@ -747,71 +780,20 @@ def exam_upload_multi(request):
         if form.is_valid():
             selected = form.cleaned_data["clinic_or_vet"]
             pdf_files = form.cleaned_data["pdf_files"]
+            notify_provider = (form.cleaned_data.get("notify_provider") or "") == "1"
 
-            assigned_user = None
-            clinic_or_vet_name = ""
-            provider_activation_link = None
-            provider_email = ""
-            provider_phone = ""
-            provider_label = "Clínica/Veterinário"
+            main_provider = prepare_provider_for_notification(
+                request,
+                selected,
+                allow_create_user=notify_provider,
+            )
 
-            if selected.startswith("CLINIC:"):
-                clinic_id = int(selected.split(":")[1])
-                clinic = Clinic.objects.get(id=clinic_id)
-                clinic_or_vet_name = clinic.name
-                provider_label = clinic.name
-                provider_email = (clinic.email or "").strip()
-                provider_phone = (clinic.phone or "").strip()
-
-                if clinic.user is None:
-                    u, created_now, needs_activation = ensure_pending_user_for_provider(
-                        name=clinic.name,
-                        email=clinic.email,
-                        phone=clinic.phone,
-                        role="BASIC",
-                    )
-                    if u:
-                        clinic.user = u
-                        clinic.save(update_fields=["user"])
-                        assigned_user = u
-
-                        if needs_activation:
-                            provider_activation_link = build_activation_link(request, u)
-                    else:
-                        assigned_user = None
-                else:
-                    assigned_user = clinic.user
-                    if not assigned_user.has_usable_password():
-                        provider_activation_link = build_activation_link(request, assigned_user)
-
-            elif selected.startswith("VET:"):
-                vet_id = int(selected.split(":")[1])
-                vet = Veterinarian.objects.get(id=vet_id)
-                clinic_or_vet_name = vet.name
-                provider_label = vet.name
-                provider_email = (vet.email or "").strip()
-                provider_phone = (vet.phone or "").strip()
-
-                if vet.user is None:
-                    u, created_now, needs_activation = ensure_pending_user_for_provider(
-                        name=vet.name,
-                        email=vet.email,
-                        phone=vet.phone,
-                        role="BASIC",
-                    )
-                    if u:
-                        vet.user = u
-                        vet.save(update_fields=["user"])
-                        assigned_user = u
-
-                        if needs_activation:
-                            provider_activation_link = build_activation_link(request, u)
-                    else:
-                        assigned_user = None
-                else:
-                    assigned_user = vet.user
-                    if not assigned_user.has_usable_password():
-                        provider_activation_link = build_activation_link(request, assigned_user)
+            assigned_user = main_provider["user"] if main_provider else None
+            clinic_or_vet_name = main_provider["label"] if main_provider else ""
+            provider_activation_link = main_provider.get("activation_link") if main_provider else None
+            provider_email = (main_provider.get("email") or "").strip() if main_provider else ""
+            provider_phone = (main_provider.get("phone") or "").strip() if main_provider else ""
+            provider_label = main_provider["label"] if main_provider else "Clínica/Veterinário"
 
             created_count = 0
             created_exam_ids = []
@@ -848,70 +830,69 @@ def exam_upload_multi(request):
                     created_exam_ids.append(exam.id)
                     created_count += 1
 
-            sent_any = False
-            zap_sent_any = False
+            provider_email_sent_any = False
+            provider_zap_sent_any = False
 
-            # Se enviou só 1 exame no upload em massa, reutiliza o template normal
-            if created_count == 1 and first_exam is not None:
-                if provider_email:
-                    try:
-                        ok = send_provider_exam_email(
-                            request,
-                            exam=first_exam,
-                            to_email=provider_email,
-                            recipient_label=provider_label,
-                            activation_link=provider_activation_link,
-                        )
-                        sent_any = sent_any or ok
-                    except Exception as e:
-                        messages.error(request, f"Falha ao enviar e-mail para a clínica/vet: {e}")
+            # Só notifica se o botão estiver ativado
+            if notify_provider:
+                # Se enviou só 1 exame no upload em massa, reutiliza o template normal
+                if created_count == 1 and first_exam is not None:
+                    if provider_email:
+                        try:
+                            ok = send_provider_exam_email(
+                                request,
+                                exam=first_exam,
+                                to_email=provider_email,
+                                recipient_label=provider_label,
+                                activation_link=provider_activation_link,
+                            )
+                            provider_email_sent_any = provider_email_sent_any or ok
+                        except Exception as e:
+                            messages.error(request, f"Falha ao enviar e-mail para a clínica/vet: {e}")
 
-                if provider_phone and is_whatsapp_phone(provider_phone):
-                    try:
-                        ok = send_provider_exam_whatsapp(
-                            request,
-                            exam=first_exam,
-                            to_phone=provider_phone,
-                            recipient_label=provider_label,
-                            activation_link=provider_activation_link,
-                        )
-                        zap_sent_any = zap_sent_any or ok
-                    except Exception as e:
-                        messages.error(request, f"Falha ao enviar WhatsApp para a clínica/vet: {e}")
+                    if provider_phone and is_whatsapp_phone(provider_phone):
+                        try:
+                            ok = send_provider_exam_whatsapp(
+                                request,
+                                exam=first_exam,
+                                to_phone=provider_phone,
+                                recipient_label=provider_label,
+                                activation_link=provider_activation_link,
+                            )
+                            provider_zap_sent_any = provider_zap_sent_any or ok
+                        except Exception as e:
+                            messages.error(request, f"Falha ao enviar WhatsApp para a clínica/vet: {e}")
 
-            # Se enviou mais de 1 exame, usa os templates novos de massa
-            elif created_count > 1:
-                if provider_email:
-                    try:
-                        ok = send_provider_bulk_exam_email(
-                            request,
-                            recipient_label=provider_label,
-                            to_email=provider_email,
-                            exam_count=created_count,
-                            activation_link=provider_activation_link,
-                        )
-                        sent_any = sent_any or ok
-                    except Exception as e:
-                        messages.error(request, f"Falha ao enviar e-mail em massa para a clínica/vet: {e}")
+                # Se enviou mais de 1 exame, usa os templates novos de massa
+                elif created_count > 1:
+                    if provider_email:
+                        try:
+                            ok = send_provider_bulk_exam_email(
+                                request,
+                                recipient_label=provider_label,
+                                to_email=provider_email,
+                                exam_count=created_count,
+                                activation_link=provider_activation_link,
+                            )
+                            provider_email_sent_any = provider_email_sent_any or ok
+                        except Exception as e:
+                            messages.error(request, f"Falha ao enviar e-mail em massa para a clínica/vet: {e}")
 
-                if provider_phone and is_whatsapp_phone(provider_phone):
-                    try:
-                        ok = send_provider_bulk_exam_whatsapp(
-                            request,
-                            recipient_label=provider_label,
-                            to_phone=provider_phone,
-                            exam_count=created_count,
-                            activation_link=provider_activation_link,
-                        )
-                        zap_sent_any = zap_sent_any or ok
-                    except Exception as e:
-                        messages.error(request, f"Falha ao enviar WhatsApp em massa para a clínica/vet: {e}")
+                    if provider_phone and is_whatsapp_phone(provider_phone):
+                        try:
+                            ok = send_provider_bulk_exam_whatsapp(
+                                request,
+                                recipient_label=provider_label,
+                                to_phone=provider_phone,
+                                exam_count=created_count,
+                                activation_link=provider_activation_link,
+                            )
+                            provider_zap_sent_any = provider_zap_sent_any or ok
+                        except Exception as e:
+                            messages.error(request, f"Falha ao enviar WhatsApp em massa para a clínica/vet: {e}")
 
-            if sent_any:
-                Exam.objects.filter(id__in=created_exam_ids).update(alerta_email=timezone.now())
-
-            if zap_sent_any:
-                Exam.objects.filter(id__in=created_exam_ids).update(alerta_zap=timezone.now())
+            # Não marcamos alerta_email/alerta_zap aqui, porque esses campos
+            # agora representam alerta do tutor na tela de visualização.
 
             messages.success(request, f"{created_count} exame(s) enviados com sucesso.")
             return redirect("exames")
