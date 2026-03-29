@@ -35,6 +35,7 @@ class Exam(models.Model):
 
     alerta_email = models.DateTimeField("Alerta Email", blank=True, null=True)
     alerta_zap = models.DateTimeField("Alerta Zap", blank=True, null=True)
+    alerta_provider = models.BooleanField(default=False)
     retorno_previsto = models.DateField("Retorno", blank=True, null=True)
     retorno_horario = models.TimeField("Horário do retorno", blank=True, null=True)
     

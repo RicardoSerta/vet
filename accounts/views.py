@@ -672,6 +672,7 @@ def exam_upload(request):
             
             tutor_email_sent_any = False
             tutor_zap_sent_any = False
+            provider_sent_any = False
 
             if tutor_email and notify_tutor_email:
                 try:
@@ -752,6 +753,10 @@ def exam_upload(request):
             if tutor_zap_sent_any:
                 exam.alerta_zap = timezone.now()
                 exam.save(update_fields=["alerta_zap"])
+                
+            if provider_sent_any:
+                exam.alerta_provider = True
+                exam.save(update_fields=["alerta_provider"])
 
             messages.success(
                 request,
@@ -830,8 +835,7 @@ def exam_upload_multi(request):
                     created_exam_ids.append(exam.id)
                     created_count += 1
 
-            provider_email_sent_any = False
-            provider_zap_sent_any = False
+            provider_sent_any = False
 
             # Só notifica se o botão estiver ativado
             if notify_provider:
@@ -841,12 +845,12 @@ def exam_upload_multi(request):
                         try:
                             ok = send_provider_exam_email(
                                 request,
-                                exam=first_exam,
+                                exam=exam,
                                 to_email=provider_email,
                                 recipient_label=provider_label,
                                 activation_link=provider_activation_link,
                             )
-                            provider_email_sent_any = provider_email_sent_any or ok
+                            provider_sent_any = provider_sent_any or ok
                         except Exception as e:
                             messages.error(request, f"Falha ao enviar e-mail para a clínica/vet: {e}")
 
@@ -854,12 +858,12 @@ def exam_upload_multi(request):
                         try:
                             ok = send_provider_exam_whatsapp(
                                 request,
-                                exam=first_exam,
+                                exam=exam,
                                 to_phone=provider_phone,
                                 recipient_label=provider_label,
                                 activation_link=provider_activation_link,
                             )
-                            provider_zap_sent_any = provider_zap_sent_any or ok
+                            provider_sent_any = provider_sent_any or ok
                         except Exception as e:
                             messages.error(request, f"Falha ao enviar WhatsApp para a clínica/vet: {e}")
 
@@ -874,7 +878,7 @@ def exam_upload_multi(request):
                                 exam_count=created_count,
                                 activation_link=provider_activation_link,
                             )
-                            provider_email_sent_any = provider_email_sent_any or ok
+                            provider_sent_any = provider_sent_any or ok
                         except Exception as e:
                             messages.error(request, f"Falha ao enviar e-mail em massa para a clínica/vet: {e}")
 
@@ -887,12 +891,15 @@ def exam_upload_multi(request):
                                 exam_count=created_count,
                                 activation_link=provider_activation_link,
                             )
-                            provider_zap_sent_any = provider_zap_sent_any or ok
+                            provider_sent_any = provider_sent_any or ok
                         except Exception as e:
                             messages.error(request, f"Falha ao enviar WhatsApp em massa para a clínica/vet: {e}")
 
             # Não marcamos alerta_email/alerta_zap aqui, porque esses campos
             # agora representam alerta do tutor na tela de visualização.
+            
+            if provider_sent_any:
+                Exam.objects.filter(id__in=created_exam_ids).update(alerta_provider=True)
 
             messages.success(request, f"{created_count} exame(s) enviados com sucesso.")
             return redirect("exames")

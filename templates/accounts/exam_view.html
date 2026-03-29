@@ -79,7 +79,9 @@
       <div class="exam-view-row">
         <div class="exam-view-item">
           <div class="exam-view-label">Alerta Clínica/Veterinário</div>
-          <div class="exam-view-value">-</div>
+          <div class="exam-view-value">
+            {% if exam.alerta_provider %}✅{% else %}❌{% endif %}
+          </div>
         </div>
         <div class="exam-view-item">
           <div class="exam-view-label">Alerta Tutor</div>
