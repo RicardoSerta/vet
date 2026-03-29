@@ -1600,3 +1600,27 @@ body.app-body {
   border-color: #ef4444;
   background: rgba(239, 68, 68, 0.16);
 }
+
+/* ===== Upload em massa: versão um pouco maior do botão da clínica/veterinário ===== */
+
+.provider-notify-line-multi {
+  margin-top: 8px;
+  min-height: 22px;
+}
+
+.provider-notify-line-multi .provider-notify-toggle {
+  gap: 7px;
+  font-size: 12px;
+}
+
+.provider-notify-line-multi .provider-notify-icon {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  font-size: 13px;
+  border-radius: 6px;
+}
+
+.provider-notify-line-multi .provider-notify-text {
+  white-space: nowrap;
+}

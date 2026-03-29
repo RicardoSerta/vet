@@ -726,6 +726,8 @@ def _make_unique_username(base: str, exclude_user_id=None) -> str:
         i += 1
     
 class MultiExamUploadForm(forms.Form):
+    notify_provider = forms.CharField(required=False, initial="", widget=forms.HiddenInput())
+
     clinic_or_vet = forms.ChoiceField(
         label='Clínica / Veterinário',
         choices=[],

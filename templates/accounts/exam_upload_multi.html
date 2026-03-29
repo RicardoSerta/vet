@@ -15,9 +15,21 @@
         <div class="profile-form-group" style="grid-column: 1 / -1;">
           <label for="{{ form.clinic_or_vet.id_for_label }}">Clínica / Veterinário:</label>
           {{ form.clinic_or_vet }}
+          {{ form.notify_provider }}
+
           {% if form.clinic_or_vet.errors %}
             <div class="field-error">{{ form.clinic_or_vet.errors.0 }}</div>
           {% endif %}
+
+          <div class="provider-notify-line provider-notify-line-multi">
+            <button type="button"
+                    class="provider-notify-toggle provider-notify-neutral"
+                    id="multi-provider-notify-toggle"
+                    title="Selecione uma clínica ou veterinário">
+              <span class="provider-notify-icon" id="multi-provider-notify-icon">🔔</span>
+              <span class="provider-notify-text">Notificar clínica/veterinário</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -161,6 +173,74 @@ document.addEventListener('DOMContentLoaded', function () {
   render();
 });
 </script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const providerSelect = document.getElementById("id_clinic_or_vet");
+  const providerHidden = document.getElementById("id_notify_provider");
+  const providerToggle = document.getElementById("multi-provider-notify-toggle");
+  const providerIcon = document.getElementById("multi-provider-notify-icon");
 
+  if (!providerSelect || !providerHidden || !providerToggle || !providerIcon) return;
+
+  function applyProviderState(state) {
+    providerToggle.classList.remove(
+      "provider-notify-neutral",
+      "provider-notify-enabled",
+      "provider-notify-disabled"
+    );
+
+    providerToggle.classList.add("provider-notify-" + state);
+
+    if (state === "enabled") {
+      providerIcon.textContent = "🔔";
+      providerToggle.title = "Clique para desativar a notificação";
+    } else if (state === "disabled") {
+      providerIcon.textContent = "🔕";
+      providerToggle.title = "Clique para ativar a notificação";
+    } else {
+      providerIcon.textContent = "🔔";
+      providerToggle.title = "Selecione uma clínica ou veterinário";
+    }
+  }
+
+  function syncProviderNotify() {
+    const hasProvider = !!(providerSelect.value || "").trim();
+
+    if (!hasProvider) {
+      providerHidden.value = "";
+      applyProviderState("neutral");
+      return;
+    }
+
+    if (providerHidden.value !== "0" && providerHidden.value !== "1") {
+      providerHidden.value = "1";
+    }
+
+    applyProviderState(providerHidden.value === "1" ? "enabled" : "disabled");
+  }
+
+  providerToggle.addEventListener("click", function () {
+    const hasProvider = !!(providerSelect.value || "").trim();
+    if (!hasProvider) return;
+
+    providerHidden.value = (providerHidden.value === "1") ? "0" : "1";
+    syncProviderNotify();
+  });
+
+  providerSelect.addEventListener("change", function () {
+    const hasProvider = !!(providerSelect.value || "").trim();
+
+    if (!hasProvider) {
+      providerHidden.value = "";
+    } else if (providerHidden.value !== "0" && providerHidden.value !== "1") {
+      providerHidden.value = "1";
+    }
+
+    syncProviderNotify();
+  });
+
+  syncProviderNotify();
+});
+</script>
 {% endblock %}
 

@@ -36,7 +36,7 @@
                             id="provider-notify-toggle"
                             title="Selecione uma clínica ou veterinário">
                         <span class="provider-notify-icon" id="provider-notify-icon">🔔</span>
-                        <span class="provider-notify-text">Notificar Clínicas/Veterinários</span>
+                        <span class="provider-notify-text">Notificar clínicas/veterinários</span>
                     </button>
                 </div>
             </div>
@@ -84,7 +84,7 @@
                   <button type="button"
                           class="notify-bell notify-empty"
                           id="bell-tutor-phone"
-                          title="Notificar via WhatsApp">🔔</button>
+                          title="Notificar tutor via WhatsApp">🔔</button>
                 </div>
 
                 {% if form.tutor_phone.errors %}
@@ -104,7 +104,7 @@
                   <button type="button"
                           class="notify-bell notify-empty"
                           id="bell-tutor-email"
-                          title="Notificar via e-mail">🔔</button>
+                          title="Notificar tutor via e-mail">🔔</button>
                 </div>
 
                 {% if form.tutor_email.errors %}
@@ -618,7 +618,7 @@ document.addEventListener("DOMContentLoaded", function () {
       hidden.value = "0";
       bell.dataset.userToggled = "";
       applyState(bell, "empty");
-      bell.title = "Notificar via WhatsApp";
+      bell.title = "Notificar tutor via WhatsApp";
       bell.dataset.eligible = "0";
       return;
     }
@@ -643,7 +643,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // whatsapp válido
     bell.dataset.eligible = "1";
-    bell.title = "Notificar via WhatsApp";
+    bell.title = "Notificar tutor via WhatsApp";
 
     if (!bell.dataset.userToggled) hidden.value = "1";
     applyState(bell, hidden.value === "1" ? "enabled" : "disabled");
@@ -656,7 +656,7 @@ document.addEventListener("DOMContentLoaded", function () {
       hidden.value = "0";
       bell.dataset.userToggled = "";
       applyState(bell, "empty");
-      bell.title = "Notificar via e-mail";
+      bell.title = "Notificar tutor via e-mail";
       bell.dataset.eligible = "0";
       return;
     }
@@ -673,7 +673,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     bell.dataset.eligible = "1";
-    bell.title = "Notificar via e-mail";
+    bell.title = "Notificar tutor via e-mail";
 
     if (!bell.dataset.userToggled) hidden.value = "1";
     applyState(bell, hidden.value === "1" ? "enabled" : "disabled");
