@@ -50,18 +50,18 @@
           <div class="exam-view-value">{{ exam.pet_name }}</div>
         </div>
         <div class="exam-view-item">
-          <div class="exam-view-label">Tutor</div>
-          <div class="exam-view-value">{{ exam.tutor_name }}</div>
+          <div class="exam-view-label">Raça</div>
+          <div class="exam-view-value">{{ exam.breed|default:"–" }}</div>
         </div>
       </div>
 
       <div class="exam-view-row">
         <div class="exam-view-item">
-          <div class="exam-view-label">Raça</div>
-          <div class="exam-view-value">{{ exam.breed|default:"–" }}</div>
+          <div class="exam-view-label">Tutor</div>
+          <div class="exam-view-value">{{ exam.tutor_name }}</div>
         </div>
         <div class="exam-view-item">
-          <div class="exam-view-label">Contato do tutor</div>
+          <div class="exam-view-label">Contato Tutor</div>
           <div class="exam-view-value">
             {% if exam.tutor_phone and exam.tutor_email %}
               {{ exam.tutor_phone }} | {{ exam.tutor_email }}
@@ -78,20 +78,20 @@
 
       <div class="exam-view-row">
         <div class="exam-view-item">
+          <div class="exam-view-label">Alerta Clínica/Veterinário</div>
+          <div class="exam-view-value">-</div>
+        </div>
+        <div class="exam-view-item">
           <div class="exam-view-label">Alerta Tutor</div>
           <div class="exam-view-value">
             {% if exam.alerta_email or exam.alerta_zap %}✅{% else %}❌{% endif %}
           </div>
         </div>
-        <div class="exam-view-item">
-          <div class="exam-view-label">Alerta Clínica/Veterinário</div>
-          <div class="exam-view-value">-</div>
-        </div>
       </div>
 
       <div class="exam-view-row">
         <div class="exam-view-item">
-          <div class="exam-view-label">Cadastro</div>
+          <div class="exam-view-label">Data de Cadastro</div>
           <div class="exam-view-value">
             {% if exam.created_at %}
               {{ exam.created_at|date:"d/m/Y" }} às {{ exam.created_at|date:"H:i" }}

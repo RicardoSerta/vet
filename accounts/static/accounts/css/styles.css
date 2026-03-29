@@ -846,7 +846,7 @@ body.app-body {
 
 .exam-pdf-open{
   position: absolute;
-  top: 12px;
+  top: 48px;
   right: 12px;
   z-index: 5;
   padding: 8px 12px;
