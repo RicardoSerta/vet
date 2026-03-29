@@ -78,21 +78,29 @@
 
       <div class="exam-view-row">
         <div class="exam-view-item">
-          <div class="exam-view-label">Alerta Email</div>
+          <div class="exam-view-label">Alerta Tutor</div>
           <div class="exam-view-value">
-            {% if exam.alerta_email %}✅{% else %}❌{% endif %}
+            {% if exam.alerta_email or exam.alerta_zap %}✅{% else %}❌{% endif %}
           </div>
         </div>
         <div class="exam-view-item">
-          <div class="exam-view-label">Alerta Zap</div>
-          <div class="exam-view-value">
-            {% if exam.alerta_zap %}✅{% else %}❌{% endif %}
-          </div>
+          <div class="exam-view-label">Alerta Clínica/Veterinário</div>
+          <div class="exam-view-value">-</div>
         </div>
       </div>
 
       <div class="exam-view-row">
-        <div class="exam-view-item" style="grid-column: 1 / -1;">
+        <div class="exam-view-item">
+          <div class="exam-view-label">Cadastro</div>
+          <div class="exam-view-value">
+            {% if exam.created_at %}
+              {{ exam.created_at|date:"d/m/Y" }} às {{ exam.created_at|date:"H:i" }}
+            {% else %}
+              –
+            {% endif %}
+          </div>
+        </div>
+        <div class="exam-view-item">
           <div class="exam-view-label">Retorno</div>
           <div class="exam-view-value">
             {% if exam.retorno_previsto %}
