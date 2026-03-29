@@ -456,10 +456,8 @@ def send_provider_return_email(request, *, exam, to_email: str, recipient_label:
         return False
 
     exam_date = exam.date_realizacao.strftime("%d/%m/%Y")
-    retorno_time = exam.retorno_horario.strftime("%H:%M") if exam.retorno_horario else "12:00"
-    retorno_text = f"{exam.retorno_previsto.strftime('%d/%m/%Y')} às {retorno_time}"
-
     login_link = request.build_absolute_uri(reverse("login"))
+
     is_first_access = bool(activation_link)
     target_link = activation_link or login_link
 
@@ -468,14 +466,13 @@ def send_provider_return_email(request, *, exam, to_email: str, recipient_label:
     lines = [
         f"Olá, {recipient_label}!",
         "",
-        "O retorno previsto de um exame chegou no LumaVet.",
+        "Seu exame do portal LumaVet retornou.",
         "",
         "Dados do exame:",
         f"Tutor: {exam.tutor_name}",
         f"Pet: {exam.pet_name}",
         f"Exame: {exam.exam_type}",
         f"Realização: {exam_date}",
-        f"Retorno previsto: {retorno_text}",
         "",
     ]
 
@@ -501,14 +498,13 @@ def send_provider_return_email(request, *, exam, to_email: str, recipient_label:
 
     html_parts = [
         f"<p>Olá, {escape(recipient_label)}!</p>",
-        "<p>O retorno previsto de um exame chegou no LumaVet.</p>",
+        "<p>Seu exame do portal LumaVet retornou.</p>",
         (
             "<p><strong>Dados do exame:</strong><br>"
             f"Tutor: {escape(exam.tutor_name)}<br>"
             f"Pet: {escape(exam.pet_name)}<br>"
             f"Exame: {escape(exam.exam_type)}<br>"
-            f"Realização: {escape(exam_date)}<br>"
-            f"Retorno previsto: {escape(retorno_text)}"
+            f"Realização: {escape(exam_date)}"
             "</p>"
         ),
     ]
@@ -535,5 +531,4 @@ def send_provider_return_email(request, *, exam, to_email: str, recipient_label:
     msg.attach_alternative(html_body, "text/html")
     msg.send()
     return True
-    
 
