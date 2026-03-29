@@ -35,7 +35,7 @@
                             class="provider-notify-toggle provider-notify-neutral"
                             id="provider-notify-toggle"
                             title="Selecione uma clínica ou veterinário">
-                        <span class="provider-notify-box" id="provider-notify-box"></span>
+                        <span class="provider-notify-icon" id="provider-notify-icon">🔔</span>
                         <span class="provider-notify-text">Notificar Clínicas/Veterinários</span>
                     </button>
                 </div>
@@ -1079,9 +1079,9 @@ document.addEventListener("DOMContentLoaded", function () {
   const providerSelect = document.getElementById("id_clinic_or_vet");
   const providerHidden = document.getElementById("id_notify_provider");
   const providerToggle = document.getElementById("provider-notify-toggle");
-  const providerBox = document.getElementById("provider-notify-box");
+  const providerIcon = document.getElementById("provider-notify-icon");
 
-  if (!providerSelect || !providerHidden || !providerToggle || !providerBox) return;
+  if (!providerSelect || !providerHidden || !providerToggle || !providerIcon) return;
 
   function applyProviderState(state) {
     providerToggle.classList.remove(
@@ -1093,13 +1093,13 @@ document.addEventListener("DOMContentLoaded", function () {
     providerToggle.classList.add("provider-notify-" + state);
 
     if (state === "enabled") {
-      providerBox.textContent = "✓";
+      providerIcon.textContent = "🔔";
       providerToggle.title = "Clique para desativar a notificação";
     } else if (state === "disabled") {
-      providerBox.textContent = "✕";
+      providerIcon.textContent = "🔕";
       providerToggle.title = "Clique para ativar a notificação";
     } else {
-      providerBox.textContent = "";
+      providerIcon.textContent = "🔔";
       providerToggle.title = "Selecione uma clínica ou veterinário";
     }
   }
