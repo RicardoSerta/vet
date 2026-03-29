@@ -122,6 +122,7 @@ class MultipleFileField(forms.FileField):
 class ExamUploadForm(forms.Form):
     notify_tutor_phone = forms.CharField(required=False, initial="1", widget=forms.HiddenInput())
     notify_tutor_email = forms.CharField(required=False, initial="1", widget=forms.HiddenInput())
+    notify_provider = forms.CharField(required=False, initial="", widget=forms.HiddenInput())
     
     clinic_or_vet = forms.ChoiceField(
         label='Clínica / Veterinário',
