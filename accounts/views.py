@@ -930,11 +930,28 @@ def exam_view(request, pk):
 
     extras = exam.extra_pdfs.all().order_by("uploaded_at")
 
+    provider_obj = Clinic.objects.filter(name__iexact=exam.clinic_or_vet).first()
+    if provider_obj is None:
+        provider_obj = Veterinarian.objects.filter(name__iexact=exam.clinic_or_vet).first()
+
+    provider_phone = (getattr(provider_obj, "phone", "") or "").strip()
+    provider_email = (getattr(provider_obj, "email", "") or "").strip()
+
+    if provider_phone and provider_email:
+        provider_contact = f"{provider_phone} | {provider_email}"
+    elif provider_phone:
+        provider_contact = provider_phone
+    elif provider_email:
+        provider_contact = provider_email
+    else:
+        provider_contact = "–"
+
     return render(request, "accounts/exam_view.html", {
         "profile": profile,
         "exam": exam,
         "extras": extras,
         "is_admin": is_admin_user(request.user),
+        "provider_contact": provider_contact,
     })
 
 

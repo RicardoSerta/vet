@@ -23,6 +23,13 @@
           <div class="exam-view-value">{{ exam.date_realizacao|date:"d/m/Y" }}</div>
         </div>
         <div class="exam-view-item">
+          <div class="exam-view-label">Exame</div>
+          <div class="exam-view-value">{{ exam.exam_type }}</div>
+        </div>
+      </div>
+
+      <div class="exam-view-row">
+        <div class="exam-view-item">
           <div class="exam-view-label">Clínica / Veterinário</div>
           <div class="exam-view-value">
             {{ exam.clinic_or_vet }}
@@ -31,23 +38,16 @@
             {% endif %}
           </div>
         </div>
+        <div class="exam-view-item">
+          <div class="exam-view-label">Contato Clínica/Veterinário</div>
+          <div class="exam-view-value">{{ provider_contact }}</div>
+        </div>
       </div>
 
       <div class="exam-view-row">
-        <div class="exam-view-item">
-          <div class="exam-view-label">Exame</div>
-          <div class="exam-view-value">{{ exam.exam_type }}</div>
-        </div>
         <div class="exam-view-item">
           <div class="exam-view-label">Pet</div>
           <div class="exam-view-value">{{ exam.pet_name }}</div>
-        </div>
-      </div>
-
-      <div class="exam-view-row">
-        <div class="exam-view-item">
-          <div class="exam-view-label">Raça</div>
-          <div class="exam-view-value">{{ exam.breed|default:"–" }}</div>
         </div>
         <div class="exam-view-item">
           <div class="exam-view-label">Tutor</div>
@@ -57,35 +57,49 @@
 
       <div class="exam-view-row">
         <div class="exam-view-item">
-          <div class="exam-view-label">Alerta Email</div>
-          <div class="exam-view-value">
-            {% if exam.alerta_email %}{{ exam.alerta_email|date:"d/m/Y H:i" }}{% else %}–{% endif %}
-          </div>
+          <div class="exam-view-label">Raça</div>
+          <div class="exam-view-value">{{ exam.breed|default:"–" }}</div>
         </div>
         <div class="exam-view-item">
-          <div class="exam-view-label">Alerta Zap</div>
+          <div class="exam-view-label">Contato do tutor</div>
           <div class="exam-view-value">
-            {% if exam.alerta_zap %}{{ exam.alerta_zap|date:"d/m/Y H:i" }}{% else %}–{% endif %}
+            {% if exam.tutor_phone and exam.tutor_email %}
+              {{ exam.tutor_phone }} | {{ exam.tutor_email }}
+            {% elif exam.tutor_phone %}
+              {{ exam.tutor_phone }}
+            {% elif exam.tutor_email %}
+              {{ exam.tutor_email }}
+            {% else %}
+              –
+            {% endif %}
           </div>
         </div>
       </div>
 
       <div class="exam-view-row">
         <div class="exam-view-item">
+          <div class="exam-view-label">Alerta Email</div>
+          <div class="exam-view-value">
+            {% if exam.alerta_email %}✅{% else %}❌{% endif %}
+          </div>
+        </div>
+        <div class="exam-view-item">
+          <div class="exam-view-label">Alerta Zap</div>
+          <div class="exam-view-value">
+            {% if exam.alerta_zap %}✅{% else %}❌{% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="exam-view-row">
+        <div class="exam-view-item" style="grid-column: 1 / -1;">
           <div class="exam-view-label">Retorno</div>
           <div class="exam-view-value">
             {% if exam.retorno_previsto %}
               {{ exam.retorno_previsto|date:"d/m/Y" }}{% if exam.retorno_horario %} às {{ exam.retorno_horario|time:"H:i" }}{% endif %}
             {% else %}
-              -
+              –
             {% endif %}
-          </div>
-        </div>
-        <div class="exam-view-item">
-          <div class="exam-view-label">Contato do tutor</div>
-          <div class="exam-view-value">
-            {% if exam.tutor_phone %}{{ exam.tutor_phone }}{% else %}–{% endif %}
-            {% if exam.tutor_email %}<div style="margin-top:4px;">{{ exam.tutor_email }}</div>{% endif %}
           </div>
         </div>
       </div>
