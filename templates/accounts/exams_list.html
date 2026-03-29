@@ -84,8 +84,14 @@
                             {% endif %}
                         </a>
                     </th>
-                    <th>Alerta Email</th>
-                    <th>Alerta Zap</th>
+                    <th>
+                        <a href="?order=cadastro&direction={% if order == 'cadastro' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
+                            Cadastro
+                            {% if order == 'cadastro' %}
+                                {% if direction == 'asc' %}▲{% else %}▼{% endif %}
+                            {% endif %}
+                        </a>
+                    </th>
                     <th>
                         <a href="?order=retorno&direction={% if order == 'retorno' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
                             Retorno
@@ -110,17 +116,10 @@
                             <td>{{ exam.breed }}</td>
                             <td>{{ exam.tutor_name }}</td>
                             <td>
-                                {% if exam.alerta_email %}
-                                    {{ exam.alerta_email|date:"d/m/Y H:i" }}
+                                {% if exam.created_at %}
+                                  {{ exam.created_at|date:"d/m/Y" }} às {{ exam.created_at|date:"H:i" }}
                                 {% else %}
-                                    –
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if exam.alerta_zap %}
-                                    {{ exam.alerta_zap|date:"d/m/Y H:i" }}
-                                {% else %}
-                                    –
+                                  -
                                 {% endif %}
                             </td>
                             <td>
@@ -150,7 +149,7 @@
                     {% endfor %}
                 {% else %}
                     <tr>
-                        <td colspan="10" style="text-align:center;">
+                        <td colspan="9" style="text-align:center;">
                             Nenhum exame cadastrado ainda.
                         </td>
                     </tr>

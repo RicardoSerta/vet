@@ -454,6 +454,7 @@ def exams_list(request):
         'pet': 'pet_name',
         'raca': 'breed',
         'tutor': 'tutor_name',
+        'cadastro': 'created_at',
         'retorno': 'retorno_previsto',
     }
 
