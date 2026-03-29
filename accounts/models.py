@@ -38,6 +38,8 @@ class Exam(models.Model):
     alerta_provider = models.BooleanField(default=False)
     retorno_previsto = models.DateField("Retorno", blank=True, null=True)
     retorno_horario = models.TimeField("Horário do retorno", blank=True, null=True)
+    retorno_alert_processed_at = models.DateTimeField(blank=True, null=True)
+    retorno_alert_processed_for = models.DateTimeField(blank=True, null=True)
     
     additional_clinic_or_vet = models.JSONField(
         "Clínicas/Vets adicionais",

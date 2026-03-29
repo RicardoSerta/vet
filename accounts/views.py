@@ -14,6 +14,7 @@ from .notifications import (
     send_tutor_exam_email,
     send_provider_exam_email,
     send_provider_bulk_exam_email,
+    send_provider_return_email,
     send_portal_access_email,
     send_contact_updated_email,
 )
@@ -23,6 +24,7 @@ from .whatsapp_client import (
     send_tutor_exam_whatsapp,
     send_provider_exam_whatsapp,
     send_provider_bulk_exam_whatsapp,
+    send_provider_return_whatsapp,
     send_portal_access_whatsapp,
     send_contact_updated_whatsapp,
 )

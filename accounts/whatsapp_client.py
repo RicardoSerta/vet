@@ -355,3 +355,46 @@ def send_provider_bulk_exam_whatsapp(
         button_url_suffix=target_suffix,
         button_index="0",
     )
+    
+def send_provider_return_whatsapp(
+    request,
+    *,
+    exam,
+    to_phone: str,
+    recipient_label: str,
+    activation_link: str | None = None,
+) -> bool:
+    retorno_time = exam.retorno_horario.strftime("%H:%M") if exam.retorno_horario else "12:00"
+    retorno_text = f"{exam.retorno_previsto.strftime('%d/%m/%Y')} às {retorno_time}"
+
+    login_link = request.build_absolute_uri(reverse("login"))
+
+    is_first_access = bool(activation_link)
+    target_link = activation_link or login_link
+    target_suffix = _url_suffix_from_absolute_url(target_link)
+
+    template_name = (
+        settings.WHATSAPP_TEMPLATE_PROVIDER_RETURN_FIRST_ACCESS
+        if is_first_access
+        else settings.WHATSAPP_TEMPLATE_PROVIDER_RETURN_EXISTING_ACCESS
+    )
+
+    if is_first_access and not settings.WHATSAPP_TEMPLATE_PROVIDER_RETURN_FIRST_ACCESS:
+        raise RuntimeError("WHATSAPP_TEMPLATE_PROVIDER_RETURN_FIRST_ACCESS não configurado.")
+
+    if not is_first_access and not settings.WHATSAPP_TEMPLATE_PROVIDER_RETURN_EXISTING_ACCESS:
+        raise RuntimeError("WHATSAPP_TEMPLATE_PROVIDER_RETURN_EXISTING_ACCESS não configurado.")
+
+    return _send_template_message(
+        to_phone=to_phone,
+        template_name=template_name,
+        body_parameters=[
+            recipient_label,
+            exam.tutor_name,
+            exam.pet_name,
+            exam.exam_type,
+            retorno_text,
+        ],
+        button_url_suffix=target_suffix,
+        button_index="0",
+    )
