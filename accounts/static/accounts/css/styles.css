@@ -1543,9 +1543,9 @@ body.app-body {
   padding: 0;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 11.5px;
   color: #6b7280;
   line-height: 1.2;
 }
@@ -1555,16 +1555,17 @@ body.app-body {
 }
 
 .provider-notify-icon {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   border-radius: 5px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1;
-  flex: 0 0 16px;
+  flex: 0 0 18px;
   border: 1px solid transparent;
+  transform: translateY(0.5px);
 }
 
 .provider-notify-text {
