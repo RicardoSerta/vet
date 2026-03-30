@@ -364,9 +364,7 @@ def send_provider_return_whatsapp(
     recipient_label: str,
     activation_link: str | None = None,
 ) -> bool:
-    retorno_time = exam.retorno_horario.strftime("%H:%M") if exam.retorno_horario else "12:00"
-    retorno_text = f"{exam.retorno_previsto.strftime('%d/%m/%Y')} às {retorno_time}"
-
+    exam_date = exam.date_realizacao.strftime("%d/%m/%Y")
     login_link = request.build_absolute_uri(reverse("login"))
 
     is_first_access = bool(activation_link)
@@ -393,7 +391,7 @@ def send_provider_return_whatsapp(
             exam.tutor_name,
             exam.pet_name,
             exam.exam_type,
-            retorno_text,
+            exam_date,
         ],
         button_url_suffix=target_suffix,
         button_index="0",
