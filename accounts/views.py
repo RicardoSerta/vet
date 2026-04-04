@@ -1262,7 +1262,6 @@ def management_view(request, category='tutores'):
     }
     return render(request, 'accounts/management.html', context)
 
-
 @login_required
 @admin_required
 def management_create(request, category):
