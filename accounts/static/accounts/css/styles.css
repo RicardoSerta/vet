@@ -1800,3 +1800,152 @@ body.app-body {
         justify-content: flex-start;
     }
 }
+
+
+/* ===== Paginação + busca (ajuste final para Exames e Gestão) ===== */
+
+.exams-header,
+.management-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+
+.exams-header-right,
+.management-header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.exams-search-form {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.exams-search-form input[type="text"] {
+    padding: 6px 8px;
+    border-radius: 3px;
+    border: 1px solid #d1d5db;
+    font-size: 13px;
+    min-width: 190px;
+}
+
+.exams-search-form button {
+    border: none;
+    background-color: #6b7280;
+    color: #ffffff;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+    height: 32px;
+}
+
+.exams-top-pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.exams-top-pagination-controls select {
+    height: 32px;
+    padding: 0 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-size: 13px;
+    background: #ffffff;
+    cursor: pointer;
+    min-width: 62px;
+}
+
+.exams-page-arrow {
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    background: #ffffff;
+    color: #374151;
+    text-decoration: none;
+    font-size: 18px;
+    line-height: 1;
+    box-sizing: border-box;
+}
+
+.exams-page-arrow:hover {
+    background: #f3f4f6;
+}
+
+.exams-page-arrow.disabled {
+    color: #9ca3af;
+    background: #f9fafb;
+    cursor: default;
+    pointer-events: none;
+}
+
+.exams-pagination-footer {
+    margin-top: 14px;
+    display: flex;
+    justify-content: center;
+}
+
+.exams-pagination {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.exams-pagination-link,
+.exams-pagination-ellipsis {
+    min-width: 32px;
+    height: 32px;
+    padding: 0 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    font-size: 13px;
+    box-sizing: border-box;
+}
+
+.exams-pagination-link {
+    border: 1px solid #d1d5db;
+    background: #ffffff;
+    color: #374151;
+    text-decoration: none;
+}
+
+.exams-pagination-link:hover {
+    background: #f3f4f6;
+}
+
+.exams-pagination-link.active {
+    background: #2563eb;
+    color: #ffffff;
+    border-color: #2563eb;
+    font-weight: 600;
+    cursor: default;
+}
+
+.exams-pagination-ellipsis {
+    color: #6b7280;
+}
+
+@media (max-width: 900px) {
+    .exams-header-right,
+    .management-header-right {
+        width: 100%;
+        justify-content: flex-start;
+    }
+}

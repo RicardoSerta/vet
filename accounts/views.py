@@ -1015,13 +1015,22 @@ def management_view(request, category='tutores'):
 
     if category not in MANAGEMENT_CATEGORIES:
         category = 'tutores'
-        
+
     categories_nav = [
         {'slug': key, 'label': value['label']}
         for key, value in MANAGEMENT_CATEGORIES.items()
         if (key != 'admin' or is_superadmin)
     ]
-        
+
+    per_page = request.GET.get('per_page', '20')
+    try:
+        per_page = int(per_page)
+    except (TypeError, ValueError):
+        per_page = 20
+
+    if per_page not in (20, 50, 100):
+        per_page = 20
+
     if category == 'admin':
         if not is_superadmin:
             messages.error(request, "Você não tem permissão para acessar essa aba.")
@@ -1060,31 +1069,25 @@ def management_view(request, category='tutores'):
 
         items = []
         for u in qs:
-            profile, _ = Profile.objects.get_or_create(
+            item_profile, _ = Profile.objects.get_or_create(
                 user=u,
                 defaults={'role': 'ADMIN' if u.is_superuser else 'ADMIN_AUX'}
             )
 
-            # garante consistência: superuser aparece como ADMIN
-            if u.is_superuser and profile.role != 'ADMIN':
-                profile.role = 'ADMIN'
-                profile.save(update_fields=['role'])
+            if u.is_superuser and item_profile.role != 'ADMIN':
+                item_profile.role = 'ADMIN'
+                item_profile.save(update_fields=['role'])
 
-            role_label = 'Administrador' if (u.is_superuser or profile.role == 'ADMIN') else 'Auxiliar'
+            role_label = 'Administrador' if (u.is_superuser or item_profile.role == 'ADMIN') else 'Auxiliar'
 
-            # Regra da coluna "Conta?"
-            # Auxiliar sem senha = ❌
-            # Admin e superuser = ✅
             has_account = True if role_label == 'Administrador' else u.has_usable_password()
 
-            # botão de reenviar alertas:
-            # só para auxiliar, sem conta, e com algum meio de contato útil
             can_resend = (
-                profile.role == 'ADMIN_AUX'
+                item_profile.role == 'ADMIN_AUX'
                 and not u.has_usable_password()
                 and (
                     bool((u.email or '').strip()) or
-                    is_whatsapp_phone(profile.whatsapp or '')
+                    is_whatsapp_phone(item_profile.whatsapp or '')
                 )
             )
 
@@ -1092,26 +1095,47 @@ def management_view(request, category='tutores'):
                 'id': u.id,
                 'name': (u.first_name or u.username),
                 'email': (u.email or ''),
-                'phone': (profile.whatsapp or ''),
+                'phone': (item_profile.whatsapp or ''),
                 'created_at': u.date_joined,
                 'role_label': role_label,
                 'has_account': has_account,
                 'can_resend': can_resend,
-                'can_delete': (profile.role == 'ADMIN_AUX') and (not u.is_superuser),
-                'can_edit': (profile.role == 'ADMIN_AUX') and (not u.is_superuser),
+                'can_delete': (item_profile.role == 'ADMIN_AUX') and (not u.is_superuser),
+                'can_edit': (item_profile.role == 'ADMIN_AUX') and (not u.is_superuser),
             })
-            
-            if order == 'conta':
-                items.sort(
-                    key=lambda x: (x['has_account'], (x['name'] or '').lower()),
-                    reverse=(direction == 'desc')
+
+        if order == 'conta':
+            items.sort(
+                key=lambda x: (x['has_account'], (x['name'] or '').lower()),
+                reverse=(direction == 'desc')
+            )
+
+        paginator = Paginator(items, per_page)
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+        items = page_obj.object_list
+
+        current_page = page_obj.number
+        total_pages = paginator.num_pages
+
+        if total_pages <= 9:
+            page_numbers = list(range(1, total_pages + 1))
+        else:
+            page_numbers = []
+            last_added = None
+
+            for num in range(1, total_pages + 1):
+                should_show = (
+                    num == 1 or
+                    num == total_pages or
+                    abs(num - current_page) <= 2
                 )
 
-                categories_nav = [
-                    {'slug': key, 'label': value['label']}
-                    for key, value in MANAGEMENT_CATEGORIES.items()
-                    if (key != 'admin' or is_superadmin)
-                ]
+                if should_show:
+                    if last_added and num - last_added > 1:
+                        page_numbers.append('...')
+                    page_numbers.append(num)
+                    last_added = num
 
         return render(request, 'accounts/management.html', {
             'profile': profile,
@@ -1125,6 +1149,9 @@ def management_view(request, category='tutores'):
             'order': order,
             'direction': direction,
             'is_superadmin': is_superadmin,
+            'page_obj': page_obj,
+            'page_numbers': page_numbers,
+            'per_page': per_page,
         })
 
     info = MANAGEMENT_CATEGORIES[category]
@@ -1132,7 +1159,6 @@ def management_view(request, category='tutores'):
 
     items = Model.objects.all()
 
-    # BUSCA
     search_query = request.GET.get('q', '').strip()
     if search_query:
         q_obj = Q()
@@ -1140,7 +1166,6 @@ def management_view(request, category='tutores'):
             q_obj |= Q(**{f"{field}__icontains": search_query})
         items = items.filter(q_obj)
 
-    # ORDENAÇÃO
     order = request.GET.get('order', '')
     direction = request.GET.get('direction', 'asc')
     order_map = info.get('order_map', {})
@@ -1152,13 +1177,11 @@ def management_view(request, category='tutores'):
         items = items.order_by(field_name)
     else:
         items = items.order_by('-created_at')
-        
-    # ===== Possui Conta? (Tutores / Clínicas / Veterinários) =====
+
     if category in ("tutores", "clinicas", "veterinarios"):
         items_list = list(items)
 
         if category == "tutores":
-            # Tutor não tem FK pra user, então usamos o email do tutor
             emails = [((t.email or "").strip().lower()) for t in items_list if (t.email or "").strip()]
             email_to_has = {}
 
@@ -1177,18 +1200,44 @@ def management_view(request, category='tutores'):
                 t.has_account = bool(em and email_to_has.get(em, False))
 
         else:
-            # Clínica/Vet tem obj.user
             for obj in items_list:
                 u = getattr(obj, "user", None)
                 obj.has_account = bool(u and u.has_usable_password())
 
         items = items_list
-        
-        if category in ("tutores", "clinicas", "veterinarios") and order == "conta":
+
+        if order == "conta":
             items.sort(
                 key=lambda x: (x.has_account, (getattr(x, "display_name", "") or "").lower()),
                 reverse=(direction == "desc")
             )
+
+    paginator = Paginator(items, per_page)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    items = page_obj.object_list
+
+    current_page = page_obj.number
+    total_pages = paginator.num_pages
+
+    if total_pages <= 9:
+        page_numbers = list(range(1, total_pages + 1))
+    else:
+        page_numbers = []
+        last_added = None
+
+        for num in range(1, total_pages + 1):
+            should_show = (
+                num == 1 or
+                num == total_pages or
+                abs(num - current_page) <= 2
+            )
+
+            if should_show:
+                if last_added and num - last_added > 1:
+                    page_numbers.append('...')
+                page_numbers.append(num)
+                last_added = num
 
     categories_nav = [
         {'slug': key, 'label': value['label']}
@@ -1207,8 +1256,12 @@ def management_view(request, category='tutores'):
         'search_query': search_query,
         'order': order,
         'direction': direction,
+        'page_obj': page_obj,
+        'page_numbers': page_numbers,
+        'per_page': per_page,
     }
     return render(request, 'accounts/management.html', context)
+
 
 @login_required
 @admin_required

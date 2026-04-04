@@ -26,51 +26,40 @@
                     <input type="hidden" name="direction" value="{{ direction }}">
                 {% endif %}
 
-                <input type="hidden" name="per_page" value="{{ per_page }}">
-                <button type="submit">Buscar</button>
-            </form>
-
-            <div class="exams-top-pagination-controls">
-                {% if page_obj.has_previous %}
-                    <a
-                        href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}{% if order %}&order={{ order }}&direction={{ direction }}{% endif %}&per_page={{ per_page }}"
-                        class="exams-page-arrow"
-                        title="Página anterior"
-                    >
-                        ‹
-                    </a>
-                {% else %}
-                    <span class="exams-page-arrow disabled" title="Página anterior">‹</span>
-                {% endif %}
-
-                {% if page_obj.has_next %}
-                    <a
-                        href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}{% if order %}&order={{ order }}&direction={{ direction }}{% endif %}&per_page={{ per_page }}"
-                        class="exams-page-arrow"
-                        title="Próxima página"
-                    >
-                        ›
-                    </a>
-                {% else %}
-                    <span class="exams-page-arrow disabled" title="Próxima página">›</span>
-                {% endif %}
-
-                <form method="get" class="exams-per-page-form">
-                    {% if search_query %}
-                        <input type="hidden" name="q" value="{{ search_query }}">
-                    {% endif %}
-                    {% if order %}
-                        <input type="hidden" name="order" value="{{ order }}">
-                        <input type="hidden" name="direction" value="{{ direction }}">
-                    {% endif %}
-
+                <div class="exams-top-pagination-controls">
                     <select name="per_page" onchange="this.form.submit()">
                         <option value="20" {% if per_page == 20 %}selected{% endif %}>20</option>
                         <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
                         <option value="100" {% if per_page == 100 %}selected{% endif %}>100</option>
                     </select>
-                </form>
-            </div>
+
+                    {% if page_obj.has_previous %}
+                        <a
+                            href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}{% if order %}&order={{ order }}&direction={{ direction }}{% endif %}&per_page={{ per_page }}"
+                            class="exams-page-arrow"
+                            title="Página anterior"
+                        >
+                            ‹
+                        </a>
+                    {% else %}
+                        <span class="exams-page-arrow disabled" title="Página anterior">‹</span>
+                    {% endif %}
+
+                    {% if page_obj.has_next %}
+                        <a
+                            href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}{% if order %}&order={{ order }}&direction={{ direction }}{% endif %}&per_page={{ per_page }}"
+                            class="exams-page-arrow"
+                            title="Próxima página"
+                        >
+                            ›
+                        </a>
+                    {% else %}
+                        <span class="exams-page-arrow disabled" title="Próxima página">›</span>
+                    {% endif %}
+                </div>
+
+                <button type="submit">Buscar</button>
+            </form>
 
             {% if is_admin %}
                 <a href="{% url 'exam_types' %}" class="btn-siglas">
