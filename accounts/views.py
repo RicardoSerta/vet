@@ -34,6 +34,7 @@ from django.urls import reverse
 from django.db.models.deletion import ProtectedError
 from django.db import transaction
 from django.http import FileResponse, Http404, HttpResponseForbidden
+from django.core.paginator import Paginator
 from django.core.mail import send_mail
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -528,16 +529,57 @@ def exams_list(request):
         if direction == 'desc':
             field_name = '-' + field_name
         exams = exams.order_by(field_name)
-        
+
     if tutor_filter_later:
         exams = [exam for exam in exams if _tutor_matches_exam(request.user, profile, exam)]
 
+    # Quantidade por página
+    per_page = request.GET.get('per_page', '20')
+    try:
+        per_page = int(per_page)
+    except (TypeError, ValueError):
+        per_page = 20
+
+    if per_page not in (20, 50, 100):
+        per_page = 20
+
+    # Paginação
+    paginator = Paginator(exams, per_page)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Faixa de páginas para mostrar no rodapé
+    current_page = page_obj.number
+    total_pages = paginator.num_pages
+
+    if total_pages <= 9:
+        page_numbers = list(range(1, total_pages + 1))
+    else:
+        page_numbers = []
+        last_added = None
+
+        for num in range(1, total_pages + 1):
+            should_show = (
+                num == 1 or
+                num == total_pages or
+                abs(num - current_page) <= 2
+            )
+
+            if should_show:
+                if last_added and num - last_added > 1:
+                    page_numbers.append('...')
+                page_numbers.append(num)
+                last_added = num
+
     context = {
         'profile': profile,
-        'exams': exams,
+        'exams': page_obj.object_list,
+        'page_obj': page_obj,
+        'page_numbers': page_numbers,
         'search_query': search_query,
         'order': order,
         'direction': direction,
+        'per_page': per_page,
     }
     return render(request, 'accounts/exams_list.html', context)
     

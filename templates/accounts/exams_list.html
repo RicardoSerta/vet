@@ -14,17 +14,69 @@
 
         <div class="exams-header-right">
             <form method="get" class="exams-search-form">
-                <input type="text" name="q" placeholder="Buscar..."
-                       value="{{ search_query|default_if_none:'' }}">
+                <input
+                    type="text"
+                    name="q"
+                    placeholder="Buscar..."
+                    value="{{ search_query|default_if_none:'' }}"
+                >
+
+                {% if order %}
+                    <input type="hidden" name="order" value="{{ order }}">
+                    <input type="hidden" name="direction" value="{{ direction }}">
+                {% endif %}
+
+                <input type="hidden" name="per_page" value="{{ per_page }}">
                 <button type="submit">Buscar</button>
             </form>
 
+            <div class="exams-top-pagination-controls">
+                {% if page_obj.has_previous %}
+                    <a
+                        href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}{% if order %}&order={{ order }}&direction={{ direction }}{% endif %}&per_page={{ per_page }}"
+                        class="exams-page-arrow"
+                        title="Página anterior"
+                    >
+                        ‹
+                    </a>
+                {% else %}
+                    <span class="exams-page-arrow disabled" title="Página anterior">‹</span>
+                {% endif %}
+
+                {% if page_obj.has_next %}
+                    <a
+                        href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}{% if order %}&order={{ order }}&direction={{ direction }}{% endif %}&per_page={{ per_page }}"
+                        class="exams-page-arrow"
+                        title="Próxima página"
+                    >
+                        ›
+                    </a>
+                {% else %}
+                    <span class="exams-page-arrow disabled" title="Próxima página">›</span>
+                {% endif %}
+
+                <form method="get" class="exams-per-page-form">
+                    {% if search_query %}
+                        <input type="hidden" name="q" value="{{ search_query }}">
+                    {% endif %}
+                    {% if order %}
+                        <input type="hidden" name="order" value="{{ order }}">
+                        <input type="hidden" name="direction" value="{{ direction }}">
+                    {% endif %}
+
+                    <select name="per_page" onchange="this.form.submit()">
+                        <option value="20" {% if per_page == 20 %}selected{% endif %}>20</option>
+                        <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
+                        <option value="100" {% if per_page == 100 %}selected{% endif %}>100</option>
+                    </select>
+                </form>
+            </div>
+
             {% if is_admin %}
-                <!-- Botão novo: Tipos de Exames (fica entre Buscar e Novo Exame) -->
-                <a href="{% url 'exam_types' %}" class="btn-siglas" style="margin-left: 10px; margin-right: 0px;">
+                <a href="{% url 'exam_types' %}" class="btn-siglas">
                     Siglas
                 </a>
-                <a href="{% url 'exam_upload' %}" class="btn-primary btn-upload-exam" style="margin-left: 10px;">
+                <a href="{% url 'exam_upload' %}" class="btn-primary btn-upload-exam">
                     + Novo Exame
                 </a>
             {% endif %}
@@ -35,9 +87,8 @@
         <table class="exams-table">
             <thead>
                 <tr>
-                    {% with qparam=search_query|default_if_none:'' %}
                     <th>
-                        <a href="?order=realizacao&direction={% if order == 'realizacao' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
+                        <a href="?order=realizacao&direction={% if order == 'realizacao' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}&per_page={{ per_page }}">
                             Realização
                             {% if order == 'realizacao' %}
                                 {% if direction == 'asc' %}▲{% else %}▼{% endif %}
@@ -45,7 +96,7 @@
                         </a>
                     </th>
                     <th>
-                        <a href="?order=clinica&direction={% if order == 'clinica' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
+                        <a href="?order=clinica&direction={% if order == 'clinica' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}&per_page={{ per_page }}">
                             Clínica / Veterinário
                             {% if order == 'clinica' %}
                                 {% if direction == 'asc' %}▲{% else %}▼{% endif %}
@@ -53,7 +104,7 @@
                         </a>
                     </th>
                     <th>
-                        <a href="?order=exame&direction={% if order == 'exame' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
+                        <a href="?order=exame&direction={% if order == 'exame' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}&per_page={{ per_page }}">
                             Exame
                             {% if order == 'exame' %}
                                 {% if direction == 'asc' %}▲{% else %}▼{% endif %}
@@ -61,7 +112,7 @@
                         </a>
                     </th>
                     <th>
-                        <a href="?order=pet&direction={% if order == 'pet' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
+                        <a href="?order=pet&direction={% if order == 'pet' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}&per_page={{ per_page }}">
                             Pet
                             {% if order == 'pet' %}
                                 {% if direction == 'asc' %}▲{% else %}▼{% endif %}
@@ -69,7 +120,7 @@
                         </a>
                     </th>
                     <th>
-                        <a href="?order=raca&direction={% if order == 'raca' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
+                        <a href="?order=raca&direction={% if order == 'raca' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}&per_page={{ per_page }}">
                             Raça
                             {% if order == 'raca' %}
                                 {% if direction == 'asc' %}▲{% else %}▼{% endif %}
@@ -77,7 +128,7 @@
                         </a>
                     </th>
                     <th>
-                        <a href="?order=tutor&direction={% if order == 'tutor' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
+                        <a href="?order=tutor&direction={% if order == 'tutor' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}&per_page={{ per_page }}">
                             Tutor
                             {% if order == 'tutor' %}
                                 {% if direction == 'asc' %}▲{% else %}▼{% endif %}
@@ -85,7 +136,7 @@
                         </a>
                     </th>
                     <th>
-                        <a href="?order=cadastro&direction={% if order == 'cadastro' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
+                        <a href="?order=cadastro&direction={% if order == 'cadastro' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}&per_page={{ per_page }}">
                             Cadastro
                             {% if order == 'cadastro' %}
                                 {% if direction == 'asc' %}▲{% else %}▼{% endif %}
@@ -93,7 +144,7 @@
                         </a>
                     </th>
                     <th>
-                        <a href="?order=retorno&direction={% if order == 'retorno' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}">
+                        <a href="?order=retorno&direction={% if order == 'retorno' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}&per_page={{ per_page }}">
                             Retorno
                             {% if order == 'retorno' %}
                                 {% if direction == 'asc' %}▲{% else %}▼{% endif %}
@@ -101,7 +152,6 @@
                         </a>
                     </th>
                     <th>Ações</th>
-                    {% endwith %}
                 </tr>
             </thead>
 
@@ -117,32 +167,38 @@
                             <td>{{ exam.tutor_name }}</td>
                             <td>
                                 {% if exam.created_at %}
-                                  {{ exam.created_at|date:"d/m/Y" }} às {{ exam.created_at|date:"H:i" }}
+                                    {{ exam.created_at|date:"d/m/Y" }} às {{ exam.created_at|date:"H:i" }}
                                 {% else %}
-                                  -
+                                    -
                                 {% endif %}
                             </td>
                             <td>
                                 {% if exam.retorno_previsto %}
-                                  {{ exam.retorno_previsto|date:"d/m/Y" }}{% if exam.retorno_horario %} às {{ exam.retorno_horario|time:"H:i" }}{% endif %}
+                                    {{ exam.retorno_previsto|date:"d/m/Y" }}{% if exam.retorno_horario %} às {{ exam.retorno_horario|time:"H:i" }}{% endif %}
                                 {% else %}
-                                  -
+                                    -
                                 {% endif %}
                             </td>
 
                             <td class="exams-actions">
                                 {% if is_admin %}
-                                  <a href="{% url 'exam_forward' exam.pk %}" title="Encaminhar" class="btn-icon btn-icon-blue">✉</a>
+                                    <a href="{% url 'exam_forward' exam.pk %}" title="Encaminhar" class="btn-icon btn-icon-blue">✉</a>
                                 {% endif %}
 
                                 <a href="{% url 'exam_view' exam.pk %}" title="Visualizar exame" class="btn-icon btn-icon-green">👁</a>
 
                                 {% if is_admin %}
-                                  <form method="post" action="{% url 'exam_delete' exam.pk %}" style="display:inline;">
-                                      {% csrf_token %}
-                                      <button type="submit" class="btn-icon btn-icon-red" title="Excluir"
-                                          onclick="return confirm('Tem certeza que deseja excluir este exame?');">🗑</button>
-                                  </form>
+                                    <form method="post" action="{% url 'exam_delete' exam.pk %}" style="display:inline;">
+                                        {% csrf_token %}
+                                        <button
+                                            type="submit"
+                                            class="btn-icon btn-icon-red"
+                                            title="Excluir"
+                                            onclick="return confirm('Tem certeza que deseja excluir este exame?');"
+                                        >
+                                            🗑
+                                        </button>
+                                    </form>
                                 {% endif %}
                             </td>
                         </tr>
@@ -157,7 +213,27 @@
             </tbody>
         </table>
     </div>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+        <div class="exams-pagination-footer">
+            <div class="exams-pagination">
+                {% for item in page_numbers %}
+                    {% if item == '...' %}
+                        <span class="exams-pagination-ellipsis">…</span>
+                    {% elif item == page_obj.number %}
+                        <span class="exams-pagination-link active">{{ item }}</span>
+                    {% else %}
+                        <a
+                            href="?page={{ item }}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}{% if order %}&order={{ order }}&direction={{ direction }}{% endif %}&per_page={{ per_page }}"
+                            class="exams-pagination-link"
+                        >
+                            {{ item }}
+                        </a>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
 </div>
 
 {% endblock %}
-
