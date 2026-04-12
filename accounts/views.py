@@ -622,7 +622,7 @@ def exam_delete(request, pk):
 def exam_forward(request, pk):
     exam = get_object_or_404(Exam, pk=pk)
     # Protótipo: só mostra uma mensagem por enquanto
-    messages.info(request, 'Funcionalidade de encaminhar exame ainda será implementada.')
+    messages.info(request, 'Funcionalidade de reenviar notificações ainda será implementada.')
     return redirect('exames')
     
 @login_required

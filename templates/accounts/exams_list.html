@@ -170,8 +170,8 @@
                             </td>
 
                             <td class="exams-actions">
-                                {% if is_admin %}
-                                    <a href="{% url 'exam_forward' exam.pk %}" title="Encaminhar" class="btn-icon btn-icon-blue">✉</a>
+                                {{% if is_admin %}
+                                    <a href="{% url 'exam_forward' exam.pk %}" title="Reenviar notificações" class="btn-icon btn-icon-gray">🔔</a>
                                 {% endif %}
 
                                 <a href="{% url 'exam_view' exam.pk %}" title="Visualizar exame" class="btn-icon btn-icon-green">👁</a>

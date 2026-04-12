@@ -235,10 +235,10 @@
                                         <form method="post"
                                               action="{% url 'gestao_admin_resend_alerts' item.id %}"
                                               style="display:inline;"
-                                              onsubmit="return confirm('Reenviar alertas de cadastro para {{ item.name|escapejs }}?\n\nE-mail: {{ item.email|default_if_none:''|escapejs }}\nTelefone: {{ item.phone|default_if_none:''|escapejs }}');">
+                                              onsubmit="return confirm('Reenviar notificações de cadastro para {{ item.name|escapejs }}?\n\nE-mail: {{ item.email|default_if_none:''|escapejs }}\nTelefone: {{ item.phone|default_if_none:''|escapejs }}');">
                                             {% csrf_token %}
                                             <button type="submit"
-                                                    title="Reenviar alertas"
+                                                    title="Reenviar notificações"
                                                     class="btn-icon btn-icon-gray"
                                                     style="border:0; cursor:pointer; margin-left:6px;">
                                                 🔔
@@ -331,13 +331,13 @@
                                     <form method="post"
                                           action="{% url 'gestao_resend_alerts' category item.id %}"
                                           style="display:inline;"
-                                          onsubmit="return confirm('Reenviar alertas de cadastro para {{ item.display_name|escapejs }}?\n\nE-mail: {{ item.email|default_if_none:''|escapejs }}\nTelefone: {{ item.phone|default_if_none:''|escapejs }}');">
+                                          onsubmit="return confirm('Reenviar notificações de cadastro para {{ item.display_name|escapejs }}?\n\nE-mail: {{ item.email|default_if_none:''|escapejs }}\nTelefone: {{ item.phone|default_if_none:''|escapejs }}');">
                                       {% csrf_token %}
                                       <button type="submit"
-                                              title="Reenviar alertas"
+                                              title="Reenviar notificações"
                                               class="btn-icon btn-icon-gray"
                                               style="border:0; cursor:pointer; margin-left:6px;">
-                                        🔔
+                                          🔔
                                       </button>
                                     </form>
                                   {% endif %}
@@ -431,16 +431,16 @@ function lvConfirmResendAlerts(formEl) {
   const waOk = isWhatsAppPhone(phone);
 
   if (!email) {
-    let msg = `Não é possível reenviar alertas para "${name}" porque não há e-mail cadastrado.`;
+    let msg = `Não é possível reenviar notificações para "${name}" porque não há e-mail cadastrado.`;
     if (waOk) msg += `\n\nObservação: o número parece WhatsApp, mas o envio por WhatsApp ainda não está habilitado.`;
     alert(msg);
     return false;
   }
 
-  let msg = `Reenviar alertas de cadastro para "${name}"?\n\n`;
+  let msg = `Reenviar notificações de cadastro para "${name}"?\n\n`;
   msg += `E-mail: ${email || "-"}\n`;
   msg += `WhatsApp: ${waOk ? phone : (phone ? "Número não é WhatsApp" : "-")}\n\n`;
-  msg += `No momento, o sistema reenviará o alerta apenas por e-mail.`;
+  msg += `No momento, o sistema reenviará a notificação apenas por e-mail.`;
 
   return confirm(msg);
 }

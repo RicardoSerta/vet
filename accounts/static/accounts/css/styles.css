@@ -1948,3 +1948,37 @@ body.app-body {
         justify-content: flex-start;
     }
 }
+
+/* ===== Ajuste final: busca + paginação na mesma linha ===== */
+
+.exams-search-form {
+    flex-wrap: nowrap;
+}
+
+.exams-search-form input[type="text"] {
+    width: 220px;
+    min-width: 220px;
+    flex: 0 0 220px;
+}
+
+.exams-top-pagination-controls {
+    flex: 0 0 auto;
+}
+
+.exams-search-form button {
+    flex: 0 0 auto;
+}
+
+@media (max-width: 900px) {
+    .exams-search-form {
+        flex-wrap: wrap;
+    }
+
+    .exams-search-form input[type="text"] {
+        width: 100%;
+        min-width: 0;
+        flex: 1 1 100%;
+    }
+}
+
+
