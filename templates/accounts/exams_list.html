@@ -171,7 +171,14 @@
 
                             <td class="exams-actions">
                                 {{% if is_admin %}
-                                    <a href="{% url 'exam_forward' exam.pk %}" title="Reenviar notificações" class="btn-icon btn-icon-gray">🔔</a>
+                                    <button
+                                        type="button"
+                                        title="Reenviar notificações"
+                                        class="btn-icon btn-icon-gray"
+                                        onclick="lvConfirmExamResend();"
+                                    >
+                                        🔔
+                                    </button>
                                 {% endif %}
 
                                 <a href="{% url 'exam_view' exam.pk %}" title="Visualizar exame" class="btn-icon btn-icon-green">👁</a>
@@ -225,4 +232,9 @@
     {% endif %}
 </div>
 
+<script>
+function lvConfirmExamResend() {
+    confirm('Deseja reenviar as notificações deste exame?');
+}
+</script>
 {% endblock %}

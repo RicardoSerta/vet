@@ -16,6 +16,9 @@ class Profile(models.Model):
     photo = models.ImageField(upload_to='profile_photos/', blank=True, null=True)
 
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='BASIC')
+    
+    exams_per_page = models.PositiveSmallIntegerField(default=20)
+    management_per_page = models.PositiveSmallIntegerField(default=20)
 
     def __str__(self):
         return f'Perfil de {self.user.username}'

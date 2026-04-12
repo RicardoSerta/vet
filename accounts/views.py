@@ -337,6 +337,19 @@ def prepare_provider_for_notification(request, selected_value: str, *, allow_cre
     
 def _phone_digits(phone: str) -> str:
     return re.sub(r"\D", "", phone or "")
+    
+ALLOWED_PER_PAGE_VALUES = (20, 50, 100)
+
+def _sanitize_per_page(value, fallback=20):
+    try:
+        value = int(value)
+    except (TypeError, ValueError):
+        return fallback
+
+    if value not in ALLOWED_PER_PAGE_VALUES:
+        return fallback
+
+    return value
 
 def _tutor_matches_exam(user, profile, exam) -> bool:
     user_email = (user.email or "").strip().lower()
@@ -533,15 +546,18 @@ def exams_list(request):
     if tutor_filter_later:
         exams = [exam for exam in exams if _tutor_matches_exam(request.user, profile, exam)]
 
-    # Quantidade por página
-    per_page = request.GET.get('per_page', '20')
-    try:
-        per_page = int(per_page)
-    except (TypeError, ValueError):
-        per_page = 20
+    # Quantidade por página (preferência do usuário para Exames)
+    saved_per_page = _sanitize_per_page(getattr(profile, 'exams_per_page', 20), 20)
+    requested_per_page = request.GET.get('per_page')
 
-    if per_page not in (20, 50, 100):
-        per_page = 20
+    if requested_per_page is not None:
+        per_page = _sanitize_per_page(requested_per_page, saved_per_page)
+
+        if getattr(profile, 'exams_per_page', 20) != per_page:
+            profile.exams_per_page = per_page
+            profile.save(update_fields=['exams_per_page'])
+    else:
+        per_page = saved_per_page
 
     # Paginação
     paginator = Paginator(exams, per_page)
@@ -1022,15 +1038,19 @@ def management_view(request, category='tutores'):
         if (key != 'admin' or is_superadmin)
     ]
 
-    per_page = request.GET.get('per_page', '20')
-    try:
-        per_page = int(per_page)
-    except (TypeError, ValueError):
-        per_page = 20
+    # Quantidade por página (preferência do usuário para Gestão)
+    saved_per_page = _sanitize_per_page(getattr(profile, 'management_per_page', 20), 20)
+    requested_per_page = request.GET.get('per_page')
 
-    if per_page not in (20, 50, 100):
-        per_page = 20
+    if requested_per_page is not None:
+        per_page = _sanitize_per_page(requested_per_page, saved_per_page)
 
+        if getattr(profile, 'management_per_page', 20) != per_page:
+            profile.management_per_page = per_page
+            profile.save(update_fields=['management_per_page'])
+    else:
+        per_page = saved_per_page
+    
     if category == 'admin':
         if not is_superadmin:
             messages.error(request, "Você não tem permissão para acessar essa aba.")
