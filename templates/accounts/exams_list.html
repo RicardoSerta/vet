@@ -26,6 +26,8 @@
                     <input type="hidden" name="direction" value="{{ direction }}">
                 {% endif %}
 
+                <button type="submit">Buscar</button>
+
                 <div class="exams-top-pagination-controls">
                     <select name="per_page" onchange="this.form.submit()">
                         <option value="20" {% if per_page == 20 %}selected{% endif %}>20</option>
@@ -57,8 +59,6 @@
                         <span class="exams-page-arrow disabled" title="Próxima página">›</span>
                     {% endif %}
                 </div>
-
-                <button type="submit">Buscar</button>
             </form>
 
             {% if is_admin %}
@@ -170,7 +170,7 @@
                             </td>
 
                             <td class="exams-actions">
-                                {{% if is_admin %}
+                                {% if is_admin %}
                                     <form method="post"
                                           action="{% url 'exam_forward' exam.pk %}"
                                           style="display:inline;"
