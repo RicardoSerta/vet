@@ -262,6 +262,92 @@ def send_provider_exam_email(request, *, exam, to_email: str, recipient_label: s
     msg.send()
     return True
     
+def send_provider_exam_resend_email(request, *, exam, to_email: str, recipient_label: str, activation_link: str | None):
+    """
+    Reenvio da notificação de exame para clínica/veterinário.
+    Mesma estrutura do WhatsApp de reenvio.
+    """
+    to_email = (to_email or "").strip()
+    if not to_email:
+        return False
+
+    exam_date = exam.date_realizacao.strftime("%d/%m/%Y")
+    login_link = request.build_absolute_uri(reverse("login"))
+
+    is_first_access = bool(activation_link)
+    target_link = activation_link or login_link
+
+    subject = "LumaVet — Reenvio de notificação do exame"
+
+    lines = [
+        f"Olá, {recipient_label}!",
+        "",
+        "Estamos reenviando a notificação de um exame do portal LumaVet.",
+        "",
+        "Dados do exame:",
+        f"Tutor: {exam.tutor_name}",
+        f"Pet: {exam.pet_name}",
+        f"Exame: {exam.exam_type}",
+        f"Realização: {exam_date}",
+        "",
+    ]
+
+    if is_first_access:
+        lines += [
+            "Este é o seu primeiro acesso ao sistema.",
+            "",
+            "Para criar sua senha e visualizar o exame, clique no link abaixo:",
+        ]
+    else:
+        lines += [
+            "Para acessar o portal e visualizar o exame, clique no link abaixo:",
+        ]
+
+    lines += [
+        target_link,
+        "",
+        "Atenciosamente,",
+        "Equipe LumaVet",
+    ]
+
+    text_body = "\n".join(lines)
+
+    html_parts = [
+        f"<p>Olá, {escape(recipient_label)}!</p>",
+        "<p>Estamos reenviando a notificação de um exame do portal LumaVet.</p>",
+        (
+            "<p><strong>Dados do exame:</strong><br>"
+            f"Tutor: {escape(exam.tutor_name)}<br>"
+            f"Pet: {escape(exam.pet_name)}<br>"
+            f"Exame: {escape(exam.exam_type)}<br>"
+            f"Realização: {escape(exam_date)}"
+            "</p>"
+        ),
+    ]
+
+    if is_first_access:
+        html_parts.append("<p>Este é o seu primeiro acesso ao sistema.</p>")
+        html_parts.append("<p>Para criar sua senha e visualizar o exame, clique no link abaixo:</p>")
+    else:
+        html_parts.append("<p>Para acessar o portal e visualizar o exame, clique no link abaixo:</p>")
+
+    html_parts.append(
+        f'<p><a href="{escape(target_link, quote=True)}">{escape(target_link)}</a></p>'
+    )
+    html_parts.append("<p>Atenciosamente,<br>Equipe LumaVet</p>")
+
+    html_body = "\n".join(html_parts)
+
+    msg = EmailMultiAlternatives(
+        subject=subject,
+        body=text_body,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[to_email],
+    )
+    msg.attach_alternative(html_body, "text/html")
+    msg.send()
+    return True
+    
 def send_portal_access_email(
     request,
     *,

@@ -13,6 +13,7 @@ from .notifications import (
     send_exam_email,
     send_tutor_exam_email,
     send_provider_exam_email,
+    send_provider_exam_resend_email,
     send_provider_bulk_exam_email,
     send_provider_return_email,
     send_portal_access_email,
@@ -23,6 +24,7 @@ from .whatsapp_client import (
     send_exam_whatsapp,
     send_tutor_exam_whatsapp,
     send_provider_exam_whatsapp,
+    send_provider_exam_resend_whatsapp,
     send_provider_bulk_exam_whatsapp,
     send_provider_return_whatsapp,
     send_portal_access_whatsapp,
@@ -716,7 +718,7 @@ def exam_forward(request, pk):
 
         if provider_email:
             try:
-                ok = send_provider_exam_email(
+                ok = send_provider_exam_resend_email(
                     request,
                     exam=exam,
                     to_email=provider_email,
@@ -730,7 +732,7 @@ def exam_forward(request, pk):
 
         if provider_phone and is_whatsapp_phone(provider_phone):
             try:
-                ok = send_provider_exam_whatsapp(
+                ok = send_provider_exam_resend_whatsapp(
                     request,
                     exam=exam,
                     to_phone=provider_phone,

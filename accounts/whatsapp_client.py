@@ -231,6 +231,51 @@ def send_provider_exam_whatsapp(request, *, exam, to_phone: str, recipient_label
         button_index="0",
     )
     
+def send_provider_exam_resend_whatsapp(
+    request,
+    *,
+    exam,
+    to_phone: str,
+    recipient_label: str,
+    activation_link: str | None = None,
+) -> bool:
+    """
+    Reenvio da notificação de exame para clínica/veterinário.
+    Usa os templates específicos de reenvio.
+    """
+    exam_date = exam.date_realizacao.strftime("%d/%m/%Y")
+    login_link = request.build_absolute_uri(reverse("login"))
+
+    is_first_access = bool(activation_link)
+    target_link = activation_link or login_link
+    target_suffix = _url_suffix_from_absolute_url(target_link)
+
+    template_name = (
+        settings.WHATSAPP_TEMPLATE_PROVIDER_EXAM_RESEND_FIRST_ACCESS
+        if is_first_access
+        else settings.WHATSAPP_TEMPLATE_PROVIDER_EXAM_RESEND_EXISTING_ACCESS
+    )
+
+    if is_first_access and not settings.WHATSAPP_TEMPLATE_PROVIDER_EXAM_RESEND_FIRST_ACCESS:
+        raise RuntimeError("WHATSAPP_TEMPLATE_PROVIDER_EXAM_RESEND_FIRST_ACCESS não configurado.")
+
+    if not is_first_access and not settings.WHATSAPP_TEMPLATE_PROVIDER_EXAM_RESEND_EXISTING_ACCESS:
+        raise RuntimeError("WHATSAPP_TEMPLATE_PROVIDER_EXAM_RESEND_EXISTING_ACCESS não configurado.")
+
+    return _send_template_message(
+        to_phone=to_phone,
+        template_name=template_name,
+        body_parameters=[
+            recipient_label,
+            exam.tutor_name,
+            exam.pet_name,
+            exam.exam_type,
+            exam_date,
+        ],
+        button_url_suffix=target_suffix,
+        button_index="0",
+    )
+    
 def send_portal_access_whatsapp(
     request,
     *,
