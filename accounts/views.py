@@ -335,6 +335,44 @@ def prepare_provider_for_notification(request, selected_value: str, *, allow_cre
     provider["activation_link"] = activation_link
     return provider
     
+def _get_main_provider_token_for_exam(exam):
+    # 1) tenta resolver pelo usuário atualmente vinculado ao exame
+    if exam.assigned_user_id:
+        clinic = Clinic.objects.filter(user=exam.assigned_user).first()
+        if clinic:
+            return f"CLINIC:{clinic.id}"
+
+        vet = Veterinarian.objects.filter(user=exam.assigned_user).first()
+        if vet:
+            return f"VET:{vet.id}"
+
+    # 2) fallback: tenta resolver pelo nome salvo no exame
+    provider_name = (exam.clinic_or_vet or "").strip()
+    if provider_name:
+        clinic = Clinic.objects.filter(name__iexact=provider_name).first()
+        if clinic:
+            return f"CLINIC:{clinic.id}"
+
+        vet = Veterinarian.objects.filter(name__iexact=provider_name).first()
+        if vet:
+            return f"VET:{vet.id}"
+
+    return None
+
+def _get_provider_tokens_for_exam(exam):
+    tokens = []
+
+    main_token = _get_main_provider_token_for_exam(exam)
+    if main_token:
+        tokens.append(main_token)
+
+    for token in (exam.additional_clinic_or_vet or []):
+        token = (token or "").strip()
+        if token and token not in tokens:
+            tokens.append(token)
+
+    return tokens
+    
 def _phone_digits(phone: str) -> str:
     return re.sub(r"\D", "", phone or "")
     
@@ -637,9 +675,98 @@ def exam_delete(request, pk):
 @admin_required
 def exam_forward(request, pk):
     exam = get_object_or_404(Exam, pk=pk)
-    # Protótipo: só mostra uma mensagem por enquanto
-    messages.info(request, 'Funcionalidade de reenviar notificações ainda será implementada.')
-    return redirect('exames')
+
+    if request.method != "POST":
+        return redirect("exames")
+
+    provider_tokens = _get_provider_tokens_for_exam(exam)
+
+    if not provider_tokens:
+        messages.error(
+            request,
+            "Não foi possível localizar clínicas/veterinários vinculados a este exame."
+        )
+        return redirect("exames")
+
+    provider_sent_any = False
+    provider_found_any = False
+
+    for token in provider_tokens:
+        try:
+            provider = prepare_provider_for_notification(
+                request,
+                token,
+                allow_create_user=True,
+            )
+        except (Clinic.DoesNotExist, Veterinarian.DoesNotExist, ValueError):
+            continue
+        except Exception as e:
+            messages.error(request, f"Falha ao preparar um dos responsáveis do exame: {e}")
+            continue
+
+        if not provider:
+            continue
+
+        provider_found_any = True
+
+        provider_email = (provider.get("email") or "").strip()
+        provider_phone = (provider.get("phone") or "").strip()
+        provider_label = provider.get("label") or "Clínica/Veterinário"
+        provider_activation_link = provider.get("activation_link")
+
+        if provider_email:
+            try:
+                ok = send_provider_exam_email(
+                    request,
+                    exam=exam,
+                    to_email=provider_email,
+                    recipient_label=provider_label,
+                    activation_link=provider_activation_link,
+                )
+                if ok is not False:
+                    provider_sent_any = True
+            except Exception as e:
+                messages.error(request, f"Falha ao enviar e-mail para {provider_label}: {e}")
+
+        if provider_phone and is_whatsapp_phone(provider_phone):
+            try:
+                ok = send_provider_exam_whatsapp(
+                    request,
+                    exam=exam,
+                    to_phone=provider_phone,
+                    recipient_label=provider_label,
+                    activation_link=provider_activation_link,
+                )
+                if ok:
+                    provider_sent_any = True
+                elif ok is False:
+                    messages.warning(
+                        request,
+                        f"O WhatsApp de {provider_label} não foi enviado."
+                    )
+            except Exception as e:
+                messages.error(request, f"Falha ao enviar WhatsApp para {provider_label}: {e}")
+
+    if not provider_found_any:
+        messages.error(
+            request,
+            "Não foi possível localizar os responsáveis atuais deste exame."
+        )
+        return redirect("exames")
+
+    if provider_sent_any:
+        if not exam.alerta_provider:
+            exam.alerta_provider = True
+            exam.save(update_fields=["alerta_provider"])
+
+        messages.success(request, "Notificações reenviadas com sucesso.")
+    else:
+        messages.warning(
+            request,
+            "Nenhuma notificação pôde ser reenviada. Verifique se os responsáveis possuem e-mail ou WhatsApp válidos."
+        )
+
+    return redirect("exames")
     
 @login_required
 @admin_required
