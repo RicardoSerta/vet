@@ -14,7 +14,7 @@
     {% if is_edit %}Editar {{ category_singular }}{% else %}Cadastrar {{ category_singular }}{% endif %}
   </h2>
 
-  <form method="post" enctype="multipart/form-data" class="exam-upload-form">
+  <form method="post" enctype="multipart/form-data" class="exam-upload-form" autocomplete="off">
     {% csrf_token %}
 
     {# hidden fields (notify_email / notify_phone etc) #}
@@ -71,7 +71,11 @@
                   <label for="{{ field.id_for_label }}">{{ field.label }}:</label>
                   <input type="text" id="tutor-search"
                          placeholder="Digite para filtrar tutores..."
-                         style="margin-bottom: 6px;">
+                         style="margin-bottom: 6px;"
+                         autocomplete="off"
+                         autocapitalize="off"
+                         autocorrect="off"
+                         spellcheck="false">
                   {{ field }}
 
                 {% elif field.name == 'phone' %}

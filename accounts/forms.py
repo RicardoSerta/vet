@@ -47,6 +47,17 @@ def normalize_name_words(value: str) -> str:
     
 def normalize_email_value(value: str) -> str:
     return (value or "").strip().lower()
+    
+def disable_browser_autocomplete(field, *, new_password=False):
+    if not field:
+        return
+
+    field.widget.attrs.update({
+        "autocomplete": "new-password" if new_password else "off",
+        "autocapitalize": "off",
+        "autocorrect": "off",
+        "spellcheck": "false",
+    })
         
 def validate_photo_file(photo):
     if not photo:
@@ -434,6 +445,10 @@ class TutorForm(forms.ModelForm):
             self.fields["photo"].error_messages["invalid_image"] = (
                 "Imagem inválida. Envie uma imagem PNG, JPG ou JPEG."
             )
+        
+        for field_name in ["name", "surname", "phone", "email"]:
+            if field_name in self.fields:
+                disable_browser_autocomplete(self.fields[field_name])
             
     def clean_name(self):
         return normalize_name_words(self.cleaned_data.get("name"))
@@ -537,6 +552,10 @@ class ClinicForm(forms.ModelForm):
                 "Imagem inválida. Envie uma imagem PNG, JPG ou JPEG."
             )
             
+        for field_name in ["name", "phone", "email"]:
+            if field_name in self.fields:
+                disable_browser_autocomplete(self.fields[field_name])
+            
     def clean_name(self):
         return normalize_name_words(self.cleaned_data.get("name"))
         
@@ -638,6 +657,10 @@ class VeterinarianForm(forms.ModelForm):
                 "Imagem inválida. Envie uma imagem PNG, JPG ou JPEG."
             )
             
+        for field_name in ["name", "surname", "phone", "email"]:
+            if field_name in self.fields:
+                disable_browser_autocomplete(self.fields[field_name])
+            
     def clean_name(self):
         return normalize_name_words(self.cleaned_data.get("name"))
         
@@ -682,6 +705,10 @@ class PetForm(forms.ModelForm):
             self.fields["photo"].error_messages["invalid_image"] = (
                 "Imagem inválida. Envie uma imagem PNG, JPG ou JPEG."
             )
+            
+        for field_name in ["name", "breed", "tutor"]:
+            if field_name in self.fields:
+                disable_browser_autocomplete(self.fields[field_name])
             
     def clean_name(self):
         return normalize_name_words(self.cleaned_data.get("name"))
@@ -834,6 +861,13 @@ class AdminAuxForm(forms.Form):
 
     notify_phone = forms.CharField(required=False, widget=forms.HiddenInput(), initial="0")
     notify_email = forms.CharField(required=False, widget=forms.HiddenInput(), initial="0")
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        for field_name in ["first_name", "last_name", "phone", "email"]:
+            if field_name in self.fields:
+                disable_browser_autocomplete(self.fields[field_name])
     
     def clean_first_name(self):
         return normalize_name_words(self.cleaned_data.get("first_name"))

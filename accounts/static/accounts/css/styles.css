@@ -2141,3 +2141,16 @@ body.app-body {
         grid-template-columns: 1fr;
     }
 }
+
+/* ===== Meu Perfil: espaçamento dos campos ===== */
+.profile-fields-column .profile-form-group {
+    margin-bottom: 14px;
+}
+
+.profile-fields-column .field-hint {
+    margin-top: 4px;
+}
+
+.profile-fields-column .btn-primary {
+    margin-top: 4px;
+}

@@ -8,32 +8,44 @@
 <div class="card">
     <h2 class="card-title">Dados do usuário</h2>
 
-    <form method="post" enctype="multipart/form-data">
+    <form method="post" enctype="multipart/form-data" autocomplete="off">
         {% csrf_token %}
         <input type="hidden" name="remove_photo" id="id_remove_photo" value="0">
 
         <div class="profile-grid">
             <!-- LADO ESQUERDO: CAMPOS -->
-            <div>
+            <div class="profile-fields-column">
                 <div class="profile-form-group">
                     <label for="id_name">Nome:</label>
                     <input type="text" id="id_name" name="name"
                            value="{{ request.user.first_name|default_if_none:'' }}"
-                           placeholder="Seu nome">
+                           placeholder="Seu nome"
+                           autocomplete="off"
+                           autocapitalize="off"
+                           autocorrect="off"
+                           spellcheck="false">
                 </div>
 
                 <div class="profile-form-group">
                     <label for="id_last_name">Sobrenome:</label>
                     <input type="text" id="id_last_name" name="last_name"
                            value="{{ request.user.last_name|default_if_none:'' }}"
-                           placeholder="Seu sobrenome">
+                           placeholder="Seu sobrenome"
+                           autocomplete="off"
+                           autocapitalize="off"
+                           autocorrect="off"
+                           spellcheck="false">
                 </div>
 
                 <div class="profile-form-group">
                     <label for="id_whatsapp">Telefone:</label>
                     <input type="text" id="id_whatsapp" name="whatsapp"
                            value="{{ profile.whatsapp|default_if_none:'' }}"
-                           placeholder="(XX) XXXX-XXXX">
+                           placeholder="(XX) XXXX-XXXX"
+                           autocomplete="off"
+                           autocapitalize="off"
+                           autocorrect="off"
+                           spellcheck="false">
                     <div class="field-hint">
                         Formato: (XX) 9XXXX-XXXX ou (XX) XXXX-XXXX
                     </div>
@@ -43,13 +55,21 @@
                     <label for="id_email">E-mail:</label>
                     <input type="email" id="id_email" name="email"
                            value="{{ request.user.email|default_if_none:'' }}"
-                           placeholder="exemplo@email.com">
+                           placeholder="exemplo@email.com"
+                           autocomplete="off"
+                           autocapitalize="off"
+                           autocorrect="off"
+                           spellcheck="false">
                 </div>
 
                 <div class="profile-form-group">
                     <label for="id_password">Nova senha:</label>
                     <input type="password" id="id_password" name="password"
-                           placeholder="Deixar em branco para não alterar">
+                           placeholder="Deixar em branco para não alterar"
+                           autocomplete="new-password"
+                           autocapitalize="off"
+                           autocorrect="off"
+                           spellcheck="false">
                     <div class="field-hint">
                         A senha atual não é exibida. Preencha aqui apenas se quiser trocar.
                     </div>
