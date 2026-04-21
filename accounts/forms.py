@@ -845,20 +845,31 @@ class ExamTypeAliasForm(forms.ModelForm):
         model = ExamTypeAlias
         fields = ["abbreviation", "full_name"]
         widgets = {
-            "abbreviation": forms.TextInput(attrs={"placeholder": "Sigla (ex: eco, egc, rx)"}),
-            "full_name": forms.TextInput(attrs={"placeholder": "Nome real do exame (ex: Ecocardiograma)"}),
+            "abbreviation": forms.TextInput(attrs={
+                "placeholder": "Sigla (ex: eco, egc, rx)",
+            }),
+            "full_name": forms.TextInput(attrs={
+                "placeholder": "Nome real do exame (ex: Ecocardiograma)",
+            }),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        for field_name in ["abbreviation", "full_name"]:
+            if field_name in self.fields:
+                disable_browser_autocomplete(self.fields[field_name])
 
     def clean_abbreviation(self):
         abbr = (self.cleaned_data.get("abbreviation") or "").strip().lower()
         if not abbr:
-            raise forms.ValidationError("Informe a sigla.")
+            raise forms.ValidationError("Digite a sigla.")
         return abbr
 
     def clean_full_name(self):
         name = (self.cleaned_data.get("full_name") or "").strip()
         if not name:
-            raise forms.ValidationError("Informe o nome real do exame.")
+            raise forms.ValidationError("Digite o nome do exame.")
         return name
         
 class AdminAuxForm(forms.Form):

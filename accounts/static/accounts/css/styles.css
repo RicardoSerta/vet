@@ -1080,7 +1080,6 @@ body.app-body {
 
 /* vazio (cinza) */
 .notify-bell.notify-empty {
-  cursor: help;
   border-color: #d1d5db;
   background: #f3f4f6;
   opacity: 0.6;
@@ -1105,7 +1104,7 @@ body.app-body {
   border-color: #ef4444 !important;
 }
 
-.notify-bell.notify-empty { cursor: help !important; }
+.notify-bell.notify-empty { cursor: default !important; }
 
 /* ===== Gestão: layout com foto à esquerda ===== */
 .mgmt-form-grid{
@@ -2235,4 +2234,17 @@ body.app-body {
 #multiPdfsDropZone.input-error {
   border-color: #dc2626 !important;
   background: rgba(220, 38, 38, 0.04);
+}
+
+/* ===== Meu Perfil: erro no mesmo estilo do upload ===== */
+.profile-form-group .field-error-text {
+  display: block;
+  margin-top: 2px;
+  color: #b91c1c;
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.profile-form-group .field-error-text + .field-hint {
+  margin-top: 2px;
 }

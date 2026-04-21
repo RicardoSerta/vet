@@ -13,24 +13,46 @@
     </div>
   {% endif %}
 
-  <form method="post" class="exam-upload-form">
+  <form method="post" class="exam-upload-form" id="examTypesForm" autocomplete="off" novalidate>
     {% csrf_token %}
 
     <div class="profile-form-row">
       <div class="profile-form-group">
-        <label for="{{ form.abbreviation.id_for_label }}">Sigla:</label>
-        {{ form.abbreviation }}
-        {% if form.abbreviation.errors %}
-          <div class="field-error">{{ form.abbreviation.errors.0 }}</div>
-        {% endif %}
+        <label for="id_abbreviation">Sigla:</label>
+        <input type="text"
+               name="abbreviation"
+               id="id_abbreviation"
+               value="{{ form.abbreviation.value|default_if_none:'' }}"
+               placeholder="Sigla (ex: eco, egc, rx)"
+               autocomplete="off"
+               autocapitalize="off"
+               autocorrect="off"
+               spellcheck="false"
+               class="{% if form.abbreviation.errors %}input-error{% endif %}">
+        <div class="field-error"
+             id="id_abbreviation_error"
+             {% if not form.abbreviation.errors %}style="display:none;"{% endif %}>
+          {{ form.abbreviation.errors.0 }}
+        </div>
       </div>
 
       <div class="profile-form-group">
-        <label for="{{ form.full_name.id_for_label }}">Exame:</label>
-        {{ form.full_name }}
-        {% if form.full_name.errors %}
-          <div class="field-error">{{ form.full_name.errors.0 }}</div>
-        {% endif %}
+        <label for="id_full_name">Exame:</label>
+        <input type="text"
+               name="full_name"
+               id="id_full_name"
+               value="{{ form.full_name.value|default_if_none:'' }}"
+               placeholder="Nome real do exame (ex: Ecocardiograma)"
+               autocomplete="off"
+               autocapitalize="off"
+               autocorrect="off"
+               spellcheck="false"
+               class="{% if form.full_name.errors %}input-error{% endif %}">
+        <div class="field-error"
+             id="id_full_name_error"
+             {% if not form.full_name.errors %}style="display:none;"{% endif %}>
+          {{ form.full_name.errors.0 }}
+        </div>
       </div>
     </div>
 
@@ -38,5 +60,78 @@
     <a href="{% url 'exam_types' %}" style="margin-left: 10px; font-size: 13px;">Cancelar</a>
   </form>
 </div>
-{% endblock %}
 
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const form = document.getElementById("examTypesForm");
+  const abbrInput = document.getElementById("id_abbreviation");
+  const fullNameInput = document.getElementById("id_full_name");
+
+  function setFieldError(inputEl, errorId, message) {
+    const errorEl = document.getElementById(errorId);
+    if (!inputEl || !errorEl) return;
+
+    if (message) {
+      inputEl.classList.add("input-error");
+      errorEl.textContent = message;
+      errorEl.style.display = "block";
+    } else {
+      inputEl.classList.remove("input-error");
+      errorEl.textContent = "";
+      errorEl.style.display = "none";
+    }
+  }
+
+  function validateAbbreviation() {
+    const value = (abbrInput?.value || "").trim();
+    if (!value) {
+      setFieldError(abbrInput, "id_abbreviation_error", "Digite a sigla.");
+      return false;
+    }
+    setFieldError(abbrInput, "id_abbreviation_error", "");
+    return true;
+  }
+
+  function validateFullName() {
+    const value = (fullNameInput?.value || "").trim();
+    if (!value) {
+      setFieldError(fullNameInput, "id_full_name_error", "Digite o nome do exame.");
+      return false;
+    }
+    setFieldError(fullNameInput, "id_full_name_error", "");
+    return true;
+  }
+
+  if (abbrInput) {
+    abbrInput.addEventListener("input", function () {
+      setFieldError(abbrInput, "id_abbreviation_error", "");
+    });
+  }
+
+  if (fullNameInput) {
+    fullNameInput.addEventListener("input", function () {
+      setFieldError(fullNameInput, "id_full_name_error", "");
+    });
+  }
+
+  if (form) {
+    form.addEventListener("submit", function (e) {
+      const okAbbr = validateAbbreviation();
+      const okFullName = validateFullName();
+
+      if (!okAbbr || !okFullName) {
+        e.preventDefault();
+
+        const firstInvalid =
+          document.querySelector("#id_abbreviation.input-error") ||
+          document.querySelector("#id_full_name.input-error");
+
+        if (firstInvalid) {
+          firstInvalid.focus();
+        }
+      }
+    });
+  }
+});
+</script>
+{% endblock %}

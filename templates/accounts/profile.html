@@ -69,13 +69,13 @@
                            inputmode="numeric"
                            maxlength="15"
                            class="{% if field_errors.whatsapp %}input-error{% endif %}">
-                    <div class="field-hint">
-                        Formato: (XX) 9XXXX-XXXX ou (XX) XXXX-XXXX
-                    </div>
                     <div class="field-error-text"
                          id="id_whatsapp_error"
                          {% if not field_errors.whatsapp %}style="display:none;"{% endif %}>
                         {{ field_errors.whatsapp }}
+                    </div>
+                    <div class="field-hint">
+                        Formato: (XX) 9XXXX-XXXX ou (XX) XXXX-XXXX
                     </div>
                 </div>
 
@@ -129,13 +129,13 @@
                         </button>
                     </div>
 
-                    <div class="field-hint">
-                        A senha atual não é exibida. Preencha aqui apenas se quiser trocar.
-                    </div>
                     <div class="field-error-text"
                          id="id_password_error"
                          {% if not field_errors.password %}style="display:none;"{% endif %}>
                         {{ field_errors.password }}
+                    </div>
+                    <div class="field-hint">
+                        A senha atual não é exibida. Preencha aqui apenas se quiser trocar.
                     </div>
                 </div>
 
