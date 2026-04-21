@@ -443,25 +443,62 @@ def login_view(request):
 def profile_view(request):
     # Garante que exista um Profile para o usuário logado
     profile, created = Profile.objects.get_or_create(user=request.user)
-    
+
     old_email = request.user.email or ""
     old_whatsapp = profile.whatsapp or ""
 
+    field_errors = {}
+    form_values = {
+        "name": request.user.first_name or "",
+        "last_name": request.user.last_name or "",
+        "whatsapp": profile.whatsapp or "",
+        "email": request.user.email or "",
+        "password": "",
+    }
+
     if request.method == 'POST':
-        name = request.POST.get('name') or ''
-        last_name = request.POST.get('last_name') or ''
-        whatsapp = request.POST.get('whatsapp') or ''
-        email = request.POST.get('email') or ''
+        name = (request.POST.get('name') or '').strip()
+        last_name = (request.POST.get('last_name') or '').strip()
+        whatsapp = (request.POST.get('whatsapp') or '').strip()
+        email = (request.POST.get('email') or '').strip().lower()
         new_password = request.POST.get('password') or ''
         photo_file = request.FILES.get('photo')
         remove_photo = (request.POST.get("remove_photo") == "1")
-        
+
+        form_values = {
+            "name": name,
+            "last_name": last_name,
+            "whatsapp": whatsapp,
+            "email": email,
+            "password": new_password,
+        }
+
+        # ===== Validações server-side =====
+        if not name:
+            field_errors["name"] = "Digite seu nome."
+
+        if email:
+            try:
+                validate_email(email)
+            except DjangoValidationError:
+                field_errors["email"] = "E-mail inválido."
+
+        if new_password and len(new_password) < 8:
+            field_errors["password"] = "A senha deve possuir no mínimo 8 caracteres."
+
+        if field_errors:
+            return render(request, 'accounts/profile.html', {
+                'profile': profile,
+                'form_values': form_values,
+                'field_errors': field_errors,
+            })
+
         # Atualiza dados básicos do User
-        request.user.first_name = name.strip()
-        request.user.last_name = last_name.strip()
-        request.user.email = email.strip().lower()
+        request.user.first_name = name
+        request.user.last_name = last_name
+        request.user.email = email
         request.user.save()
-        
+
         # Se for tutor e mudou o email, atualiza os exames antigos para manter acesso
         if profile.role == "TUTOR":
             new_email = (request.user.email or "").strip()
@@ -497,8 +534,8 @@ def profile_view(request):
             request.user.save()
             # Mantém o usuário logado após trocar a senha
             update_session_auth_hash(request, request.user)
-            
-        email_changed = (old_email or "").strip().lower() != (email or "").strip().lower()
+
+        email_changed = (old_email or "").strip().lower() != email
         phone_changed = _phone_digits(old_whatsapp) != _phone_digits(whatsapp)
         contacts_changed = email_changed or phone_changed
 
@@ -537,6 +574,8 @@ def profile_view(request):
 
     context = {
         'profile': profile,
+        'form_values': form_values,
+        'field_errors': field_errors,
     }
     return render(request, 'accounts/profile.html', context)
     

@@ -8,28 +8,46 @@
 <div class="card">
     <h2 class="card-title">Dados do usuário</h2>
 
-    <form method="post" enctype="multipart/form-data" autocomplete="off">
+    <form method="post"
+          enctype="multipart/form-data"
+          autocomplete="off"
+          novalidate
+          id="profileForm">
         {% csrf_token %}
         <input type="hidden" name="remove_photo" id="id_remove_photo" value="0">
+
+        <!-- Campos-isca para reduzir autofill / prompts de gerenciador de senha -->
+        <input type="text" name="fake_username" class="profile-decoy-input" tabindex="-1" autocomplete="username" aria-hidden="true">
+        <input type="password" name="fake_password" class="profile-decoy-input" tabindex="-1" autocomplete="current-password" aria-hidden="true">
 
         <div class="profile-grid">
             <!-- LADO ESQUERDO: CAMPOS -->
             <div class="profile-fields-column">
                 <div class="profile-form-group">
                     <label for="id_name">Nome:</label>
-                    <input type="text" id="id_name" name="name"
-                           value="{{ request.user.first_name|default_if_none:'' }}"
+                    <input type="text"
+                           id="id_name"
+                           name="name"
+                           value="{{ form_values.name }}"
                            placeholder="Seu nome"
                            autocomplete="off"
                            autocapitalize="off"
                            autocorrect="off"
-                           spellcheck="false">
+                           spellcheck="false"
+                           class="{% if field_errors.name %}input-error{% endif %}">
+                    <div class="field-error-text"
+                         id="id_name_error"
+                         {% if not field_errors.name %}style="display:none;"{% endif %}>
+                        {{ field_errors.name }}
+                    </div>
                 </div>
 
                 <div class="profile-form-group">
                     <label for="id_last_name">Sobrenome:</label>
-                    <input type="text" id="id_last_name" name="last_name"
-                           value="{{ request.user.last_name|default_if_none:'' }}"
+                    <input type="text"
+                           id="id_last_name"
+                           name="last_name"
+                           value="{{ form_values.last_name }}"
                            placeholder="Seu sobrenome"
                            autocomplete="off"
                            autocapitalize="off"
@@ -39,8 +57,10 @@
 
                 <div class="profile-form-group">
                     <label for="id_whatsapp">Telefone:</label>
-                    <input type="text" id="id_whatsapp" name="whatsapp"
-                           value="{{ profile.whatsapp|default_if_none:'' }}"
+                    <input type="text"
+                           id="id_whatsapp"
+                           name="whatsapp"
+                           value="{{ form_values.whatsapp }}"
                            placeholder="(XX) XXXX-XXXX"
                            autocomplete="off"
                            autocapitalize="off"
@@ -53,25 +73,49 @@
 
                 <div class="profile-form-group">
                     <label for="id_email">E-mail:</label>
-                    <input type="email" id="id_email" name="email"
-                           value="{{ request.user.email|default_if_none:'' }}"
+                    <input type="email"
+                           id="id_email"
+                           name="email"
+                           value="{{ form_values.email }}"
                            placeholder="exemplo@email.com"
                            autocomplete="off"
                            autocapitalize="off"
                            autocorrect="off"
-                           spellcheck="false">
+                           spellcheck="false"
+                           inputmode="email"
+                           data-lpignore="true"
+                           data-1p-ignore="true"
+                           data-bwignore="true"
+                           class="{% if field_errors.email %}input-error{% endif %}">
+                    <div class="field-error-text"
+                         id="id_email_error"
+                         {% if not field_errors.email %}style="display:none;"{% endif %}>
+                        {{ field_errors.email }}
+                    </div>
                 </div>
 
                 <div class="profile-form-group">
                     <label for="id_password">Nova senha:</label>
-                    <input type="password" id="id_password" name="password"
+                    <input type="password"
+                           id="id_password"
+                           name="password"
+                           value=""
                            placeholder="Deixar em branco para não alterar"
                            autocomplete="new-password"
                            autocapitalize="off"
                            autocorrect="off"
-                           spellcheck="false">
+                           spellcheck="false"
+                           data-lpignore="true"
+                           data-1p-ignore="true"
+                           data-bwignore="true"
+                           class="{% if field_errors.password %}input-error{% endif %}">
                     <div class="field-hint">
                         A senha atual não é exibida. Preencha aqui apenas se quiser trocar.
+                    </div>
+                    <div class="field-error-text"
+                         id="id_password_error"
+                         {% if not field_errors.password %}style="display:none;"{% endif %}>
+                        {{ field_errors.password }}
                     </div>
                 </div>
 
@@ -109,11 +153,108 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+  const form = document.getElementById("profileForm");
+
+  const nameInput = document.getElementById("id_name");
+  const emailInput = document.getElementById("id_email");
+  const passwordInput = document.getElementById("id_password");
+
   const input = document.getElementById("id_photo");
   const img = document.getElementById("mgmt-photo-preview");
   const clearBtn = document.getElementById("mgmt-photo-clear");
   const removeHidden = document.getElementById("id_remove_photo");
   const dropZone = document.getElementById("photoDropZone");
+
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  function setFieldError(inputEl, errorId, message) {
+    const errorEl = document.getElementById(errorId);
+    if (!inputEl || !errorEl) return;
+
+    if (message) {
+      inputEl.classList.add("input-error");
+      errorEl.textContent = message;
+      errorEl.style.display = "block";
+    } else {
+      inputEl.classList.remove("input-error");
+      errorEl.textContent = "";
+      errorEl.style.display = "none";
+    }
+  }
+
+  function validateName() {
+    const value = (nameInput?.value || "").trim();
+    if (!value) {
+      setFieldError(nameInput, "id_name_error", "Digite seu nome.");
+      return false;
+    }
+    setFieldError(nameInput, "id_name_error", "");
+    return true;
+  }
+
+  function validateEmail() {
+    const value = (emailInput?.value || "").trim();
+    if (!value) {
+      setFieldError(emailInput, "id_email_error", "");
+      return true;
+    }
+    if (!EMAIL_RE.test(value)) {
+      setFieldError(emailInput, "id_email_error", "E-mail inválido.");
+      return false;
+    }
+    setFieldError(emailInput, "id_email_error", "");
+    return true;
+  }
+
+  function validatePassword() {
+    const value = passwordInput?.value || "";
+    if (!value) {
+      setFieldError(passwordInput, "id_password_error", "");
+      return true;
+    }
+    if (value.length < 8) {
+      setFieldError(passwordInput, "id_password_error", "A senha deve possuir no mínimo 8 caracteres.");
+      return false;
+    }
+    setFieldError(passwordInput, "id_password_error", "");
+    return true;
+  }
+
+  if (nameInput) {
+    nameInput.addEventListener("input", validateName);
+    nameInput.addEventListener("blur", validateName);
+  }
+
+  if (emailInput) {
+    emailInput.addEventListener("input", validateEmail);
+    emailInput.addEventListener("blur", validateEmail);
+  }
+
+  if (passwordInput) {
+    passwordInput.addEventListener("input", validatePassword);
+    passwordInput.addEventListener("blur", validatePassword);
+  }
+
+  if (form) {
+    form.addEventListener("submit", function (e) {
+      const okName = validateName();
+      const okEmail = validateEmail();
+      const okPassword = validatePassword();
+
+      if (!okName || !okEmail || !okPassword) {
+        e.preventDefault();
+
+        const firstInvalid =
+          document.querySelector("#id_name.input-error") ||
+          document.querySelector("#id_email.input-error") ||
+          document.querySelector("#id_password.input-error");
+
+        if (firstInvalid) {
+          firstInvalid.focus();
+        }
+      }
+    });
+  }
 
   if (!input || !img) return;
 
