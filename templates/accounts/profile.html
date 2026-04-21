@@ -6,7 +6,7 @@
 
 {% block main_content %}
 <div class="card">
-    <h2 class="card-title">Dados do usuário</h2>
+    <h2 class="card-title">Seus dados</h2>
 
     <form method="post"
           enctype="multipart/form-data"
@@ -104,19 +104,31 @@
 
                 <div class="profile-form-group">
                     <label for="id_password">Nova senha:</label>
-                    <input type="password"
-                           id="id_password"
-                           name="password"
-                           value=""
-                           placeholder="Deixar em branco para não alterar"
-                           autocomplete="new-password"
-                           autocapitalize="off"
-                           autocorrect="off"
-                           spellcheck="false"
-                           data-lpignore="true"
-                           data-1p-ignore="true"
-                           data-bwignore="true"
-                           class="{% if field_errors.password %}input-error{% endif %}">
+
+                    <div class="profile-password-wrap">
+                        <input type="password"
+                               id="id_password"
+                               name="password"
+                               value=""
+                               placeholder="Deixar em branco para não alterar"
+                               autocomplete="new-password"
+                               autocapitalize="off"
+                               autocorrect="off"
+                               spellcheck="false"
+                               data-lpignore="true"
+                               data-1p-ignore="true"
+                               data-bwignore="true"
+                               class="{% if field_errors.password %}input-error{% endif %}">
+
+                        <button type="button"
+                                id="id_password_toggle"
+                                class="profile-password-toggle"
+                                aria-label="Exibir senha"
+                                title="Exibir senha">
+                            Exibir
+                        </button>
+                    </div>
+
                     <div class="field-hint">
                         A senha atual não é exibida. Preencha aqui apenas se quiser trocar.
                     </div>
@@ -167,6 +179,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const phoneInput = document.getElementById("id_whatsapp");
   const emailInput = document.getElementById("id_email");
   const passwordInput = document.getElementById("id_password");
+  const passwordToggle = document.getElementById("id_password_toggle");
 
   const input = document.getElementById("id_photo");
   const img = document.getElementById("mgmt-photo-preview");
@@ -192,27 +205,31 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
+  function clearFieldError(inputEl, errorId) {
+    setFieldError(inputEl, errorId, "");
+  }
+
   function validateName() {
     const value = (nameInput?.value || "").trim();
     if (!value) {
       setFieldError(nameInput, "id_name_error", "Digite seu nome.");
       return false;
     }
-    setFieldError(nameInput, "id_name_error", "");
+    clearFieldError(nameInput, "id_name_error");
     return true;
   }
 
   function validateEmail() {
     const value = (emailInput?.value || "").trim();
     if (!value) {
-      setFieldError(emailInput, "id_email_error", "");
+      clearFieldError(emailInput, "id_email_error");
       return true;
     }
     if (!EMAIL_RE.test(value)) {
       setFieldError(emailInput, "id_email_error", "E-mail inválido.");
       return false;
     }
-    setFieldError(emailInput, "id_email_error", "");
+    clearFieldError(emailInput, "id_email_error");
     return true;
   }
 
@@ -238,19 +255,11 @@ document.addEventListener("DOMContentLoaded", function () {
     return result;
   }
 
-  function validatePhone(options = {}) {
-    const force = !!options.force;
+  function validatePhone() {
     const value = (phoneInput?.value || "").trim();
-    const digitsCount = phoneDigits(value).length;
 
     if (!value) {
-      setFieldError(phoneInput, "id_whatsapp_error", "");
-      return true;
-    }
-
-    // Enquanto a pessoa ainda está digitando, não mostramos erro cedo demais.
-    if (!force && digitsCount < 10) {
-      setFieldError(phoneInput, "id_whatsapp_error", "");
+      clearFieldError(phoneInput, "id_whatsapp_error");
       return true;
     }
 
@@ -259,54 +268,70 @@ document.addEventListener("DOMContentLoaded", function () {
       return false;
     }
 
-    setFieldError(phoneInput, "id_whatsapp_error", "");
+    clearFieldError(phoneInput, "id_whatsapp_error");
     return true;
   }
 
   function validatePassword() {
     const value = passwordInput?.value || "";
     if (!value) {
-      setFieldError(passwordInput, "id_password_error", "");
+      clearFieldError(passwordInput, "id_password_error");
       return true;
     }
     if (value.length < 8) {
       setFieldError(passwordInput, "id_password_error", "A senha deve possuir no mínimo 8 caracteres.");
       return false;
     }
-    setFieldError(passwordInput, "id_password_error", "");
+    clearFieldError(passwordInput, "id_password_error");
     return true;
-  }
-
-  if (nameInput) {
-    nameInput.addEventListener("input", validateName);
-    nameInput.addEventListener("blur", validateName);
   }
 
   if (phoneInput) {
     phoneInput.addEventListener("input", function () {
       phoneInput.value = formatPhoneValue(phoneInput.value);
-      validatePhone({ force: false });
+      clearFieldError(phoneInput, "id_whatsapp_error");
     });
+  }
 
-    phoneInput.addEventListener("blur", function () {
-      validatePhone({ force: true });
+  if (nameInput) {
+    nameInput.addEventListener("input", function () {
+      clearFieldError(nameInput, "id_name_error");
     });
   }
 
   if (emailInput) {
-    emailInput.addEventListener("input", validateEmail);
-    emailInput.addEventListener("blur", validateEmail);
+    emailInput.addEventListener("input", function () {
+      clearFieldError(emailInput, "id_email_error");
+    });
   }
 
   if (passwordInput) {
-    passwordInput.addEventListener("input", validatePassword);
-    passwordInput.addEventListener("blur", validatePassword);
+    passwordInput.addEventListener("input", function () {
+      clearFieldError(passwordInput, "id_password_error");
+    });
+  }
+
+  if (passwordInput && passwordToggle) {
+    function syncPasswordToggle() {
+      const isVisible = passwordInput.type === "text";
+      passwordToggle.textContent = isVisible ? "Ocultar" : "Exibir";
+      passwordToggle.setAttribute("aria-label", isVisible ? "Ocultar senha" : "Exibir senha");
+      passwordToggle.setAttribute("title", isVisible ? "Ocultar senha" : "Exibir senha");
+    }
+
+    passwordToggle.addEventListener("click", function () {
+      passwordInput.type = (passwordInput.type === "password") ? "text" : "password";
+      syncPasswordToggle();
+      passwordInput.focus();
+    });
+
+    syncPasswordToggle();
   }
 
   if (form) {
     form.addEventListener("submit", function (e) {
       const okName = validateName();
-      const okPhone = validatePhone({ force: true });
+      const okPhone = validatePhone();
       const okEmail = validateEmail();
       const okPassword = validatePassword();
 
