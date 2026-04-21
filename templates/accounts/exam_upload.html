@@ -26,9 +26,11 @@
                 {{ form.clinic_or_vet }}
                 {{ form.notify_provider }}
 
-                {% if form.clinic_or_vet.errors %}
-                    <div class="field-error">{{ form.clinic_or_vet.errors.0 }}</div>
-                {% endif %}
+                <div class="field-error"
+                     id="id_clinic_or_vet_error"
+                     {% if not form.clinic_or_vet.errors %}style="display: none;"{% endif %}>
+                    {{ form.clinic_or_vet.errors.0 }}
+                </div>
 
                 <div class="provider-notify-line">
                     <button type="button"
@@ -50,9 +52,11 @@
                         <span class="file-count" id="main-pdf-name">Nenhum arquivo selecionado</span>
                     </div>
 
-                    {% if form.pdf_file.errors %}
-                        <div class="field-error">{{ form.pdf_file.errors.0 }}</div>
-                    {% endif %}
+                    <div class="field-error"
+                         id="id_pdf_file_error"
+                         {% if not form.pdf_file.errors %}style="display: none;"{% endif %}>
+                        {{ form.pdf_file.errors.0 }}
+                    </div>
 
                     <div class="field-hint">
                         Formato do nome:
@@ -67,7 +71,8 @@
 
 
         <!-- CAMPOS OPCIONAIS (SUSPENSO) -->
-        <details class="optional-fields">
+        <details class="optional-fields" id="optional-fields"
+          {% if form.tutor_phone.errors or form.tutor_email.errors or form.retorno_previsto.errors or form.retorno_horario.errors or form.extra_files.errors or form.observations.errors %}open{% endif %}>
           <summary class="optional-fields-summary">
             Preencher campos opcionais
           </summary>
@@ -87,9 +92,11 @@
                           title="Notificar tutor via WhatsApp">🔔</button>
                 </div>
 
-                {% if form.tutor_phone.errors %}
-                  <div class="field-error">{{ form.tutor_phone.errors.0 }}</div>
-                {% endif %}
+                <div class="field-error"
+                     id="id_tutor_phone_error"
+                     {% if not form.tutor_phone.errors %}style="display: none;"{% endif %}>
+                  {{ form.tutor_phone.errors.0 }}
+                </div>
                 <div class="field-hint">
                   Formato: (XX) 9XXXX-XXXX ou (XX) XXXX-XXXX
                 </div>
@@ -107,9 +114,11 @@
                           title="Notificar tutor via e-mail">🔔</button>
                 </div>
 
-                {% if form.tutor_email.errors %}
-                  <div class="field-error">{{ form.tutor_email.errors.0 }}</div>
-                {% endif %}
+                <div class="field-error"
+                     id="id_tutor_email_error"
+                     {% if not form.tutor_email.errors %}style="display: none;"{% endif %}>
+                  {{ form.tutor_email.errors.0 }}
+                </div>
               </div>
             </div>
             
@@ -627,7 +636,7 @@ document.addEventListener("DOMContentLoaded", function () {
       hidden.value = "0";
       bell.dataset.userToggled = "";
       applyState(bell, "empty");
-      bell.title = "Celular inválido.";
+      bell.title = "Número de telefone inválido.";
       bell.dataset.eligible = "0";
       return;
     }
@@ -667,7 +676,7 @@ document.addEventListener("DOMContentLoaded", function () {
       hidden.value = "0";
       bell.dataset.userToggled = "";
       applyState(bell, "empty");
-      bell.title = "E-mail inválido.";
+      bell.title = "Endereço de e-mail inválido.";
       bell.dataset.eligible = "0";
       return;
     }
@@ -704,30 +713,171 @@ document.addEventListener("DOMContentLoaded", function () {
 </script>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-  const phone = document.getElementById("id_tutor_phone");
-  const email = document.getElementById("id_tutor_email");
+  const form = document.querySelector(".exam-upload-form");
+  const optionalFields = document.getElementById("optional-fields");
 
-  if (phone) {
-    phone.addEventListener("invalid", function () {
-      if ((phone.value || "").trim()) {
-        phone.setCustomValidity("Celular inválido.");
-      } else {
-        phone.setCustomValidity("");
-      }
-    });
-    phone.addEventListener("input", () => phone.setCustomValidity(""));
+  const providerSelect = document.getElementById("id_clinic_or_vet");
+  const providerError = document.getElementById("id_clinic_or_vet_error");
+
+  const mainPdfInput = document.getElementById("id_pdf_file");
+  const mainPdfBtn = document.getElementById("main-pdf-btn");
+  const mainPdfZone = document.getElementById("mainPdfDropZone");
+  const mainPdfError = document.getElementById("id_pdf_file_error");
+
+  const phoneInput = document.getElementById("id_tutor_phone");
+  const phoneError = document.getElementById("id_tutor_phone_error");
+
+  const emailInput = document.getElementById("id_tutor_email");
+  const emailError = document.getElementById("id_tutor_email_error");
+
+  const PHONE_RE = /^\(\d{2}\)\s?(\d{4}-\d{4}|9\d{4}-\d{4})$/;
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  function setFieldError(inputEl, errorEl, message) {
+    if (inputEl) inputEl.classList.add("input-error");
+    if (!errorEl) return;
+
+    errorEl.textContent = message;
+    errorEl.style.display = "block";
   }
 
-  if (email) {
-    email.addEventListener("invalid", function () {
-      if ((email.value || "").trim()) {
-        email.setCustomValidity("E-mail inválido.");
-      } else {
-        email.setCustomValidity("");
-      }
-    });
-    email.addEventListener("input", () => email.setCustomValidity(""));
+  function clearFieldError(inputEl, errorEl) {
+    if (inputEl) inputEl.classList.remove("input-error");
+    if (!errorEl) return;
+
+    errorEl.textContent = "";
+    errorEl.style.display = "none";
   }
+
+  function setZoneError(zoneEl, errorEl, message) {
+    if (zoneEl) zoneEl.classList.add("input-error");
+    if (!errorEl) return;
+
+    errorEl.textContent = message;
+    errorEl.style.display = "block";
+  }
+
+  function clearZoneError(zoneEl, errorEl) {
+    if (zoneEl) zoneEl.classList.remove("input-error");
+    if (!errorEl) return;
+
+    errorEl.textContent = "";
+    errorEl.style.display = "none";
+  }
+
+  function validateProvider() {
+    const value = (providerSelect?.value || "").trim();
+    if (!value) {
+      setFieldError(providerSelect, providerError, "Selecione uma clínica ou veterinário da lista.");
+      return false;
+    }
+    clearFieldError(providerSelect, providerError);
+    return true;
+  }
+
+  function validateMainPdf() {
+    const hasFile = !!(mainPdfInput && mainPdfInput.files && mainPdfInput.files.length > 0);
+    if (!hasFile) {
+      setZoneError(mainPdfZone, mainPdfError, "Selecione um arquivo.");
+      return false;
+    }
+    clearZoneError(mainPdfZone, mainPdfError);
+    return true;
+  }
+
+  function validatePhone() {
+    const value = (phoneInput?.value || "").trim();
+    if (!value) {
+      clearFieldError(phoneInput, phoneError);
+      return true;
+    }
+
+    if (!PHONE_RE.test(value)) {
+      setFieldError(phoneInput, phoneError, "Número de telefone inválido.");
+      return false;
+    }
+
+    clearFieldError(phoneInput, phoneError);
+    return true;
+  }
+
+  function validateEmail() {
+    const value = (emailInput?.value || "").trim();
+    if (!value) {
+      clearFieldError(emailInput, emailError);
+      return true;
+    }
+
+    if (!EMAIL_RE.test(value)) {
+      setFieldError(emailInput, emailError, "Endereço de e-mail inválido.");
+      return false;
+    }
+
+    clearFieldError(emailInput, emailError);
+    return true;
+  }
+
+  if (providerSelect) {
+    providerSelect.addEventListener("change", function () {
+      clearFieldError(providerSelect, providerError);
+    });
+  }
+
+  if (mainPdfInput) {
+    mainPdfInput.addEventListener("change", function () {
+      clearZoneError(mainPdfZone, mainPdfError);
+    });
+  }
+
+  if (phoneInput) {
+    phoneInput.addEventListener("input", function () {
+      clearFieldError(phoneInput, phoneError);
+    });
+  }
+
+  if (emailInput) {
+    emailInput.addEventListener("input", function () {
+      clearFieldError(emailInput, emailError);
+    });
+  }
+
+  if (!form) return;
+
+  form.addEventListener("submit", function (e) {
+    const okProvider = validateProvider();
+    const okPdf = validateMainPdf();
+    const okPhone = validatePhone();
+    const okEmail = validateEmail();
+
+    if (!okProvider || !okPdf || !okPhone || !okEmail) {
+      e.preventDefault();
+
+      if ((!okPhone || !okEmail) && optionalFields) {
+        optionalFields.open = true;
+      }
+
+      if (!okProvider && providerSelect) {
+        providerSelect.focus();
+        return;
+      }
+
+      if (!okPdf) {
+        if (mainPdfBtn) {
+          mainPdfBtn.focus();
+        }
+        return;
+      }
+
+      if (!okPhone && phoneInput) {
+        phoneInput.focus();
+        return;
+      }
+
+      if (!okEmail && emailInput) {
+        emailInput.focus();
+      }
+    }
+  });
 });
 </script>
 <script>

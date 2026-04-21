@@ -138,6 +138,9 @@ class ExamUploadForm(forms.Form):
     clinic_or_vet = forms.ChoiceField(
         label='Clínica / Veterinário',
         choices=[],
+        error_messages={
+            "required": "Selecione uma clínica ou veterinário da lista.",
+        },
         widget=forms.Select(attrs={
             "class": "clinic-vet-select",
         })
@@ -160,7 +163,7 @@ class ExamUploadForm(forms.Form):
         max_length=255,
         required=False,
         error_messages={
-            "invalid": "Informe um e-mail válido (ex: nome@email.com)."
+            "invalid": "Endereço de e-mail inválido."
         },
         widget=forms.EmailInput(attrs={
             "placeholder": "exemplo@email.com",
@@ -208,6 +211,9 @@ class ExamUploadForm(forms.Form):
 
     pdf_file = forms.FileField(
         required=True,
+        error_messages={
+            "required": "Selecione um arquivo.",
+        },
         widget=forms.ClearableFileInput(attrs={
             "accept": "application/pdf",
             "class": "file-input-hidden",
@@ -260,7 +266,7 @@ class ExamUploadForm(forms.Form):
     def clean_clinic_or_vet(self):
         value = self.cleaned_data.get('clinic_or_vet')
         if not value:
-            raise forms.ValidationError("Selecione uma clínica ou veterinário.")
+            raise forms.ValidationError("Selecione uma clínica ou veterinário da lista.")
         return value
         
     def clean_additional_clinic_or_vet(self):
@@ -274,7 +280,7 @@ class ExamUploadForm(forms.Form):
         if phone:
             pattern = r'^\(\d{2}\)\s?(\d{4}-\d{4}|9\d{4}-\d{4})$'
             if not re.match(pattern, phone):
-                raise forms.ValidationError("Use o formato (XX) XXXX-XXXX ou (XX) 9XXXX-XXXX.")
+                raise forms.ValidationError("Número de telefone inválido.")
         return phone
         
     def clean_retorno_previsto(self):

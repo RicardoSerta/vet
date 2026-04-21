@@ -2222,3 +2222,16 @@ body.app-body {
     outline: none;
     color: #111827;
 }
+
+/* ===== Upload de exame: validação client-side ===== */
+.exam-upload-form select.input-error,
+.exam-upload-form input.input-error,
+.exam-upload-form textarea.input-error {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.12);
+}
+
+#mainPdfDropZone.input-error {
+  border-color: #dc2626 !important;
+  background: rgba(220, 38, 38, 0.04);
+}
