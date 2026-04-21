@@ -7,7 +7,7 @@
 <div class="card">
     <h2 class="card-title">Fazer upload de vários exames</h2>
 
-    <form method="post" enctype="multipart/form-data" class="exam-upload-form">
+    <form method="post" enctype="multipart/form-data" class="exam-upload-form" novalidate autocomplete="off">
       {% csrf_token %}
 
       <!-- LINHA 1: CLÍNICA/VET (linha inteira) -->
@@ -17,9 +17,11 @@
           {{ form.clinic_or_vet }}
           {{ form.notify_provider }}
 
-          {% if form.clinic_or_vet.errors %}
-            <div class="field-error">{{ form.clinic_or_vet.errors.0 }}</div>
-          {% endif %}
+          <div class="field-error"
+               id="id_multi_clinic_or_vet_error"
+               {% if not form.clinic_or_vet.errors %}style="display: none;"{% endif %}>
+            {{ form.clinic_or_vet.errors.0 }}
+          </div>
 
           <div class="provider-notify-line provider-notify-line-multi">
             <button type="button"
@@ -47,9 +49,11 @@
 
             <div id="multi-pdfs-list" class="file-list"></div>
 
-            {% if form.pdf_files.errors %}
-              <div class="field-error">{{ form.pdf_files.errors.0 }}</div>
-            {% endif %}
+            <div class="field-error"
+                 id="id_multi_pdf_files_error"
+                 {% if not form.pdf_files.errors %}style="display: none;"{% endif %}>
+              {{ form.pdf_files.errors.0 }}
+            </div>
 
             <div class="field-hint">
               Formato do nome: <strong>Laudo Pet Raça Tutor Exame DD.MM.YYYY.pdf</strong><br>
@@ -240,6 +244,90 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   syncProviderNotify();
+});
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const form = document.querySelector(".exam-upload-form");
+  const providerSelect = document.getElementById("id_clinic_or_vet");
+  const providerError = document.getElementById("id_multi_clinic_or_vet_error");
+
+  const pdfInput = document.getElementById("id_pdf_files");
+  const pdfBtn = document.getElementById("multi-pdfs-btn");
+  const pdfZone = document.getElementById("multiPdfsDropZone");
+  const pdfError = document.getElementById("id_multi_pdf_files_error");
+
+  if (!form || !providerSelect || !providerError || !pdfInput || !pdfZone || !pdfError) return;
+
+  function setFieldError(inputEl, errorEl, message) {
+    if (inputEl) inputEl.classList.add("input-error");
+    errorEl.textContent = message;
+    errorEl.style.display = "block";
+  }
+
+  function clearFieldError(inputEl, errorEl) {
+    if (inputEl) inputEl.classList.remove("input-error");
+    errorEl.textContent = "";
+    errorEl.style.display = "none";
+  }
+
+  function setZoneError(zoneEl, errorEl, message) {
+    if (zoneEl) zoneEl.classList.add("input-error");
+    errorEl.textContent = message;
+    errorEl.style.display = "block";
+  }
+
+  function clearZoneError(zoneEl, errorEl) {
+    if (zoneEl) zoneEl.classList.remove("input-error");
+    errorEl.textContent = "";
+    errorEl.style.display = "none";
+  }
+
+  function validateProvider() {
+    const value = (providerSelect.value || "").trim();
+    if (!value) {
+      setFieldError(providerSelect, providerError, "Selecione uma clínica ou veterinário da lista.");
+      return false;
+    }
+    clearFieldError(providerSelect, providerError);
+    return true;
+  }
+
+  function validatePdfFiles() {
+    const hasFiles = !!(pdfInput.files && pdfInput.files.length > 0);
+    if (!hasFiles) {
+      setZoneError(pdfZone, pdfError, "Selecione um arquivo.");
+      return false;
+    }
+    clearZoneError(pdfZone, pdfError);
+    return true;
+  }
+
+  providerSelect.addEventListener("change", function () {
+    clearFieldError(providerSelect, providerError);
+  });
+
+  pdfInput.addEventListener("change", function () {
+    clearZoneError(pdfZone, pdfError);
+  });
+
+  form.addEventListener("submit", function (e) {
+    const okProvider = validateProvider();
+    const okPdf = validatePdfFiles();
+
+    if (!okProvider || !okPdf) {
+      e.preventDefault();
+
+      if (!okProvider) {
+        providerSelect.focus();
+        return;
+      }
+
+      if (!okPdf && pdfBtn) {
+        pdfBtn.focus();
+      }
+    }
+  });
 });
 </script>
 {% endblock %}

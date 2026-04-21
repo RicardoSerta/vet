@@ -16,7 +16,7 @@
         </div>
     {% endif %}
 
-    <form method="post" enctype="multipart/form-data" class="exam-upload-form" novalidate>
+    <form method="post" enctype="multipart/form-data" class="exam-upload-form" novalidate autocomplete="off">
         {% csrf_token %}
 
         <!-- PRIMEIRA LINHA: Clínica / Vet + Arquivo PDF -->
@@ -78,10 +78,10 @@
           </summary>
 
           <div class="optional-fields-body">
-            <!-- Celular + E-mail -->
+            <!-- Telefone + E-mail -->
             <div class="profile-form-row" style="margin-top: 12px;">
               <div class="profile-form-group">
-                <label for="{{ form.tutor_phone.id_for_label }}">Celular Tutor:</label>
+                <label for="{{ form.tutor_phone.id_for_label }}">Telefone Tutor:</label>
 
                 <div class="notify-input-wrap">
                   {{ form.tutor_phone }}
@@ -921,6 +921,7 @@ document.addEventListener("DOMContentLoaded", function () {
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   const form = document.querySelector(".exam-upload-form");
+  const optionalFields = document.getElementById("optional-fields");
   const dateInput = document.getElementById("id_retorno_previsto");
   const timeInput = document.getElementById("id_retorno_horario");
   const dateError = document.getElementById("retorno-date-client-error");
@@ -962,19 +963,35 @@ document.addEventListener("DOMContentLoaded", function () {
     );
   }
 
-  function showError(target, message) {
+  function showError(target, input, message) {
     target.textContent = message;
     target.style.display = "block";
+    if (input) input.classList.add("input-error");
   }
 
-  function clearError(target) {
+  function clearError(target, input) {
     target.textContent = "";
     target.style.display = "none";
+    if (input) input.classList.remove("input-error");
   }
 
   function clearRetornoErrors() {
-    clearError(dateError);
-    clearError(timeError);
+    clearError(dateError, dateInput);
+    clearError(timeError, timeInput);
+  }
+
+  function hasNativeInvalidDate() {
+    return !!(
+      dateInput.validity &&
+      (dateInput.validity.badInput || (dateInput.matches(":invalid") && (dateInput.value || document.activeElement === dateInput)))
+    );
+  }
+
+  function hasNativeInvalidTime() {
+    return !!(
+      timeInput.validity &&
+      (timeInput.validity.badInput || (timeInput.matches(":invalid") && (timeInput.value || document.activeElement === timeInput)))
+    );
   }
 
   function validateRetorno(showErrors = false) {
@@ -987,36 +1004,46 @@ document.addEventListener("DOMContentLoaded", function () {
     const dateValue = (dateInput.value || "").trim();
     const timeValue = (timeInput.value || "").trim();
 
-    // Se a data foi digitada mas está em formato inválido
+    if (hasNativeInvalidDate()) {
+      if (showErrors) {
+        showError(dateError, dateInput, "Insira uma data válida.");
+      }
+      return false;
+    }
+
+    if (hasNativeInvalidTime()) {
+      if (showErrors) {
+        showError(timeError, timeInput, "Informe um horário válido.");
+      }
+      return false;
+    }
+
     if (dateValue && !isValidIsoDate(dateValue)) {
       if (showErrors) {
-        showError(dateError, "Insira uma data válida.");
+        showError(dateError, dateInput, "Insira uma data válida.");
       }
       return false;
     }
 
-    // Se a data é passada
     if (dateValue && dateValue < today) {
       if (showErrors) {
-        showError(dateError, "Escolha uma data a partir de hoje.");
+        showError(dateError, dateInput, "Escolha uma data a partir de hoje.");
       }
       return false;
     }
 
-    // Se preencheu hoje sem horário e já passou de 12:00
     if (dateValue === today && !timeValue && nowMinutes >= noonMinutes) {
       if (showErrors) {
-        showError(timeError, "Como o retorno é para hoje, informe o horário.");
+        showError(timeError, timeInput, "Como o retorno é para hoje, informe o horário.");
       }
       return false;
     }
 
-    // Se preencheu hoje com horário que já passou
     if (dateValue === today && timeValue) {
       const selectedMinutes = timeToMinutes(timeValue);
       if (selectedMinutes !== null && selectedMinutes <= nowMinutes) {
         if (showErrors) {
-          showError(timeError, "Escolha uma data e horário futuros.");
+          showError(timeError, timeInput, "Escolha uma data e horário futuros.");
         }
         return false;
       }
@@ -1049,13 +1076,15 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!retornoOk) {
       e.preventDefault();
 
+      if (optionalFields) {
+        optionalFields.open = true;
+      }
+
       if (dateError.style.display !== "none") {
         dateInput.focus();
       } else if (timeError.style.display !== "none") {
         timeInput.focus();
       }
-
-      return;
     }
   });
 });

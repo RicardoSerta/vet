@@ -126,7 +126,10 @@ class MultipleFileField(forms.FileField):
 
     def validate(self, data):
         if self.required and not data:
-            raise forms.ValidationError("Selecione pelo menos um arquivo PDF.")
+            raise forms.ValidationError(
+                self.error_messages.get("required", "Selecione um arquivo."),
+                code="required",
+            )
 
 
 
@@ -147,14 +150,18 @@ class ExamUploadForm(forms.Form):
     )
 
     tutor_phone = forms.CharField(
-        label='Celular do tutor',
+        label='Telefone do tutor',
         max_length=20,
         required=False,
         widget=forms.TextInput(attrs={
             'placeholder': '(XX) XXXX-XXXX',
-            # HTML5: só valida se tiver algo preenchido
             'pattern': r'^\(\d{2}\)\s?(\d{4}-\d{4}|9\d{4}-\d{4})$',
             'title': 'Use (XX) XXXX-XXXX ou (XX) 9XXXX-XXXX',
+            'autocomplete': 'off',
+            'autocapitalize': 'off',
+            'autocorrect': 'off',
+            'spellcheck': 'false',
+            'inputmode': 'numeric',
         })
     )
 
@@ -167,6 +174,11 @@ class ExamUploadForm(forms.Form):
         },
         widget=forms.EmailInput(attrs={
             "placeholder": "exemplo@email.com",
+            "autocomplete": "off",
+            "autocapitalize": "off",
+            "autocorrect": "off",
+            "spellcheck": "false",
+            "inputmode": "email",
         })
     )
     
@@ -262,6 +274,10 @@ class ExamUploadForm(forms.Form):
             ('Clínicas', clinic_choices),
             ('Veterinários', vet_choices),
         ]
+        
+        for field_name in ["clinic_or_vet", "tutor_phone", "tutor_email"]:
+            if field_name in self.fields:
+                disable_browser_autocomplete(self.fields[field_name])
         
     def clean_clinic_or_vet(self):
         value = self.cleaned_data.get('clinic_or_vet')
@@ -764,6 +780,9 @@ class MultiExamUploadForm(forms.Form):
     clinic_or_vet = forms.ChoiceField(
         label='Clínica / Veterinário',
         choices=[],
+        error_messages={
+            "required": "Selecione uma clínica ou veterinário da lista.",
+        },
         widget=forms.Select(attrs={
             "class": "clinic-vet-select",
         })
@@ -771,6 +790,9 @@ class MultiExamUploadForm(forms.Form):
 
     pdf_files = MultipleFileField(
         required=True,
+        error_messages={
+            "required": "Selecione um arquivo.",
+        },
         widget=MultipleFileInput(attrs={
             "multiple": True,
             "accept": "application/pdf",
@@ -796,11 +818,15 @@ class MultiExamUploadForm(forms.Form):
             ('Clínicas', clinic_choices),
             ('Veterinários', vet_choices),
         ]
+        
+        for field_name in ["clinic_or_vet"]:
+            if field_name in self.fields:
+                disable_browser_autocomplete(self.fields[field_name])
 
     def clean_clinic_or_vet(self):
         value = self.cleaned_data.get('clinic_or_vet')
         if not value:
-            raise forms.ValidationError("Selecione uma clínica ou veterinário.")
+            raise forms.ValidationError("Selecione uma clínica ou veterinário da lista.")
         return value
 
     def clean_pdf_files(self):
