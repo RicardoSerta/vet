@@ -8,65 +8,199 @@
 <div class="card">
     <h2 class="card-title">Dados do usuário</h2>
 
-    <div class="profile-grid">
-        <!-- FORMULÁRIO -->
-        <div>
-            <form method="post" enctype="multipart/form-data">
-                {% csrf_token %}
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="hidden" name="remove_photo" id="id_remove_photo" value="0">
 
-                <div class="profile-form-row">
-                    <div class="profile-form-group">
-                        <label for="id_name">Nome:</label>
-                        <input type="text" id="id_name" name="name"
-                               value="{{ request.user.first_name }}">
-                    </div>
+        <div class="profile-grid">
+            <!-- LADO ESQUERDO: CAMPOS -->
+            <div>
+                <div class="profile-form-group">
+                    <label for="id_name">Nome:</label>
+                    <input type="text" id="id_name" name="name"
+                           value="{{ request.user.first_name|default_if_none:'' }}"
+                           placeholder="Seu nome">
+                </div>
 
-                    <div class="profile-form-group">
-                        <label for="id_email">E-mail:</label>
-                        <input type="email" id="id_email" name="email"
-                               value="{{ request.user.email }}">
+                <div class="profile-form-group">
+                    <label for="id_last_name">Sobrenome:</label>
+                    <input type="text" id="id_last_name" name="last_name"
+                           value="{{ request.user.last_name|default_if_none:'' }}"
+                           placeholder="Seu sobrenome">
+                </div>
+
+                <div class="profile-form-group">
+                    <label for="id_whatsapp">Telefone:</label>
+                    <input type="text" id="id_whatsapp" name="whatsapp"
+                           value="{{ profile.whatsapp|default_if_none:'' }}"
+                           placeholder="(XX) XXXX-XXXX">
+                    <div class="field-hint">
+                        Formato: (XX) 9XXXX-XXXX ou (XX) XXXX-XXXX
                     </div>
                 </div>
 
-                <div class="profile-form-row">
-                    <div class="profile-form-group">
-                        <label for="id_whatsapp">Telefone:</label>
-                        <input type="text" id="id_whatsapp" name="whatsapp"
-                               value="{{ profile.whatsapp }}">
-                    </div>
-
-                    <div class="profile-form-group">
-                        <label for="id_password">Nova senha:</label>
-                        <input type="password" id="id_password" name="password" placeholder="Deixar em branco para não alterar">
-                        <div class="field-hint">
-                            A senha atual não é exibida. Preencha aqui apenas se quiser trocar.
-                        </div>
-                    </div>
+                <div class="profile-form-group">
+                    <label for="id_email">E-mail:</label>
+                    <input type="email" id="id_email" name="email"
+                           value="{{ request.user.email|default_if_none:'' }}"
+                           placeholder="exemplo@email.com">
                 </div>
 
-                <div class="profile-form-row">
-                    <div class="profile-form-group">
-                        <label for="id_photo">Foto de perfil:</label>
-                        <input type="file" id="id_photo" name="photo" accept="image/*">
-                        <div class="field-hint">
-                            Envie uma imagem quadrada, de preferência.
-                        </div>
+                <div class="profile-form-group">
+                    <label for="id_password">Nova senha:</label>
+                    <input type="password" id="id_password" name="password"
+                           placeholder="Deixar em branco para não alterar">
+                    <div class="field-hint">
+                        A senha atual não é exibida. Preencha aqui apenas se quiser trocar.
                     </div>
                 </div>
 
                 <button type="submit" class="btn-primary">Salvar alterações</button>
-            </form>
-        </div>
+            </div>
 
-        <!-- FOTO GRANDE AO LADO -->
-        <div class="profile-photo-card">
-            {% if profile.photo %}
-                <img src="{{ profile.photo.url }}" alt="Foto de perfil" class="profile-photo">
-            {% else %}
-                <img src="{% static 'accounts/img/avatar-placeholder.png' %}" alt="Foto de perfil" class="profile-photo">
-            {% endif %}
+            <!-- LADO DIREITO: FOTO NO ESTILO DA GESTÃO -->
+            <div class="profile-photo-side">
+                <div class="mgmt-photo-card">
+                    <div class="mgmt-photo-title">Foto de perfil</div>
+
+                    <div id="photoDropZone" class="mgmt-photo-preview-wrap" title="Arraste e solte uma imagem aqui (PNG/JPG/JPEG)">
+                        <img
+                            id="mgmt-photo-preview"
+                            class="mgmt-photo-preview"
+                            src="{% if profile.photo %}{{ profile.photo.url }}{% else %}{% static 'accounts/img/avatar-placeholder.png' %}{% endif %}"
+                            data-original="{% if profile.photo %}{{ profile.photo.url }}{% else %}{% static 'accounts/img/avatar-placeholder.png' %}{% endif %}"
+                            data-placeholder="{% static 'accounts/img/avatar-placeholder.png' %}"
+                            alt="Foto de perfil"
+                        >
+                    </div>
+
+                    <div class="mgmt-photo-actions">
+                        <label class="btn-file mgmt-photo-btn" for="id_photo">Escolher imagem</label>
+                        <input type="file" name="photo" id="id_photo" accept=".png,.jpg,.jpeg" class="mgmt-photo-input">
+                        <button type="button" class="btn-file mgmt-photo-clear" id="mgmt-photo-clear">Remover</button>
+                    </div>
+
+                    <div class="mgmt-photo-hint">Envie uma imagem quadrada, de preferência.</div>
+                </div>
+            </div>
         </div>
-    </div>
+    </form>
 </div>
-{% endblock %}
 
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const input = document.getElementById("id_photo");
+  const img = document.getElementById("mgmt-photo-preview");
+  const clearBtn = document.getElementById("mgmt-photo-clear");
+  const removeHidden = document.getElementById("id_remove_photo");
+  const dropZone = document.getElementById("photoDropZone");
+
+  if (!input || !img) return;
+
+  const placeholder = img.dataset.placeholder || img.getAttribute("src");
+  let currentObjectUrl = null;
+
+  const ALLOWED_EXTS = [".png", ".jpg", ".jpeg"];
+
+  function allowedFile(file) {
+    const name = (file && file.name ? file.name.toLowerCase() : "");
+    return ALLOWED_EXTS.some(ext => name.endsWith(ext));
+  }
+
+  function setPreview(url) {
+    img.src = url;
+  }
+
+  function setFileToInput(file) {
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    input.files = dt.files;
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  img.addEventListener("click", () => input.click());
+
+  if (dropZone) {
+    dropZone.addEventListener("click", (e) => {
+      if (e.target === img) return;
+      input.click();
+    });
+  }
+
+  input.addEventListener("change", function () {
+    const file = input.files && input.files[0];
+
+    if (removeHidden) removeHidden.value = "0";
+
+    if (!file) {
+      const original = img.dataset.original || placeholder;
+      setPreview(original);
+      return;
+    }
+
+    if (!allowedFile(file)) {
+      alert("Formato inválido. Envie uma imagem PNG, JPG ou JPEG.");
+      input.value = "";
+      setPreview(placeholder);
+      return;
+    }
+
+    if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
+    currentObjectUrl = URL.createObjectURL(file);
+    setPreview(currentObjectUrl);
+  });
+
+  if (clearBtn) {
+    clearBtn.addEventListener("click", function () {
+      if (removeHidden) removeHidden.value = "1";
+      input.value = "";
+
+      if (currentObjectUrl) {
+        URL.revokeObjectURL(currentObjectUrl);
+        currentObjectUrl = null;
+      }
+
+      setPreview(placeholder);
+    });
+  }
+
+  function bindDropZone(zone, onFiles) {
+    if (!zone) return;
+
+    ["dragenter", "dragover"].forEach(evt => {
+      zone.addEventListener(evt, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        zone.classList.add("dragover");
+      });
+    });
+
+    ["dragleave", "drop"].forEach(evt => {
+      zone.addEventListener(evt, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        zone.classList.remove("dragover");
+      });
+    });
+
+    zone.addEventListener("drop", (e) => {
+      const files = Array.from(e.dataTransfer?.files || []);
+      if (files.length) onFiles(files);
+    });
+  }
+
+  bindDropZone(dropZone, (files) => {
+    const f = files[0];
+    if (!f) return;
+
+    if (!allowedFile(f)) {
+      alert("Formato inválido. Envie uma imagem PNG, JPG ou JPEG.");
+      return;
+    }
+
+    if (removeHidden) removeHidden.value = "0";
+    setFileToInput(f);
+  });
+});
+</script>
+{% endblock %}

@@ -2126,3 +2126,18 @@ body.app-body {
         font-size: 0.98rem;
     }
 }
+
+/* ===== Meu Perfil: pequenos ajustes para usar a foto no estilo da Gestão ===== */
+.profile-grid {
+    align-items: start;
+}
+
+.profile-photo-side {
+    min-width: 0;
+}
+
+@media (max-width: 920px) {
+    .profile-grid {
+        grid-template-columns: 1fr;
+    }
+}

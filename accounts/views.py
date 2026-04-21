@@ -449,14 +449,17 @@ def profile_view(request):
 
     if request.method == 'POST':
         name = request.POST.get('name') or ''
-        email = request.POST.get('email') or ''
+        last_name = request.POST.get('last_name') or ''
         whatsapp = request.POST.get('whatsapp') or ''
+        email = request.POST.get('email') or ''
         new_password = request.POST.get('password') or ''
         photo_file = request.FILES.get('photo')
-
+        remove_photo = (request.POST.get("remove_photo") == "1")
+        
         # Atualiza dados básicos do User
-        request.user.first_name = name
-        request.user.email = email
+        request.user.first_name = name.strip()
+        request.user.last_name = last_name.strip()
+        request.user.email = email.strip().lower()
         request.user.save()
         
         # Se for tutor e mudou o email, atualiza os exames antigos para manter acesso
@@ -472,8 +475,20 @@ def profile_view(request):
 
         # Atualiza dados do Profile
         profile.whatsapp = whatsapp
+
+        # Remove foto atual, se o usuário clicou em "Remover"
+        if remove_photo and not photo_file:
+            try:
+                if profile.photo:
+                    profile.photo.delete(save=False)
+            except Exception:
+                pass
+            profile.photo = None
+
+        # Se enviou uma nova foto, ela substitui a atual
         if photo_file:
             profile.photo = photo_file
+
         profile.save()
 
         # Troca de senha (se veio algo no campo)
