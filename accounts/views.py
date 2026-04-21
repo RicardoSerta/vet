@@ -46,7 +46,7 @@ import mimetypes
 import re
 import unicodedata
 from .models import Profile, Exam, Tutor, Clinic, Veterinarian, Pet, ExamTypeAlias, ExamExtraPDF
-from .forms import ExamUploadForm, TutorForm, ClinicForm, VeterinarianForm, PetForm, MultiExamUploadForm, parse_exam_filename, ExamTypeAliasForm, AdminAuxForm
+from .forms import ExamUploadForm, TutorForm, ClinicForm, VeterinarianForm, PetForm, MultiExamUploadForm, parse_exam_filename, ExamTypeAliasForm, AdminAuxForm, PHONE_ANY_RE
 
 MANAGEMENT_CATEGORIES = {
     'tutores': {
@@ -482,6 +482,9 @@ def profile_view(request):
                 validate_email(email)
             except DjangoValidationError:
                 field_errors["email"] = "E-mail inválido."
+
+        if whatsapp and not PHONE_ANY_RE.match(whatsapp):
+            field_errors["whatsapp"] = "Telefone inválido."
 
         if new_password and len(new_password) < 8:
             field_errors["password"] = "A senha deve possuir no mínimo 8 caracteres."

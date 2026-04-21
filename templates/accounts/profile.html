@@ -65,9 +65,17 @@
                            autocomplete="off"
                            autocapitalize="off"
                            autocorrect="off"
-                           spellcheck="false">
+                           spellcheck="false"
+                           inputmode="numeric"
+                           maxlength="15"
+                           class="{% if field_errors.whatsapp %}input-error{% endif %}">
                     <div class="field-hint">
                         Formato: (XX) 9XXXX-XXXX ou (XX) XXXX-XXXX
+                    </div>
+                    <div class="field-error-text"
+                         id="id_whatsapp_error"
+                         {% if not field_errors.whatsapp %}style="display:none;"{% endif %}>
+                        {{ field_errors.whatsapp }}
                     </div>
                 </div>
 
@@ -156,6 +164,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const form = document.getElementById("profileForm");
 
   const nameInput = document.getElementById("id_name");
+  const phoneInput = document.getElementById("id_whatsapp");
   const emailInput = document.getElementById("id_email");
   const passwordInput = document.getElementById("id_password");
 
@@ -166,6 +175,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const dropZone = document.getElementById("photoDropZone");
 
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const PHONE_RE = /^\(\d{2}\)\s?(\d{4}-\d{4}|9\d{4}-\d{4})$/;
 
   function setFieldError(inputEl, errorId, message) {
     const errorEl = document.getElementById(errorId);
@@ -206,6 +216,53 @@ document.addEventListener("DOMContentLoaded", function () {
     return true;
   }
 
+  function phoneDigits(value) {
+    return (value || "").replace(/\D/g, "");
+  }
+
+  function formatPhoneValue(value) {
+    let digits = phoneDigits(value);
+    if (digits.length > 11) digits = digits.slice(0, 11);
+
+    if (!digits) return "";
+
+    let result = "(" + digits.slice(0, 2);
+    if (digits.length <= 2) return result;
+
+    result += ") ";
+    let rest = digits.slice(2);
+
+    if (rest.length <= 4) result += rest;
+    else result += rest.slice(0, rest.length - 4) + "-" + rest.slice(-4);
+
+    return result;
+  }
+
+  function validatePhone(options = {}) {
+    const force = !!options.force;
+    const value = (phoneInput?.value || "").trim();
+    const digitsCount = phoneDigits(value).length;
+
+    if (!value) {
+      setFieldError(phoneInput, "id_whatsapp_error", "");
+      return true;
+    }
+
+    // Enquanto a pessoa ainda está digitando, não mostramos erro cedo demais.
+    if (!force && digitsCount < 10) {
+      setFieldError(phoneInput, "id_whatsapp_error", "");
+      return true;
+    }
+
+    if (!PHONE_RE.test(value)) {
+      setFieldError(phoneInput, "id_whatsapp_error", "Telefone inválido.");
+      return false;
+    }
+
+    setFieldError(phoneInput, "id_whatsapp_error", "");
+    return true;
+  }
+
   function validatePassword() {
     const value = passwordInput?.value || "";
     if (!value) {
@@ -225,6 +282,17 @@ document.addEventListener("DOMContentLoaded", function () {
     nameInput.addEventListener("blur", validateName);
   }
 
+  if (phoneInput) {
+    phoneInput.addEventListener("input", function () {
+      phoneInput.value = formatPhoneValue(phoneInput.value);
+      validatePhone({ force: false });
+    });
+
+    phoneInput.addEventListener("blur", function () {
+      validatePhone({ force: true });
+    });
+  }
+
   if (emailInput) {
     emailInput.addEventListener("input", validateEmail);
     emailInput.addEventListener("blur", validateEmail);
@@ -238,14 +306,16 @@ document.addEventListener("DOMContentLoaded", function () {
   if (form) {
     form.addEventListener("submit", function (e) {
       const okName = validateName();
+      const okPhone = validatePhone({ force: true });
       const okEmail = validateEmail();
       const okPassword = validatePassword();
 
-      if (!okName || !okEmail || !okPassword) {
+      if (!okName || !okPhone || !okEmail || !okPassword) {
         e.preventDefault();
 
         const firstInvalid =
           document.querySelector("#id_name.input-error") ||
+          document.querySelector("#id_whatsapp.input-error") ||
           document.querySelector("#id_email.input-error") ||
           document.querySelector("#id_password.input-error");
 
