@@ -2154,3 +2154,28 @@ body.app-body {
 .profile-fields-column .btn-primary {
     margin-top: 4px;
 }
+
+/* ===== Meu Perfil: erros de validação ===== */
+.profile-form-group .field-error-text {
+    display: block;
+    margin-top: 4px;
+    color: #dc2626;
+    font-size: 13px;
+    line-height: 1.3;
+}
+
+.profile-form-group input.input-error {
+    border-color: #dc2626 !important;
+    box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.12);
+}
+
+/* Campos-isca para reduzir prompts/autofill de gerenciadores de senha */
+.profile-decoy-input {
+    position: absolute !important;
+    left: -9999px !important;
+    top: auto !important;
+    width: 1px !important;
+    height: 1px !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
