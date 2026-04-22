@@ -2248,3 +2248,69 @@ body.app-body {
 .profile-form-group .field-error-text + .field-hint {
   margin-top: 2px;
 }
+
+.icon-eye-svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+  flex-shrink: 0;
+}
+
+.btn-icon svg,
+.pdf-eye-btn svg,
+.exam-eye-btn svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+table th,
+table td {
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* ===== Sidebar: fechar completamente com animação ===== */
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+.sidebar {
+  flex: 0 0 230px;
+  width: 230px;
+  overflow: hidden;
+  transform: translateX(0);
+  opacity: 1;
+  transition:
+    width 0.22s ease,
+    flex-basis 0.22s ease,
+    transform 0.22s ease,
+    opacity 0.18s ease,
+    border-color 0.22s ease;
+}
+
+.main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.sidebar-header,
+.sidebar-nav {
+  transition: opacity 0.14s ease;
+}
+
+body.sidebar-hidden .sidebar {
+  width: 0 !important;
+  flex-basis: 0 !important;
+  opacity: 0;
+  transform: translateX(-18px);
+  border-right-color: transparent;
+  pointer-events: none;
+}
+
+body.sidebar-hidden .sidebar-header,
+body.sidebar-hidden .sidebar-nav {
+  opacity: 0;
+}

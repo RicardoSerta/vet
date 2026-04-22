@@ -144,10 +144,20 @@
 
       {% if exam.pdf_file %}
         <div class="exam-pdf-wrapper">
-          <a class="btn-icon btn-icon-green exam-pdf-open"
+          <a class="btn-icon btn-icon-green exam-pdf-open exam-eye-btn"
              target="_blank"
              href="{% url 'exam_pdf' exam.pk %}"
-             title="Abrir em nova aba">👁</a>
+             title="Abrir PDF em nova aba"
+             aria-label="Abrir PDF em nova aba">
+            <svg class="icon-eye-svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12Z"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"/>
+              <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+            </svg>
+          </a>
 
           <iframe class="exam-pdf-frame" src="{% url 'exam_pdf' exam.pk %}"></iframe>
         </div>

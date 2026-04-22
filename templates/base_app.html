@@ -93,13 +93,32 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const toggleBtn = document.getElementById('sidebar-toggle');
-    const layout = document.getElementById('app-layout');
+    if (!toggleBtn) return;
 
-    if (toggleBtn && layout) {
-        toggleBtn.addEventListener('click', function () {
-            layout.classList.toggle('sidebar-collapsed');
-        });
+    const STORAGE_KEY = 'lumavet-sidebar-hidden';
+
+    function syncSidebarState() {
+        const hidden = document.body.classList.contains('sidebar-hidden');
+        toggleBtn.setAttribute('aria-expanded', hidden ? 'false' : 'true');
+        toggleBtn.setAttribute('title', hidden ? 'Mostrar menu lateral' : 'Ocultar menu lateral');
     }
+
+    if (localStorage.getItem(STORAGE_KEY) === '1') {
+        document.body.classList.add('sidebar-hidden');
+    }
+
+    syncSidebarState();
+
+    toggleBtn.addEventListener('click', function () {
+        document.body.classList.toggle('sidebar-hidden');
+
+        localStorage.setItem(
+            STORAGE_KEY,
+            document.body.classList.contains('sidebar-hidden') ? '1' : '0'
+        );
+
+        syncSidebarState();
+    });
 });
 </script>
 
