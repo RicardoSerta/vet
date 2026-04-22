@@ -2,16 +2,24 @@
 {% load static %}
 
 {% block title %}
-  {% if is_edit %}Editar {{ category_singular }} - LumaVet{% else %}Novo {{ category_singular }} - LumaVet{% endif %}
+  {% if is_edit %}
+    Editar {{ category_singular }} - LumaVet
+  {% else %}
+    {% if category == 'clinicas' %}Nova{% else %}Novo{% endif %} {{ category_singular|lower }} - LumaVet
+  {% endif %}
 {% endblock %}
 {% block page_title %}
-  {% if is_edit %}Editar {{ category_singular }}{% else %}Novo {{ category_singular }}{% endif %}
+  {% if is_edit %}
+    Editar {{ category_singular }}
+  {% else %}
+    {% if category == 'clinicas' %}Nova{% else %}Novo{% endif %} {{ category_singular|lower }}
+  {% endif %}
 {% endblock %}
 
 {% block main_content %}
 <div class="card">
   <h2 class="card-title">
-    {% if is_edit %}Editar {{ category_singular }}{% else %}Cadastrar {{ category_singular }}{% endif %}
+    {% if is_edit %}Editar {{ category_singular }}{% else %}Cadastrar {{ category_singular|lower }}{% endif %}
   </h2>
 
   <form method="post" enctype="multipart/form-data" class="exam-upload-form" autocomplete="off" novalidate id="managementForm">

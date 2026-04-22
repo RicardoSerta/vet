@@ -63,11 +63,11 @@
             {% if category == 'admin' %}
               <a href="{% url 'gestao_admin_create' %}"
                  class="btn-icon btn-icon-green management-add-btn"
-                 title="Novo Auxiliar">+</a>
+                 title="Novo auxiliar">+</a>
             {% else %}
               <a href="{% url 'gestao_create' category %}"
                  class="btn-icon btn-icon-green management-add-btn"
-                 title="{% if category == 'clinicas' %}Nova{% else %}Novo{% endif %} {{ category_singular }}">+</a>
+                 title="{% if category == 'clinicas' %}Nova{% else %}Novo{% endif %} {{ category_singular|lower }}">+</a>
             {% endif %}
         </div>
     </div>
@@ -100,7 +100,7 @@
                         </th>
                         <th>
                             <a href="?order=data&direction={% if order == 'data' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}&per_page={{ per_page }}">
-                                Data de Cadastro
+                                Cadastro
                                 {% if order == 'data' %}{% if direction == 'asc' %}▲{% else %}▼{% endif %}{% endif %}
                             </a>
                         </th>
@@ -148,7 +148,7 @@
                         </th>
                         <th>
                             <a href="?order=data&direction={% if order == 'data' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}&per_page={{ per_page }}">
-                                Data de Cadastro
+                                Cadastro
                                 {% if order == 'data' %}
                                     {% if direction == 'asc' %}▲{% else %}▼{% endif %}
                                 {% endif %}
@@ -180,7 +180,7 @@
                         </th>
                         <th>
                             <a href="?order=data&direction={% if order == 'data' and direction == 'asc' %}desc{% else %}asc{% endif %}{% if qparam %}&q={{ qparam|urlencode }}{% endif %}&per_page={{ per_page }}">
-                                Data de Cadastro
+                                Cadastro
                                 {% if order == 'data' %}{% if direction == 'asc' %}▲{% else %}▼{% endif %}{% endif %}
                             </a>
                         </th>
@@ -199,7 +199,7 @@
                         <th>Nome</th>
                         <th>Telefone</th>
                         <th>E-mail</th>
-                        <th>Data de Cadastro</th>
+                        <th>Cadastro</th>
                         <th style="width: 110px; text-align:center;">Ações</th>
                     </tr>
                 {% endif %}
