@@ -753,9 +753,9 @@ class PetForm(forms.ModelForm):
                 "Imagem inválida. Envie uma imagem PNG, JPG ou JPEG."
             )
 
-    for field_name in ["name", "breed", "tutor"]:
-        if field_name in self.fields:
-            disable_browser_autocomplete(self.fields[field_name])
+        for field_name in ["name", "breed", "tutor"]:
+            if field_name in self.fields:
+                disable_browser_autocomplete(self.fields[field_name])
             
     def clean_name(self):
         return normalize_name_words(self.cleaned_data.get("name"))
