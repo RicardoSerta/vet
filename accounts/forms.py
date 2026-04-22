@@ -453,21 +453,28 @@ class TutorForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.fields['name'].widget.attrs.update({'placeholder': 'Nome do tutor'})
-        self.fields['email'].widget.attrs.update({'placeholder': 'exemplo@email.com'})
-        self.fields['phone'].widget.attrs.update({'placeholder': '(XX) XXXX-XXXX'})
-        self.fields['phone'].help_text = 'Formato: (XX) 9XXXX-XXXX ou (XX) XXXX-XXXX'
-        self.fields['phone'].widget.attrs.update({
-            'placeholder': '(XX) XXXX-XXXX',
-            'pattern': r'^\(\d{2}\)\s?(\d{4}-\d{4}|9\d{4}-\d{4})$',
-            'title': 'Use (XX) XXXX-XXXX ou (XX) 9XXXX-XXXX',
+        self.fields["name"].label = "Nome"
+        self.fields["surname"].label = "Sobrenome"
+        self.fields["phone"].label = "Telefone"
+        self.fields["email"].label = "E-mail"
+
+        self.fields["name"].error_messages["required"] = "Digite o nome."
+        self.fields["email"].error_messages["invalid"] = "E-mail inválido."
+
+        self.fields["name"].widget.attrs.update({"placeholder": "Nome do tutor"})
+        self.fields["surname"].widget.attrs.update({"placeholder": "Sobrenome do tutor"})
+        self.fields["email"].widget.attrs.update({"placeholder": "exemplo@email.com"})
+        self.fields["phone"].widget.attrs.update({
+            "placeholder": "(XX) XXXX-XXXX",
+            "inputmode": "numeric",
         })
-        
+        self.fields["phone"].help_text = "Formato: (XX) 9XXXX-XXXX ou (XX) XXXX-XXXX"
+
         if "photo" in self.fields:
             self.fields["photo"].error_messages["invalid_image"] = (
                 "Imagem inválida. Envie uma imagem PNG, JPG ou JPEG."
             )
-        
+
         for field_name in ["name", "surname", "phone", "email"]:
             if field_name in self.fields:
                 disable_browser_autocomplete(self.fields[field_name])
@@ -481,7 +488,7 @@ class TutorForm(forms.ModelForm):
     def clean_phone(self):
         phone = (self.cleaned_data.get("phone") or "").strip()
         if phone and not PHONE_ANY_RE.match(phone):
-            raise forms.ValidationError("Use o formato (XX) XXXX-XXXX ou (XX) 9XXXX-XXXX.")
+            raise forms.ValidationError("Telefone inválido.")
         return phone
 
     def clean_email(self):
@@ -559,21 +566,26 @@ class ClinicForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.fields['name'].widget.attrs.update({'placeholder': 'Nome da clínica'})
-        self.fields['email'].widget.attrs.update({'placeholder': 'exemplo@email.com'})
-        self.fields['phone'].widget.attrs.update({'placeholder': '(XX) XXXX-XXXX'})
-        self.fields['phone'].help_text = 'Formato: (XX) 9XXXX-XXXX ou (XX) XXXX-XXXX'
-        self.fields['phone'].widget.attrs.update({
-            'placeholder': '(XX) XXXX-XXXX',
-            'pattern': r'^\(\d{2}\)\s?(\d{4}-\d{4}|9\d{4}-\d{4})$',
-            'title': 'Use (XX) XXXX-XXXX ou (XX) 9XXXX-XXXX',
+        self.fields["name"].label = "Nome"
+        self.fields["phone"].label = "Telefone"
+        self.fields["email"].label = "E-mail"
+
+        self.fields["name"].error_messages["required"] = "Digite o nome."
+        self.fields["email"].error_messages["invalid"] = "E-mail inválido."
+
+        self.fields["name"].widget.attrs.update({"placeholder": "Nome da clínica"})
+        self.fields["email"].widget.attrs.update({"placeholder": "exemplo@email.com"})
+        self.fields["phone"].widget.attrs.update({
+            "placeholder": "(XX) XXXX-XXXX",
+            "inputmode": "numeric",
         })
-        
+        self.fields["phone"].help_text = "Formato: (XX) 9XXXX-XXXX ou (XX) XXXX-XXXX"
+
         if "photo" in self.fields:
             self.fields["photo"].error_messages["invalid_image"] = (
                 "Imagem inválida. Envie uma imagem PNG, JPG ou JPEG."
             )
-            
+
         for field_name in ["name", "phone", "email"]:
             if field_name in self.fields:
                 disable_browser_autocomplete(self.fields[field_name])
@@ -584,7 +596,7 @@ class ClinicForm(forms.ModelForm):
     def clean_phone(self):
         phone = (self.cleaned_data.get("phone") or "").strip()
         if phone and not PHONE_ANY_RE.match(phone):
-            raise forms.ValidationError("Use o formato (XX) XXXX-XXXX ou (XX) 9XXXX-XXXX.")
+            raise forms.ValidationError("Telefone inválido.")
         return phone
 
     def clean_email(self):
@@ -663,22 +675,28 @@ class VeterinarianForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.fields['name'].widget.attrs.update({'placeholder': 'Nome do veterinário'})
-        self.fields['surname'].widget.attrs.update({'placeholder': 'Sobrenome do veterinário'})
-        self.fields['email'].widget.attrs.update({'placeholder': 'exemplo@email.com'})
-        self.fields['phone'].widget.attrs.update({'placeholder': '(XX) XXXX-XXXX'})
-        self.fields['phone'].help_text = 'Formato: (XX) 9XXXX-XXXX ou (XX) XXXX-XXXX'
-        self.fields['phone'].widget.attrs.update({
-            'placeholder': '(XX) XXXX-XXXX',
-            'pattern': r'^\(\d{2}\)\s?(\d{4}-\d{4}|9\d{4}-\d{4})$',
-            'title': 'Use (XX) XXXX-XXXX ou (XX) 9XXXX-XXXX',
+        self.fields["name"].label = "Nome"
+        self.fields["surname"].label = "Sobrenome"
+        self.fields["phone"].label = "Telefone"
+        self.fields["email"].label = "E-mail"
+
+        self.fields["name"].error_messages["required"] = "Digite o nome."
+        self.fields["email"].error_messages["invalid"] = "E-mail inválido."
+
+        self.fields["name"].widget.attrs.update({"placeholder": "Nome do veterinário"})
+        self.fields["surname"].widget.attrs.update({"placeholder": "Sobrenome do veterinário"})
+        self.fields["email"].widget.attrs.update({"placeholder": "exemplo@email.com"})
+        self.fields["phone"].widget.attrs.update({
+            "placeholder": "(XX) XXXX-XXXX",
+            "inputmode": "numeric",
         })
-        
+        self.fields["phone"].help_text = "Formato: (XX) 9XXXX-XXXX ou (XX) XXXX-XXXX"
+
         if "photo" in self.fields:
             self.fields["photo"].error_messages["invalid_image"] = (
                 "Imagem inválida. Envie uma imagem PNG, JPG ou JPEG."
             )
-            
+
         for field_name in ["name", "surname", "phone", "email"]:
             if field_name in self.fields:
                 disable_browser_autocomplete(self.fields[field_name])
@@ -692,7 +710,7 @@ class VeterinarianForm(forms.ModelForm):
     def clean_phone(self):
         phone = (self.cleaned_data.get("phone") or "").strip()
         if phone and not PHONE_ANY_RE.match(phone):
-            raise forms.ValidationError("Use o formato (XX) XXXX-XXXX ou (XX) 9XXXX-XXXX.")
+            raise forms.ValidationError("Telefone inválido.")
         return phone
 
     def clean_email(self):
@@ -720,17 +738,24 @@ class PetForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.fields['name'].widget.attrs.update({'placeholder': 'Nome do pet'})
-        self.fields['breed'].widget.attrs.update({'placeholder': 'Raça do pet'})
-        
+        self.fields["name"].label = "Nome"
+        self.fields["breed"].label = "Raça"
+        self.fields["tutor"].label = "Tutor"
+
+        self.fields["name"].error_messages["required"] = "Digite o nome."
+        self.fields["tutor"].error_messages["required"] = "Selecione um tutor."
+
+        self.fields["name"].widget.attrs.update({"placeholder": "Nome do pet"})
+        self.fields["breed"].widget.attrs.update({"placeholder": "Raça do pet"})
+
         if "photo" in self.fields:
             self.fields["photo"].error_messages["invalid_image"] = (
                 "Imagem inválida. Envie uma imagem PNG, JPG ou JPEG."
             )
-            
-        for field_name in ["name", "breed", "tutor"]:
-            if field_name in self.fields:
-                disable_browser_autocomplete(self.fields[field_name])
+
+    for field_name in ["name", "breed", "tutor"]:
+        if field_name in self.fields:
+            disable_browser_autocomplete(self.fields[field_name])
             
     def clean_name(self):
         return normalize_name_words(self.cleaned_data.get("name"))
@@ -885,14 +910,28 @@ class AdminAuxForm(forms.Form):
         },
     )
 
-    first_name = forms.CharField(label="Nome", max_length=150, required=True)
-    last_name  = forms.CharField(label="Sobrenome", max_length=150, required=False)
+    first_name = forms.CharField(
+        label="Nome",
+        max_length=150,
+        required=True,
+        error_messages={"required": "Digite o nome."},
+        widget=forms.TextInput(attrs={"placeholder": "Nome do auxiliar"}),
+    )
+
+    last_name = forms.CharField(
+        label="Sobrenome",
+        max_length=150,
+        required=False,
+        widget=forms.TextInput(attrs={"placeholder": "Sobrenome do auxiliar"}),
+    )
 
     phone = forms.CharField(
         label="Telefone",
         required=False,
-        validators=[RegexValidator(PHONE_RE, message="Telefone inválido.")],
-        widget=forms.TextInput(attrs={"placeholder": "(XX) XXXX-XXXX"}),
+        widget=forms.TextInput(attrs={
+            "placeholder": "(XX) XXXX-XXXX",
+            "inputmode": "numeric",
+        }),
     )
 
     email = forms.EmailField(
@@ -904,33 +943,35 @@ class AdminAuxForm(forms.Form):
 
     notify_phone = forms.CharField(required=False, widget=forms.HiddenInput(), initial="0")
     notify_email = forms.CharField(required=False, widget=forms.HiddenInput(), initial="0")
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        self.fields["phone"].help_text = "Formato: (XX) 9XXXX-XXXX ou (XX) XXXX-XXXX"
 
         for field_name in ["first_name", "last_name", "phone", "email"]:
             if field_name in self.fields:
                 disable_browser_autocomplete(self.fields[field_name])
-    
+
     def clean_first_name(self):
         return normalize_name_words(self.cleaned_data.get("first_name"))
-        
+
     def clean_last_name(self):
         return normalize_name_words(self.cleaned_data.get("last_name"))
 
     def clean_phone(self):
         phone = (self.cleaned_data.get("phone") or "").strip()
         if phone and not PHONE_ANY_RE.match(phone):
-            raise forms.ValidationError("Use o formato (XX) XXXX-XXXX ou (XX) 9XXXX-XXXX.")
+            raise forms.ValidationError("Telefone inválido.")
         return phone
-        
+
     def clean_email(self):
         email = normalize_email_value(self.cleaned_data.get("email"))
         if email:
             from django.core.validators import validate_email
             validate_email(email)
         return email
-        
+
     def clean(self):
         cleaned = super().clean()
         email = (cleaned.get("email") or "").strip()
@@ -938,11 +979,9 @@ class AdminAuxForm(forms.Form):
 
         phone_is_whatsapp = bool(re.match(r'^\(\d{2}\)\s?9\d{4}-\d{4}$', phone))
 
-        # precisa de pelo menos um meio real de envio
         if not email and not phone_is_whatsapp:
             raise forms.ValidationError(
                 "Preencha com pelo menos um e-mail válido ou um telefone no formato (XX) 9XXXX-XXXX."
             )
 
         return cleaned
-
