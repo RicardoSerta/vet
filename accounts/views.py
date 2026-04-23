@@ -515,22 +515,20 @@ def profile_view(request):
 
         if new_password:
             if len(new_password) > 64:
-                field_errors["password"] = "A nova senha não deve ultrapassar 64 caracteres."
+                field_errors["password"] = "A senha não deve ultrapassar 64 caracteres."
             elif len(new_password) < 8:
                 field_errors["password"] = "A senha deve possuir no mínimo 8 caracteres."
 
         if is_admin_profile and name and "name" not in field_errors and "last_name" not in field_errors:
             if not last_name:
                 if admin_name_exists(name, exclude_user_id=request.user.id):
-                    msg = "Já existe um administrador com esse nome. Preencha um sobrenome para diferenciar."
+                    msg = "Já existe um administrador com esse nome. Tente inserir um sobrenome para diferenciá-los."
                     field_errors["name"] = msg
-                    field_errors["last_name"] = msg
             else:
                 if admin_full_name_exists(name, last_name, exclude_user_id=request.user.id):
                     msg = "Já existe um administrador com esse nome."
                     field_errors["name"] = msg
                     field_errors["last_name"] = msg
-
         if field_errors:
             return render(request, 'accounts/profile.html', {
                 'profile': profile,

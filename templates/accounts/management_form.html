@@ -21,6 +21,12 @@
   <h2 class="card-title">
     {% if is_edit %}Editar {{ category_singular }}{% else %}Cadastrar {{ category_singular|lower }}{% endif %}
   </h2>
+  
+  {% if form.non_field_errors %}
+    <div class="messages">
+      <div class="message-error">{{ form.non_field_errors.0 }}</div>
+    </div>
+  {% endif %}
 
   <form method="post" enctype="multipart/form-data" class="exam-upload-form" autocomplete="off" novalidate id="managementForm">
     {% csrf_token %}

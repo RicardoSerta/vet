@@ -338,7 +338,7 @@ document.addEventListener("DOMContentLoaded", function () {
       return true;
     }
     if (value.length > MAX_TEXT_LEN) {
-      setFieldError(passwordInput, "id_password_error", "A nova senha não deve ultrapassar 64 caracteres.");
+      setFieldError(passwordInput, "id_password_error", "A senha não deve ultrapassar 64 caracteres.");
       return false;
     }
     if (value.length < 8) {

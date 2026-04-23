@@ -411,7 +411,7 @@ class ExamUploadForm(forms.Form):
     def clean_tutor_email(self):
         email = normalize_email_value(self.cleaned_data.get("tutor_email"))
         if email:
-            validate_max_text_length(email, "O e-mail do tutor")
+            validate_max_text_length(email, "O e-mail")
             from django.core.validators import validate_email
             validate_email(email)
         return email
@@ -858,9 +858,8 @@ class VeterinarianForm(forms.ModelForm):
 
         if not surname:
             if provider_name_exists(name, exclude_vet_id=exclude_vet_id):
-                msg = "Já existe uma clínica ou veterinário com esse nome. Preencha um sobrenome para diferenciar."
+                msg = "Já existe uma clínica ou veterinário com esse nome. Tente inserir um sobrenome para diferenciá-los."
                 self.add_error("name", msg)
-                self.add_error("surname", msg)
             return cleaned
 
         if provider_full_name_exists(name, surname, exclude_vet_id=exclude_vet_id):
@@ -1155,9 +1154,8 @@ class AdminAuxForm(forms.Form):
         if first_name:
             if not last_name:
                 if admin_name_exists(first_name, exclude_user_id=exclude_user_id):
-                    msg = "Já existe um administrador com esse nome. Preencha um sobrenome para diferenciar."
+                    msg = "Já existe um administrador com esse nome. Tente inserir um sobrenome para diferenciá-los."
                     self.add_error("first_name", msg)
-                    self.add_error("last_name", msg)
             else:
                 if admin_full_name_exists(first_name, last_name, exclude_user_id=exclude_user_id):
                     msg = "Já existe um administrador com esse nome."
