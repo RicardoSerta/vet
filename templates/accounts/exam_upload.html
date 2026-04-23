@@ -808,6 +808,11 @@ document.addEventListener("DOMContentLoaded", function () {
       return true;
     }
 
+    if (value.length > 64) {
+      setFieldError(emailInput, emailError, "E-mail do tutor não pode ultrapassar 64 caracteres.");
+      return false;
+    }
+
     if (!EMAIL_RE.test(value)) {
       setFieldError(emailInput, emailError, "Endereço de e-mail inválido.");
       return false;

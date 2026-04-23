@@ -4,6 +4,7 @@ import unicodedata
 from django.contrib.auth.models import User
 from .models import Profile
 from datetime import date, datetime, time as dt_time, timedelta
+from django.db.models import Q
 from django.utils import timezone
 from pathlib import Path
 from django.core.exceptions import ValidationError
@@ -47,6 +48,59 @@ def normalize_name_words(value: str) -> str:
     
 def normalize_email_value(value: str) -> str:
     return (value or "").strip().lower()
+
+MAX_TEXT_LEN = 64
+
+def validate_max_text_length(value: str, field_label: str, limit: int = MAX_TEXT_LEN) -> str:
+    value = (value or "").strip()
+    if len(value) > limit:
+        raise forms.ValidationError(f"{field_label} não pode ultrapassar {limit} caracteres.")
+    return value
+
+def normalize_identity_key(*parts: str) -> str:
+    full_name = " ".join(
+        part.strip() for part in parts if part and part.strip()
+    )
+    full_name = re.sub(r"\s+", " ", full_name.strip()).lower()
+    full_name = unicodedata.normalize("NFKD", full_name)
+    full_name = "".join(c for c in full_name if not unicodedata.combining(c))
+    return full_name
+
+def admin_name_exists(name: str, *, exclude_user_id=None) -> bool:
+    key = normalize_identity_key(name)
+    if not key:
+        return False
+
+    qs = User.objects.filter(
+        Q(is_superuser=True) | Q(profile__role__in=["ADMIN", "ADMIN_AUX"])
+    ).distinct()
+
+    if exclude_user_id is not None:
+        qs = qs.exclude(id=exclude_user_id)
+
+    for user in qs.only("first_name"):
+        if normalize_identity_key(user.first_name) == key:
+            return True
+
+    return False
+
+def admin_full_name_exists(first_name: str, last_name: str = "", *, exclude_user_id=None) -> bool:
+    key = normalize_identity_key(first_name, last_name)
+    if not key:
+        return False
+
+    qs = User.objects.filter(
+        Q(is_superuser=True) | Q(profile__role__in=["ADMIN", "ADMIN_AUX"])
+    ).distinct()
+
+    if exclude_user_id is not None:
+        qs = qs.exclude(id=exclude_user_id)
+
+    for user in qs.only("first_name", "last_name"):
+        if normalize_identity_key(user.first_name, user.last_name) == key:
+            return True
+
+    return False
 
 def normalize_provider_name_key(name: str, surname: str = "") -> str:
     full_name = " ".join(
@@ -222,7 +276,7 @@ class ExamUploadForm(forms.Form):
 
     tutor_email = forms.EmailField(
         label='E-mail do tutor',
-        max_length=255,
+        max_length=64,
         required=False,
         error_messages={
             "invalid": "Endereço de e-mail inválido."
@@ -353,6 +407,14 @@ class ExamUploadForm(forms.Form):
             if not re.match(pattern, phone):
                 raise forms.ValidationError("Número de telefone inválido.")
         return phone
+        
+    def clean_tutor_email(self):
+        email = normalize_email_value(self.cleaned_data.get("tutor_email"))
+        if email:
+            validate_max_text_length(email, "E-mail do tutor")
+            from django.core.validators import validate_email
+            validate_email(email)
+        return email
         
     def clean_retorno_previsto(self):
         retorno = self.cleaned_data.get("retorno_previsto")
@@ -535,10 +597,12 @@ class TutorForm(forms.ModelForm):
                 disable_browser_autocomplete(self.fields[field_name])
             
     def clean_name(self):
-        return normalize_name_words(self.cleaned_data.get("name"))
+        name = normalize_name_words(self.cleaned_data.get("name"))
+        return validate_max_text_length(name, "Nome")
         
     def clean_surname(self):
-        return normalize_name_words(self.cleaned_data.get("surname"))
+        surname = normalize_name_words(self.cleaned_data.get("surname"))
+        return validate_max_text_length(surname, "Sobrenome")
         
     def clean_phone(self):
         phone = (self.cleaned_data.get("phone") or "").strip()
@@ -549,6 +613,7 @@ class TutorForm(forms.ModelForm):
     def clean_email(self):
         email = normalize_email_value(self.cleaned_data.get("email"))
         if email:
+            validate_max_text_length(email, "E-mail")
             from django.core.validators import validate_email
             validate_email(email)
         return email
@@ -646,7 +711,8 @@ class ClinicForm(forms.ModelForm):
                 disable_browser_autocomplete(self.fields[field_name])
             
     def clean_name(self):
-        return normalize_name_words(self.cleaned_data.get("name"))
+        name = normalize_name_words(self.cleaned_data.get("name"))
+        return validate_max_text_length(name, "Nome")
         
     def clean(self):
         cleaned = super().clean()
@@ -671,6 +737,7 @@ class ClinicForm(forms.ModelForm):
     def clean_email(self):
         email = normalize_email_value(self.cleaned_data.get("email"))
         if email:
+            validate_max_text_length(email, "E-mail")
             from django.core.validators import validate_email
             validate_email(email)
         return email
@@ -771,10 +838,12 @@ class VeterinarianForm(forms.ModelForm):
                 disable_browser_autocomplete(self.fields[field_name])
             
     def clean_name(self):
-        return normalize_name_words(self.cleaned_data.get("name"))
+        name = normalize_name_words(self.cleaned_data.get("name"))
+        return validate_max_text_length(name, "Nome")
         
     def clean_surname(self):
-        return normalize_name_words(self.cleaned_data.get("surname"))
+        surname = normalize_name_words(self.cleaned_data.get("surname"))
+        return validate_max_text_length(surname, "Sobrenome")
         
     def clean(self):
         cleaned = super().clean()
@@ -810,6 +879,7 @@ class VeterinarianForm(forms.ModelForm):
     def clean_email(self):
         email = normalize_email_value(self.cleaned_data.get("email"))
         if email:
+            validate_max_text_length(email, "E-mail")
             from django.core.validators import validate_email
             validate_email(email)
         return email
@@ -983,13 +1053,13 @@ class ExamTypeAliasForm(forms.ModelForm):
         abbr = (self.cleaned_data.get("abbreviation") or "").strip().lower()
         if not abbr:
             raise forms.ValidationError("Digite a sigla.")
-        return abbr
+        return validate_max_text_length(abbr, "Sigla")
 
     def clean_full_name(self):
         name = (self.cleaned_data.get("full_name") or "").strip()
         if not name:
             raise forms.ValidationError("Digite o nome do exame.")
-        return name
+        return validate_max_text_length(name, "Nome do exame")
         
 class AdminAuxForm(forms.Form):
     photo = forms.ImageField(
@@ -1006,7 +1076,7 @@ class AdminAuxForm(forms.Form):
 
     first_name = forms.CharField(
         label="Nome",
-        max_length=150,
+        max_length=64,
         required=True,
         error_messages={"required": "Digite o nome."},
         widget=forms.TextInput(attrs={"placeholder": "Nome do auxiliar"}),
@@ -1014,7 +1084,7 @@ class AdminAuxForm(forms.Form):
 
     last_name = forms.CharField(
         label="Sobrenome",
-        max_length=150,
+        max_length=64,
         required=False,
         widget=forms.TextInput(attrs={"placeholder": "Sobrenome do auxiliar"}),
     )
@@ -1030,6 +1100,7 @@ class AdminAuxForm(forms.Form):
 
     email = forms.EmailField(
         label="E-mail",
+        max_length=64,
         required=False,
         error_messages={"invalid": "E-mail inválido."},
         widget=forms.EmailInput(attrs={"placeholder": "exemplo@email.com"}),
@@ -1039,6 +1110,7 @@ class AdminAuxForm(forms.Form):
     notify_email = forms.CharField(required=False, widget=forms.HiddenInput(), initial="0")
 
     def __init__(self, *args, **kwargs):
+        self.user_instance = kwargs.pop("user_instance", None)
         super().__init__(*args, **kwargs)
 
         self.fields["phone"].help_text = "Formato: (XX) 9XXXX-XXXX ou (XX) XXXX-XXXX"
@@ -1048,10 +1120,12 @@ class AdminAuxForm(forms.Form):
                 disable_browser_autocomplete(self.fields[field_name])
 
     def clean_first_name(self):
-        return normalize_name_words(self.cleaned_data.get("first_name"))
+        first_name = normalize_name_words(self.cleaned_data.get("first_name"))
+        return validate_max_text_length(first_name, "Nome")
 
     def clean_last_name(self):
-        return normalize_name_words(self.cleaned_data.get("last_name"))
+        last_name = normalize_name_words(self.cleaned_data.get("last_name"))
+        return validate_max_text_length(last_name, "Sobrenome")
 
     def clean_phone(self):
         phone = (self.cleaned_data.get("phone") or "").strip()
@@ -1062,14 +1136,32 @@ class AdminAuxForm(forms.Form):
     def clean_email(self):
         email = normalize_email_value(self.cleaned_data.get("email"))
         if email:
+            validate_max_text_length(email, "E-mail")
             from django.core.validators import validate_email
             validate_email(email)
         return email
 
     def clean(self):
         cleaned = super().clean()
+
+        first_name = (cleaned.get("first_name") or "").strip()
+        last_name = (cleaned.get("last_name") or "").strip()
         email = (cleaned.get("email") or "").strip()
         phone = (cleaned.get("phone") or "").strip()
+
+        exclude_user_id = getattr(self.user_instance, "id", None)
+
+        if first_name:
+            if not last_name:
+                if admin_name_exists(first_name, exclude_user_id=exclude_user_id):
+                    msg = "Já existe um administrador com esse nome. Preencha um sobrenome para diferenciar."
+                    self.add_error("first_name", msg)
+                    self.add_error("last_name", msg)
+            else:
+                if admin_full_name_exists(first_name, last_name, exclude_user_id=exclude_user_id):
+                    msg = "Já existe um administrador com esse nome."
+                    self.add_error("first_name", msg)
+                    self.add_error("last_name", msg)
 
         phone_is_whatsapp = bool(re.match(r'^\(\d{2}\)\s?9\d{4}-\d{4}$', phone))
 

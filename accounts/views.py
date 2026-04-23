@@ -46,7 +46,21 @@ import mimetypes
 import re
 import unicodedata
 from .models import Profile, Exam, Tutor, Clinic, Veterinarian, Pet, ExamTypeAlias, ExamExtraPDF
-from .forms import ExamUploadForm, TutorForm, ClinicForm, VeterinarianForm, PetForm, MultiExamUploadForm, parse_exam_filename, ExamTypeAliasForm, AdminAuxForm, PHONE_ANY_RE
+from .forms import (
+    ExamUploadForm,
+    TutorForm,
+    ClinicForm,
+    VeterinarianForm,
+    PetForm,
+    MultiExamUploadForm,
+    parse_exam_filename,
+    ExamTypeAliasForm,
+    AdminAuxForm,
+    PHONE_ANY_RE,
+    validate_max_text_length,
+    admin_name_exists,
+    admin_full_name_exists,
+)
 
 MANAGEMENT_CATEGORIES = {
     'tutores': {
@@ -477,20 +491,45 @@ def profile_view(request):
         }
 
         # ===== Validações server-side =====
+        is_admin_profile = request.user.is_superuser or profile.role in ("ADMIN", "ADMIN_AUX")
+
         if not name:
             field_errors["name"] = "Digite seu nome."
+        elif len(name) > 64:
+            field_errors["name"] = "Nome não pode ultrapassar 64 caracteres."
+
+        if not is_clinic_profile and last_name and len(last_name) > 64:
+            field_errors["last_name"] = "Sobrenome não pode ultrapassar 64 caracteres."
 
         if email:
-            try:
-                validate_email(email)
-            except DjangoValidationError:
-                field_errors["email"] = "E-mail inválido."
+            if len(email) > 64:
+                field_errors["email"] = "E-mail não pode ultrapassar 64 caracteres."
+            else:
+                try:
+                    validate_email(email)
+                except DjangoValidationError:
+                    field_errors["email"] = "E-mail inválido."
 
         if whatsapp and not PHONE_ANY_RE.match(whatsapp):
             field_errors["whatsapp"] = "Telefone inválido."
 
-        if new_password and len(new_password) < 8:
-            field_errors["password"] = "A senha deve possuir no mínimo 8 caracteres."
+        if new_password:
+            if len(new_password) > 64:
+                field_errors["password"] = "Nova senha não pode ultrapassar 64 caracteres."
+            elif len(new_password) < 8:
+                field_errors["password"] = "A senha deve possuir no mínimo 8 caracteres."
+
+        if is_admin_profile and name and "name" not in field_errors and "last_name" not in field_errors:
+            if not last_name:
+                if admin_name_exists(name, exclude_user_id=request.user.id):
+                    msg = "Já existe um administrador com esse nome. Preencha um sobrenome para diferenciar."
+                    field_errors["name"] = msg
+                    field_errors["last_name"] = msg
+            else:
+                if admin_full_name_exists(name, last_name, exclude_user_id=request.user.id):
+                    msg = "Já existe um administrador com esse nome."
+                    field_errors["name"] = msg
+                    field_errors["last_name"] = msg
 
         if field_errors:
             return render(request, 'accounts/profile.html', {
@@ -2168,7 +2207,7 @@ def admin_user_edit(request, user_id):
     singular = "Administrador" if target_profile.role == "ADMIN" else "Auxiliar"
 
     if request.method == "POST":
-        form = AdminAuxForm(request.POST, request.FILES)
+        form = AdminAuxForm(request.POST, request.FILES, user_instance=target_user)
         if form.is_valid():
             cd = form.cleaned_data
 
@@ -2233,7 +2272,7 @@ def admin_user_edit(request, user_id):
             messages.success(request, f"{singular} atualizado com sucesso.")
             return redirect("gestao_category", category="admin")
     else:
-        form = AdminAuxForm(initial={
+        form = AdminAuxForm(user_instance=target_user, initial={
             "first_name": target_user.first_name,
             "last_name": target_user.last_name,
             "email": target_user.email,

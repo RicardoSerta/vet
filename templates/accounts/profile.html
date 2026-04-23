@@ -55,7 +55,13 @@
                            autocomplete="off"
                            autocapitalize="off"
                            autocorrect="off"
-                           spellcheck="false">
+                           spellcheck="false"
+                           class="{% if field_errors.last_name %}input-error{% endif %}">
+                    <div class="field-error-text"
+                         id="id_last_name_error"
+                         {% if not field_errors.last_name %}style="display:none;"{% endif %}>
+                        {{ field_errors.last_name }}
+                    </div>
                 </div>
                 {% endif %}
 
@@ -183,6 +189,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const form = document.getElementById("profileForm");
 
   const nameInput = document.getElementById("id_name");
+  const lastNameInput = document.getElementById("id_last_name");
   const phoneInput = document.getElementById("id_whatsapp");
   const emailInput = document.getElementById("id_email");
   const passwordInput = document.getElementById("id_password");
@@ -197,6 +204,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const PHONE_RE = /^\(\d{2}\)\s?(\d{4}-\d{4}|9\d{4}-\d{4})$/;
+  
+  const MAX_TEXT_LEN = 64;
 
   function setFieldError(inputEl, errorId, message) {
     const errorEl = document.getElementById(errorId);
@@ -223,7 +232,27 @@ document.addEventListener("DOMContentLoaded", function () {
       setFieldError(nameInput, "id_name_error", "Digite seu nome.");
       return false;
     }
+    if (value.length > MAX_TEXT_LEN) {
+      setFieldError(nameInput, "id_name_error", "Nome não pode ultrapassar 64 caracteres.");
+      return false;
+    }
     clearFieldError(nameInput, "id_name_error");
+    return true;
+  }
+  
+  function validateLastName() {
+    if (!lastNameInput) return true;
+
+    const value = (lastNameInput.value || "").trim();
+    if (!value) {
+      clearFieldError(lastNameInput, "id_last_name_error");
+      return true;
+    }
+    if (value.length > MAX_TEXT_LEN) {
+      setFieldError(lastNameInput, "id_last_name_error", "Sobrenome não pode ultrapassar 64 caracteres.");
+      return false;
+    }
+    clearFieldError(lastNameInput, "id_last_name_error");
     return true;
   }
 
@@ -233,6 +262,10 @@ document.addEventListener("DOMContentLoaded", function () {
       clearFieldError(emailInput, "id_email_error");
       return true;
     }
+    if (value.length > MAX_TEXT_LEN) {
+      setFieldError(emailInput, "id_email_error", "E-mail não pode ultrapassar 64 caracteres.");
+      return false;
+    }
     if (!EMAIL_RE.test(value)) {
       setFieldError(emailInput, "id_email_error", "E-mail inválido.");
       return false;
@@ -240,7 +273,6 @@ document.addEventListener("DOMContentLoaded", function () {
     clearFieldError(emailInput, "id_email_error");
     return true;
   }
-
   function phoneDigits(value) {
     return (value || "").replace(/\D/g, "");
   }
@@ -298,6 +330,10 @@ document.addEventListener("DOMContentLoaded", function () {
       clearFieldError(passwordInput, "id_password_error");
       return true;
     }
+    if (value.length > MAX_TEXT_LEN) {
+      setFieldError(passwordInput, "id_password_error", "Nova senha não pode ultrapassar 64 caracteres.");
+      return false;
+    }
     if (value.length < 8) {
       setFieldError(passwordInput, "id_password_error", "A senha deve possuir no mínimo 8 caracteres.");
       return false;
@@ -316,6 +352,12 @@ document.addEventListener("DOMContentLoaded", function () {
   if (nameInput) {
     nameInput.addEventListener("input", function () {
       clearFieldError(nameInput, "id_name_error");
+    });
+  }
+  
+  if (lastNameInput) {
+    lastNameInput.addEventListener("input", function () {
+      clearFieldError(lastNameInput, "id_last_name_error");
     });
   }
 
@@ -360,15 +402,17 @@ document.addEventListener("DOMContentLoaded", function () {
       syncPasswordHidden();
       
       const okName = validateName();
+      const okLastName = validateLastName();
       const okPhone = validatePhone();
       const okEmail = validateEmail();
       const okPassword = validatePassword();
 
-      if (!okName || !okPhone || !okEmail || !okPassword) {
+      if (!okName || !okLastName || !okPhone || !okEmail || !okPassword) {
         e.preventDefault();
 
         const firstInvalid =
           document.querySelector("#id_name.input-error") ||
+          document.querySelector("#id_last_name.input-error") ||
           document.querySelector("#id_whatsapp.input-error") ||
           document.querySelector("#id_email.input-error") ||
           document.querySelector("#id_password.input-error");

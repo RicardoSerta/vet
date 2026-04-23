@@ -406,6 +406,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const PHONE_RE = /^\(\d{2}\)\s?(\d{4}-\d{4}|9\d{4}-\d{4})$/;
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const MAX_TEXT_LEN = 64;
+  const LENGTH_CHECK_CATEGORIES = ["tutores", "clinicas", "veterinarios", "admin"];
+  const category = "{{ category }}";
 
   function getErrorEl(field) {
     if (!field || !field.id) return null;
@@ -441,6 +444,24 @@ document.addEventListener("DOMContentLoaded", function () {
 
     return "Preencha este campo.";
   }
+  
+  function getMaxLengthMessage(field) {
+    const name = field.name || "";
+
+    if (name === "name" || name === "first_name") {
+      return "Nome não pode ultrapassar 64 caracteres.";
+    }
+
+    if (name === "surname" || name === "last_name") {
+      return "Sobrenome não pode ultrapassar 64 caracteres.";
+    }
+
+    if (name === "email") {
+      return "E-mail não pode ultrapassar 64 caracteres.";
+    }
+
+    return null;
+  }
 
   function validateRequiredField(field) {
     if (!field || field.disabled) return true;
@@ -460,6 +481,31 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (!value) {
       setFieldError(field, getRequiredMessage(field));
+      return false;
+    }
+
+    clearFieldError(field);
+    return true;
+  }
+  
+  function validateLengthField(field) {
+    if (!field || field.disabled) return true;
+    if (!LENGTH_CHECK_CATEGORIES.includes(category)) return true;
+
+    const type = (field.type || "").toLowerCase();
+    const name = field.name || "";
+
+    if (type === "hidden" || type === "file") return true;
+    if (!["name", "surname", "email", "first_name", "last_name"].includes(name)) return true;
+
+    const value = (field.value || "").trim();
+    if (!value) {
+      clearFieldError(field);
+      return true;
+    }
+
+    if (value.length > MAX_TEXT_LEN) {
+      setFieldError(field, getMaxLengthMessage(field));
       return false;
     }
 
@@ -494,6 +540,11 @@ document.addEventListener("DOMContentLoaded", function () {
       return true;
     }
 
+    if (value.length > MAX_TEXT_LEN) {
+      setFieldError(field, "E-mail não pode ultrapassar 64 caracteres.");
+      return false;
+    }
+
     if (!EMAIL_RE.test(value)) {
       setFieldError(field, "E-mail inválido.");
       return false;
@@ -524,6 +575,11 @@ document.addEventListener("DOMContentLoaded", function () {
       if (type === "hidden" || type === "file") return;
 
       if (!validateRequiredField(field)) {
+        ok = false;
+        if (!firstInvalid) firstInvalid = field;
+      }
+      
+      if (!validateLengthField(field)) {
         ok = false;
         if (!firstInvalid) firstInvalid = field;
       }

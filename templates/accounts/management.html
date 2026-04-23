@@ -222,15 +222,6 @@
                                     {% if item.has_account %}✅{% else %}❌{% endif %}
                                 </td>
                                 <td style="text-align:center; white-space:nowrap;">
-                                    {% if item.can_edit %}
-                                        <a href="{% url 'gestao_admin_edit' item.id %}"
-                                           title="Editar"
-                                           class="btn-icon btn-icon-blue"
-                                           style="display:inline-flex; align-items:center; justify-content:center;">
-                                            ✏️
-                                        </a>
-                                    {% endif %}
-
                                     {% if item.can_resend %}
                                         <form method="post"
                                               action="{% url 'gestao_admin_resend_alerts' item.id %}"
@@ -240,10 +231,19 @@
                                             <button type="submit"
                                                     title="Reenviar notificações"
                                                     class="btn-icon btn-icon-gray"
-                                                    style="border:0; cursor:pointer; margin-left:6px;">
+                                                    style="border:0; cursor:pointer;">
                                                 🔔
                                             </button>
                                         </form>
+                                    {% endif %}
+
+                                    {% if item.can_edit %}
+                                        <a href="{% url 'gestao_admin_edit' item.id %}"
+                                           title="Editar"
+                                           class="btn-icon btn-icon-blue"
+                                           style="display:inline-flex; align-items:center; justify-content:center; margin-left:6px;">
+                                            ✏️
+                                        </a>
                                     {% endif %}
 
                                     {% if item.can_delete %}
@@ -305,15 +305,7 @@
                                     {% if item.has_account %}✅{% else %}❌{% endif %}
                                 </td>
                                 <td style="text-align:center; white-space:nowrap;">
-                                  <a href="{% url 'gestao_edit' category item.id %}"
-                                     title="Editar"
-                                     class="btn-icon btn-icon-blue"
-                                     style="display:inline-flex; align-items:center; justify-content:center;">
-                                    ✏️
-                                  </a>
-
                                   {% if item.has_account %}
-                                    {# REMOVER ACESSO (agora cinza, não laranja) #}
                                     <form method="post"
                                           action="{% url 'gestao_remove_access' category item.id %}"
                                           style="display:inline;"
@@ -322,12 +314,11 @@
                                       <button type="submit"
                                               title="Remover acesso"
                                               class="btn-icon btn-icon-gray"
-                                              style="border:0; cursor:pointer; margin-left:6px;">
+                                              style="border:0; cursor:pointer;">
                                         🚫
                                       </button>
                                     </form>
                                   {% else %}
-                                    {# REENVIAR ALERTAS (agora com sino 🔔) #}
                                     <form method="post"
                                           action="{% url 'gestao_resend_alerts' category item.id %}"
                                           style="display:inline;"
@@ -336,11 +327,18 @@
                                       <button type="submit"
                                               title="Reenviar notificações"
                                               class="btn-icon btn-icon-gray"
-                                              style="border:0; cursor:pointer; margin-left:6px;">
+                                              style="border:0; cursor:pointer;">
                                           🔔
                                       </button>
                                     </form>
                                   {% endif %}
+
+                                  <a href="{% url 'gestao_edit' category item.id %}"
+                                     title="Editar"
+                                     class="btn-icon btn-icon-blue"
+                                     style="display:inline-flex; align-items:center; justify-content:center; margin-left:6px;">
+                                    ✏️
+                                  </a>
 
                                   <form method="post"
                                         action="{% url 'gestao_delete' category item.id %}"

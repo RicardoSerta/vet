@@ -66,6 +66,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const form = document.getElementById("examTypesForm");
   const abbrInput = document.getElementById("id_abbreviation");
   const fullNameInput = document.getElementById("id_full_name");
+  const MAX_TEXT_LEN = 64;
 
   function setFieldError(inputEl, errorId, message) {
     const errorEl = document.getElementById(errorId);
@@ -88,6 +89,10 @@ document.addEventListener("DOMContentLoaded", function () {
       setFieldError(abbrInput, "id_abbreviation_error", "Digite a sigla.");
       return false;
     }
+    if (value.length > MAX_TEXT_LEN) {
+      setFieldError(abbrInput, "id_abbreviation_error", "Sigla não pode ultrapassar 64 caracteres.");
+      return false;
+    }
     setFieldError(abbrInput, "id_abbreviation_error", "");
     return true;
   }
@@ -96,6 +101,10 @@ document.addEventListener("DOMContentLoaded", function () {
     const value = (fullNameInput?.value || "").trim();
     if (!value) {
       setFieldError(fullNameInput, "id_full_name_error", "Digite o nome do exame.");
+      return false;
+    }
+    if (value.length > MAX_TEXT_LEN) {
+      setFieldError(fullNameInput, "id_full_name_error", "Nome do exame não pode ultrapassar 64 caracteres.");
       return false;
     }
     setFieldError(fullNameInput, "id_full_name_error", "");
