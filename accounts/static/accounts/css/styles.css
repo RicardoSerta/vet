@@ -511,7 +511,31 @@ body.app-body {
 
 .exams-actions {
     white-space: nowrap;
-    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.exams-actions form {
+    display: inline-flex;
+    margin: 0;
+}
+
+.exams-actions .btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    margin-right: 0;
+    vertical-align: middle;
+}
+
+.exams-actions .icon-eye-svg {
+    width: 16px;
+    height: 16px;
 }
 
 .btn-icon {
@@ -2264,12 +2288,6 @@ body.app-body {
   display: block;
 }
 
-table th,
-table td {
-  text-align: center;
-  vertical-align: middle;
-}
-
 /* ===== Sidebar: fechar completamente com animação ===== */
 .app-layout {
   display: flex;
@@ -2313,4 +2331,20 @@ body.sidebar-hidden .sidebar {
 body.sidebar-hidden .sidebar-header,
 body.sidebar-hidden .sidebar-nav {
   opacity: 0;
+}
+
+/* ===== Sidebar: evitar quebra do texto durante a animação ===== */
+.sidebar-nav-label {
+  white-space: nowrap;
+}
+
+/* ===== Sidebar: esconder o texto um pouco até a largura voltar ===== */
+body.sidebar-hidden .sidebar-nav-label,
+body.sidebar-hidden .sidebar-username {
+  opacity: 0;
+}
+
+.sidebar-nav-label,
+.sidebar-username {
+  transition: opacity 0.12s ease;
 }

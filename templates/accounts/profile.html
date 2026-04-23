@@ -18,7 +18,9 @@
 
         <!-- Campos-isca para reduzir autofill / prompts de gerenciador de senha -->
         <input type="text" name="fake_username" class="profile-decoy-input" tabindex="-1" autocomplete="username" aria-hidden="true">
-        <input type="password" name="fake_password" class="profile-decoy-input" tabindex="-1" autocomplete="current-password" aria-hidden="true">
+        <input type="password" name="current_password_fake" class="profile-decoy-input" tabindex="-1" autocomplete="current-password" aria-hidden="true">
+        <input type="password" name="new_password_fake" class="profile-decoy-input" tabindex="-1" autocomplete="new-password" aria-hidden="true">
+        <input type="text" name="email_shadow" class="profile-decoy-input" tabindex="-1" autocomplete="email" aria-hidden="true">
 
         <div class="profile-grid">
             <!-- LADO ESQUERDO: CAMPOS -->
@@ -106,18 +108,21 @@
                     <label for="id_password">Nova senha:</label>
 
                     <div class="profile-password-wrap">
+                        <input type="hidden" name="password" id="id_password_hidden" value="">
+
                         <input type="password"
                                id="id_password"
-                               name="password"
+                               name="new_password_ui"
                                value=""
                                placeholder="Deixar em branco para não alterar"
-                               autocomplete="new-password"
+                               autocomplete="off"
                                autocapitalize="off"
                                autocorrect="off"
                                spellcheck="false"
                                data-lpignore="true"
                                data-1p-ignore="true"
                                data-bwignore="true"
+                               readonly
                                class="{% if field_errors.password %}input-error{% endif %}">
 
                         <button type="button"
@@ -179,6 +184,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const phoneInput = document.getElementById("id_whatsapp");
   const emailInput = document.getElementById("id_email");
   const passwordInput = document.getElementById("id_password");
+  const passwordHidden = document.getElementById("id_password_hidden");
   const passwordToggle = document.getElementById("id_password_toggle");
 
   const input = document.getElementById("id_photo");
@@ -271,6 +277,18 @@ document.addEventListener("DOMContentLoaded", function () {
     clearFieldError(phoneInput, "id_whatsapp_error");
     return true;
   }
+  
+  function syncPasswordHidden() {
+    if (passwordHidden) {
+      passwordHidden.value = passwordInput ? passwordInput.value : "";
+    }
+  }
+
+  function unlockPasswordField() {
+    if (passwordInput && passwordInput.hasAttribute("readonly")) {
+      passwordInput.removeAttribute("readonly");
+    }
+  }
 
   function validatePassword() {
     const value = passwordInput?.value || "";
@@ -306,8 +324,13 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   if (passwordInput) {
+    ["focus", "click", "pointerdown", "keydown"].forEach(function (evtName) {
+      passwordInput.addEventListener(evtName, unlockPasswordField);
+    });
+
     passwordInput.addEventListener("input", function () {
       clearFieldError(passwordInput, "id_password_error");
+      syncPasswordHidden();
     });
   }
 
@@ -320,6 +343,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     passwordToggle.addEventListener("click", function () {
+      unlockPasswordField();
       passwordInput.type = (passwordInput.type === "password") ? "text" : "password";
       syncPasswordToggle();
       passwordInput.focus();
@@ -330,6 +354,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
   if (form) {
     form.addEventListener("submit", function (e) {
+      unlockPasswordField();
+      syncPasswordHidden();
+      
       const okName = validateName();
       const okPhone = validatePhone();
       const okEmail = validateEmail();
