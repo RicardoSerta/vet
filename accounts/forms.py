@@ -47,6 +47,61 @@ def normalize_name_words(value: str) -> str:
     
 def normalize_email_value(value: str) -> str:
     return (value or "").strip().lower()
+
+def normalize_provider_name_key(name: str, surname: str = "") -> str:
+    full_name = " ".join(
+        part.strip() for part in [name or "", surname or ""] if part and part.strip()
+    )
+    full_name = re.sub(r"\s+", " ", full_name.strip()).lower()
+    full_name = unicodedata.normalize("NFKD", full_name)
+    full_name = "".join(c for c in full_name if not unicodedata.combining(c))
+    return full_name
+
+def provider_name_exists(name: str, *, exclude_clinic_id=None, exclude_vet_id=None) -> bool:
+    key = normalize_provider_name_key(name)
+    if not key:
+        return False
+
+    clinics = Clinic.objects.all()
+    if exclude_clinic_id is not None:
+        clinics = clinics.exclude(id=exclude_clinic_id)
+
+    for clinic in clinics.only("name"):
+        if normalize_provider_name_key(clinic.name) == key:
+            return True
+
+    vets = Veterinarian.objects.all()
+    if exclude_vet_id is not None:
+        vets = vets.exclude(id=exclude_vet_id)
+
+    for vet in vets.only("name"):
+        if normalize_provider_name_key(vet.name) == key:
+            return True
+
+    return False
+
+def provider_full_name_exists(name: str, surname: str = "", *, exclude_clinic_id=None, exclude_vet_id=None) -> bool:
+    key = normalize_provider_name_key(name, surname)
+    if not key:
+        return False
+
+    clinics = Clinic.objects.all()
+    if exclude_clinic_id is not None:
+        clinics = clinics.exclude(id=exclude_clinic_id)
+
+    for clinic in clinics.only("name"):
+        if normalize_provider_name_key(clinic.name) == key:
+            return True
+
+    vets = Veterinarian.objects.all()
+    if exclude_vet_id is not None:
+        vets = vets.exclude(id=exclude_vet_id)
+
+    for vet in vets.only("name", "surname"):
+        if normalize_provider_name_key(vet.name, vet.surname) == key:
+            return True
+
+    return False
     
 def disable_browser_autocomplete(field, *, new_password=False):
     if not field:
@@ -593,6 +648,20 @@ class ClinicForm(forms.ModelForm):
     def clean_name(self):
         return normalize_name_words(self.cleaned_data.get("name"))
         
+    def clean(self):
+        cleaned = super().clean()
+
+        name = (cleaned.get("name") or "").strip()
+        if not name:
+            return cleaned
+
+        exclude_clinic_id = self.instance.pk if getattr(self.instance, "pk", None) else None
+
+        if provider_full_name_exists(name, exclude_clinic_id=exclude_clinic_id):
+            self.add_error("name", "Já existe uma clínica ou veterinário com esse nome.")
+
+        return cleaned
+        
     def clean_phone(self):
         phone = (self.cleaned_data.get("phone") or "").strip()
         if phone and not PHONE_ANY_RE.match(phone):
@@ -706,6 +775,31 @@ class VeterinarianForm(forms.ModelForm):
         
     def clean_surname(self):
         return normalize_name_words(self.cleaned_data.get("surname"))
+        
+    def clean(self):
+        cleaned = super().clean()
+
+        name = (cleaned.get("name") or "").strip()
+        surname = (cleaned.get("surname") or "").strip()
+
+        if not name:
+            return cleaned
+
+        exclude_vet_id = self.instance.pk if getattr(self.instance, "pk", None) else None
+
+        if not surname:
+            if provider_name_exists(name, exclude_vet_id=exclude_vet_id):
+                msg = "Já existe uma clínica ou veterinário com esse nome. Preencha um sobrenome para diferenciar."
+                self.add_error("name", msg)
+                self.add_error("surname", msg)
+            return cleaned
+
+        if provider_full_name_exists(name, surname, exclude_vet_id=exclude_vet_id):
+            msg = "Já existe uma clínica ou veterinário com esse nome."
+            self.add_error("name", msg)
+            self.add_error("surname", msg)
+
+        return cleaned
         
     def clean_phone(self):
         phone = (self.cleaned_data.get("phone") or "").strip()

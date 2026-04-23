@@ -443,6 +443,9 @@ def login_view(request):
 def profile_view(request):
     # Garante que exista um Profile para o usuário logado
     profile, created = Profile.objects.get_or_create(user=request.user)
+    
+    is_clinic_profile = Clinic.objects.filter(user=request.user).exists()
+    profile_name_placeholder = "Nome da clínica" if is_clinic_profile else "Seu nome"
 
     old_email = request.user.email or ""
     old_whatsapp = profile.whatsapp or ""
@@ -450,7 +453,7 @@ def profile_view(request):
     field_errors = {}
     form_values = {
         "name": request.user.first_name or "",
-        "last_name": request.user.last_name or "",
+        "last_name": "" if is_clinic_profile else (request.user.last_name or ""),
         "whatsapp": profile.whatsapp or "",
         "email": request.user.email or "",
         "password": "",
@@ -458,7 +461,7 @@ def profile_view(request):
 
     if request.method == 'POST':
         name = (request.POST.get('name') or '').strip()
-        last_name = (request.POST.get('last_name') or '').strip()
+        last_name = '' if is_clinic_profile else (request.POST.get('last_name') or '').strip()
         whatsapp = (request.POST.get('whatsapp') or '').strip()
         email = (request.POST.get('email') or '').strip().lower()
         new_password = request.POST.get('password') or ''
@@ -494,6 +497,8 @@ def profile_view(request):
                 'profile': profile,
                 'form_values': form_values,
                 'field_errors': field_errors,
+                'is_clinic_profile': is_clinic_profile,
+                'profile_name_placeholder': profile_name_placeholder,
             })
 
         # Atualiza dados básicos do User
@@ -579,6 +584,8 @@ def profile_view(request):
         'profile': profile,
         'form_values': form_values,
         'field_errors': field_errors,
+        'is_clinic_profile': is_clinic_profile,
+        'profile_name_placeholder': profile_name_placeholder,
     }
     return render(request, 'accounts/profile.html', context)
     

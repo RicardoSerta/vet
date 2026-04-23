@@ -31,7 +31,7 @@
                            id="id_name"
                            name="name"
                            value="{{ form_values.name }}"
-                           placeholder="Seu nome"
+                           placeholder="{{ profile_name_placeholder }}"
                            autocomplete="off"
                            autocapitalize="off"
                            autocorrect="off"
@@ -44,6 +44,7 @@
                     </div>
                 </div>
 
+                {% if not is_clinic_profile %}
                 <div class="profile-form-group">
                     <label for="id_last_name">Sobrenome:</label>
                     <input type="text"
@@ -56,6 +57,7 @@
                            autocorrect="off"
                            spellcheck="false">
                 </div>
+                {% endif %}
 
                 <div class="profile-form-group">
                     <label for="id_whatsapp">Telefone:</label>
