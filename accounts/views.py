@@ -494,28 +494,28 @@ def profile_view(request):
         is_admin_profile = request.user.is_superuser or profile.role in ("ADMIN", "ADMIN_AUX")
 
         if not name:
-            field_errors["name"] = "Digite seu nome."
+            field_errors["name"] = "Digite o nome da clínica." if is_clinic_profile else "Digite seu nome."
         elif len(name) > 64:
-            field_errors["name"] = "Nome não pode ultrapassar 64 caracteres."
+            field_errors["name"] = "O nome não deve ultrapassar 64 caracteres."
 
         if not is_clinic_profile and last_name and len(last_name) > 64:
-            field_errors["last_name"] = "Sobrenome não pode ultrapassar 64 caracteres."
+            field_errors["last_name"] = "O sobrenome não deve ultrapassar 64 caracteres."
 
         if email:
             if len(email) > 64:
-                field_errors["email"] = "E-mail não pode ultrapassar 64 caracteres."
+                field_errors["email"] = "O e-mail não deve ultrapassar 64 caracteres."
             else:
                 try:
                     validate_email(email)
                 except DjangoValidationError:
-                    field_errors["email"] = "E-mail inválido."
+                    field_errors["email"] = "Endereço de e-mail inválido."
 
         if whatsapp and not PHONE_ANY_RE.match(whatsapp):
-            field_errors["whatsapp"] = "Telefone inválido."
+            field_errors["whatsapp"] = "Número de telefone inválido."
 
         if new_password:
             if len(new_password) > 64:
-                field_errors["password"] = "Nova senha não pode ultrapassar 64 caracteres."
+                field_errors["password"] = "A nova senha não deve ultrapassar 64 caracteres."
             elif len(new_password) < 8:
                 field_errors["password"] = "A senha deve possuir no mínimo 8 caracteres."
 

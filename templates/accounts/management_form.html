@@ -407,7 +407,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const PHONE_RE = /^\(\d{2}\)\s?(\d{4}-\d{4}|9\d{4}-\d{4})$/;
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const MAX_TEXT_LEN = 64;
-  const LENGTH_CHECK_CATEGORIES = ["tutores", "clinicas", "veterinarios", "admin"];
+  const LENGTH_CHECK_CATEGORIES = ["tutores", "clinicas", "veterinarios", "pets", "admin"];
   const category = "{{ category }}";
 
   function getErrorEl(field) {
@@ -449,15 +449,19 @@ document.addEventListener("DOMContentLoaded", function () {
     const name = field.name || "";
 
     if (name === "name" || name === "first_name") {
-      return "Nome não pode ultrapassar 64 caracteres.";
+      return "O nome não deve ultrapassar 64 caracteres.";
     }
 
     if (name === "surname" || name === "last_name") {
-      return "Sobrenome não pode ultrapassar 64 caracteres.";
+      return "O sobrenome não deve ultrapassar 64 caracteres.";
     }
 
     if (name === "email") {
-      return "E-mail não pode ultrapassar 64 caracteres.";
+      return "O e-mail não deve ultrapassar 64 caracteres.";
+    }
+
+    if (name === "breed") {
+      return "A raça não deve ultrapassar 64 caracteres.";
     }
 
     return null;
@@ -496,7 +500,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const name = field.name || "";
 
     if (type === "hidden" || type === "file") return true;
-    if (!["name", "surname", "email", "first_name", "last_name"].includes(name)) return true;
+    if (!["name", "surname", "email", "first_name", "last_name", "breed"].includes(name)) return true;
 
     const value = (field.value || "").trim();
     if (!value) {
@@ -523,7 +527,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     if (!PHONE_RE.test(value)) {
-      setFieldError(field, "Telefone inválido.");
+      setFieldError(field, "Número de telefone inválido.");
       return false;
     }
 
@@ -541,12 +545,12 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     if (value.length > MAX_TEXT_LEN) {
-      setFieldError(field, "E-mail não pode ultrapassar 64 caracteres.");
+      setFieldError(field, "O e-mail não deve ultrapassar 64 caracteres.");
       return false;
     }
 
     if (!EMAIL_RE.test(value)) {
-      setFieldError(field, "E-mail inválido.");
+      setFieldError(field, "Endereço de e-mail inválido.");
       return false;
     }
 

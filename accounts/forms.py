@@ -51,10 +51,10 @@ def normalize_email_value(value: str) -> str:
 
 MAX_TEXT_LEN = 64
 
-def validate_max_text_length(value: str, field_label: str, limit: int = MAX_TEXT_LEN) -> str:
+def validate_max_text_length(value: str, field_label_with_article: str, limit: int = MAX_TEXT_LEN) -> str:
     value = (value or "").strip()
     if len(value) > limit:
-        raise forms.ValidationError(f"{field_label} não pode ultrapassar {limit} caracteres.")
+        raise forms.ValidationError(f"{field_label_with_article} não deve ultrapassar {limit} caracteres.")
     return value
 
 def normalize_identity_key(*parts: str) -> str:
@@ -411,7 +411,7 @@ class ExamUploadForm(forms.Form):
     def clean_tutor_email(self):
         email = normalize_email_value(self.cleaned_data.get("tutor_email"))
         if email:
-            validate_max_text_length(email, "E-mail do tutor")
+            validate_max_text_length(email, "O e-mail do tutor")
             from django.core.validators import validate_email
             validate_email(email)
         return email
@@ -576,7 +576,7 @@ class TutorForm(forms.ModelForm):
         self.fields["email"].label = "E-mail"
 
         self.fields["name"].error_messages["required"] = "Digite o nome."
-        self.fields["email"].error_messages["invalid"] = "E-mail inválido."
+        self.fields["email"].error_messages["invalid"] = "Endereço de e-mail inválido."
 
         self.fields["name"].widget.attrs.update({"placeholder": "Nome do tutor"})
         self.fields["surname"].widget.attrs.update({"placeholder": "Sobrenome do tutor"})
@@ -598,22 +598,22 @@ class TutorForm(forms.ModelForm):
             
     def clean_name(self):
         name = normalize_name_words(self.cleaned_data.get("name"))
-        return validate_max_text_length(name, "Nome")
+        return validate_max_text_length(name, "O nome")
         
     def clean_surname(self):
         surname = normalize_name_words(self.cleaned_data.get("surname"))
-        return validate_max_text_length(surname, "Sobrenome")
+        return validate_max_text_length(surname, "O sobrenome")
         
     def clean_phone(self):
         phone = (self.cleaned_data.get("phone") or "").strip()
         if phone and not PHONE_ANY_RE.match(phone):
-            raise forms.ValidationError("Telefone inválido.")
+            raise forms.ValidationError("Número de telefone inválido.")
         return phone
 
     def clean_email(self):
         email = normalize_email_value(self.cleaned_data.get("email"))
         if email:
-            validate_max_text_length(email, "E-mail")
+            validate_max_text_length(email, "O e-mail")
             from django.core.validators import validate_email
             validate_email(email)
         return email
@@ -691,7 +691,7 @@ class ClinicForm(forms.ModelForm):
         self.fields["email"].label = "E-mail"
 
         self.fields["name"].error_messages["required"] = "Digite o nome."
-        self.fields["email"].error_messages["invalid"] = "E-mail inválido."
+        self.fields["email"].error_messages["invalid"] = "Endereço de e-mail inválido."
 
         self.fields["name"].widget.attrs.update({"placeholder": "Nome da clínica"})
         self.fields["email"].widget.attrs.update({"placeholder": "exemplo@email.com"})
@@ -712,7 +712,7 @@ class ClinicForm(forms.ModelForm):
             
     def clean_name(self):
         name = normalize_name_words(self.cleaned_data.get("name"))
-        return validate_max_text_length(name, "Nome")
+        return validate_max_text_length(name, "O nome")
         
     def clean(self):
         cleaned = super().clean()
@@ -731,13 +731,13 @@ class ClinicForm(forms.ModelForm):
     def clean_phone(self):
         phone = (self.cleaned_data.get("phone") or "").strip()
         if phone and not PHONE_ANY_RE.match(phone):
-            raise forms.ValidationError("Telefone inválido.")
+            raise forms.ValidationError("Número de telefone inválido.")
         return phone
 
     def clean_email(self):
         email = normalize_email_value(self.cleaned_data.get("email"))
         if email:
-            validate_max_text_length(email, "E-mail")
+            validate_max_text_length(email, "O e-mail")
             from django.core.validators import validate_email
             validate_email(email)
         return email
@@ -817,7 +817,7 @@ class VeterinarianForm(forms.ModelForm):
         self.fields["email"].label = "E-mail"
 
         self.fields["name"].error_messages["required"] = "Digite o nome."
-        self.fields["email"].error_messages["invalid"] = "E-mail inválido."
+        self.fields["email"].error_messages["invalid"] = "Endereço de e-mail inválido."
 
         self.fields["name"].widget.attrs.update({"placeholder": "Nome do veterinário"})
         self.fields["surname"].widget.attrs.update({"placeholder": "Sobrenome do veterinário"})
@@ -839,11 +839,11 @@ class VeterinarianForm(forms.ModelForm):
             
     def clean_name(self):
         name = normalize_name_words(self.cleaned_data.get("name"))
-        return validate_max_text_length(name, "Nome")
+        return validate_max_text_length(name, "O nome")
         
     def clean_surname(self):
         surname = normalize_name_words(self.cleaned_data.get("surname"))
-        return validate_max_text_length(surname, "Sobrenome")
+        return validate_max_text_length(surname, "O sobrenome")
         
     def clean(self):
         cleaned = super().clean()
@@ -873,13 +873,13 @@ class VeterinarianForm(forms.ModelForm):
     def clean_phone(self):
         phone = (self.cleaned_data.get("phone") or "").strip()
         if phone and not PHONE_ANY_RE.match(phone):
-            raise forms.ValidationError("Telefone inválido.")
+            raise forms.ValidationError("Número de telefone inválido.")
         return phone
 
     def clean_email(self):
         email = normalize_email_value(self.cleaned_data.get("email"))
         if email:
-            validate_max_text_length(email, "E-mail")
+            validate_max_text_length(email, "O e-mail")
             from django.core.validators import validate_email
             validate_email(email)
         return email
@@ -922,13 +922,14 @@ class PetForm(forms.ModelForm):
                 disable_browser_autocomplete(self.fields[field_name])
             
     def clean_name(self):
-        return normalize_name_words(self.cleaned_data.get("name"))
+        name = normalize_name_words(self.cleaned_data.get("name"))
+        return validate_max_text_length(name, "O nome")
 
     def clean_breed(self):
-        breed = self.cleaned_data.get('breed', '').strip()
+        breed = (self.cleaned_data.get('breed') or '').strip()
         if not breed:
             return 'SRD'
-        return breed
+        return validate_max_text_length(breed, "A raça")
         
     def clean_photo(self):
         photo = self.cleaned_data.get("photo")
@@ -1053,13 +1054,13 @@ class ExamTypeAliasForm(forms.ModelForm):
         abbr = (self.cleaned_data.get("abbreviation") or "").strip().lower()
         if not abbr:
             raise forms.ValidationError("Digite a sigla.")
-        return validate_max_text_length(abbr, "Sigla")
+        return validate_max_text_length(abbr, "A sigla")
 
     def clean_full_name(self):
         name = (self.cleaned_data.get("full_name") or "").strip()
         if not name:
             raise forms.ValidationError("Digite o nome do exame.")
-        return validate_max_text_length(name, "Nome do exame")
+        return validate_max_text_length(name, "O nome do exame")
         
 class AdminAuxForm(forms.Form):
     photo = forms.ImageField(
@@ -1102,7 +1103,7 @@ class AdminAuxForm(forms.Form):
         label="E-mail",
         max_length=64,
         required=False,
-        error_messages={"invalid": "E-mail inválido."},
+        error_messages={"invalid": "Endereço de e-mail inválido."},
         widget=forms.EmailInput(attrs={"placeholder": "exemplo@email.com"}),
     )
 
@@ -1121,22 +1122,22 @@ class AdminAuxForm(forms.Form):
 
     def clean_first_name(self):
         first_name = normalize_name_words(self.cleaned_data.get("first_name"))
-        return validate_max_text_length(first_name, "Nome")
+        return validate_max_text_length(first_name, "O nome")
 
     def clean_last_name(self):
         last_name = normalize_name_words(self.cleaned_data.get("last_name"))
-        return validate_max_text_length(last_name, "Sobrenome")
+        return validate_max_text_length(last_name, "O sobrenome")
 
     def clean_phone(self):
         phone = (self.cleaned_data.get("phone") or "").strip()
         if phone and not PHONE_ANY_RE.match(phone):
-            raise forms.ValidationError("Telefone inválido.")
+            raise forms.ValidationError("Número de telefone inválido.")
         return phone
 
     def clean_email(self):
         email = normalize_email_value(self.cleaned_data.get("email"))
         if email:
-            validate_max_text_length(email, "E-mail")
+            validate_max_text_length(email, "O e-mail")
             from django.core.validators import validate_email
             validate_email(email)
         return email

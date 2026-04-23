@@ -206,6 +206,8 @@ document.addEventListener("DOMContentLoaded", function () {
   const PHONE_RE = /^\(\d{2}\)\s?(\d{4}-\d{4}|9\d{4}-\d{4})$/;
   
   const MAX_TEXT_LEN = 64;
+  
+  const isClinicProfile = {{ is_clinic_profile|yesno:"true,false" }};
 
   function setFieldError(inputEl, errorId, message) {
     const errorEl = document.getElementById(errorId);
@@ -229,11 +231,15 @@ document.addEventListener("DOMContentLoaded", function () {
   function validateName() {
     const value = (nameInput?.value || "").trim();
     if (!value) {
-      setFieldError(nameInput, "id_name_error", "Digite seu nome.");
+      setFieldError(
+        nameInput,
+        "id_name_error",
+        isClinicProfile ? "Digite o nome da clínica." : "Digite seu nome."
+      );
       return false;
     }
     if (value.length > MAX_TEXT_LEN) {
-      setFieldError(nameInput, "id_name_error", "Nome não pode ultrapassar 64 caracteres.");
+      setFieldError(nameInput, "id_name_error", "O nome não deve ultrapassar 64 caracteres.");
       return false;
     }
     clearFieldError(nameInput, "id_name_error");
@@ -249,7 +255,7 @@ document.addEventListener("DOMContentLoaded", function () {
       return true;
     }
     if (value.length > MAX_TEXT_LEN) {
-      setFieldError(lastNameInput, "id_last_name_error", "Sobrenome não pode ultrapassar 64 caracteres.");
+      setFieldError(lastNameInput, "id_last_name_error", "O sobrenome não deve ultrapassar 64 caracteres.");
       return false;
     }
     clearFieldError(lastNameInput, "id_last_name_error");
@@ -263,16 +269,17 @@ document.addEventListener("DOMContentLoaded", function () {
       return true;
     }
     if (value.length > MAX_TEXT_LEN) {
-      setFieldError(emailInput, "id_email_error", "E-mail não pode ultrapassar 64 caracteres.");
+      setFieldError(emailInput, "id_email_error", "O e-mail não deve ultrapassar 64 caracteres.");
       return false;
     }
     if (!EMAIL_RE.test(value)) {
-      setFieldError(emailInput, "id_email_error", "E-mail inválido.");
+      setFieldError(emailInput, "id_email_error", "Endereço de e-mail inválido.");
       return false;
     }
     clearFieldError(emailInput, "id_email_error");
     return true;
   }
+
   function phoneDigits(value) {
     return (value || "").replace(/\D/g, "");
   }
@@ -304,7 +311,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     if (!PHONE_RE.test(value)) {
-      setFieldError(phoneInput, "id_whatsapp_error", "Telefone inválido.");
+      setFieldError(phoneInput, "id_whatsapp_error", "Número de telefone inválido.");
       return false;
     }
 
@@ -331,7 +338,7 @@ document.addEventListener("DOMContentLoaded", function () {
       return true;
     }
     if (value.length > MAX_TEXT_LEN) {
-      setFieldError(passwordInput, "id_password_error", "Nova senha não pode ultrapassar 64 caracteres.");
+      setFieldError(passwordInput, "id_password_error", "A nova senha não deve ultrapassar 64 caracteres.");
       return false;
     }
     if (value.length < 8) {
